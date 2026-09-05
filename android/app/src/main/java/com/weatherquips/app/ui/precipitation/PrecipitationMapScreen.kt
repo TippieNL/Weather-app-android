@@ -78,6 +78,7 @@ fun PrecipitationMapScreen(
     onTogglePlay: () -> Unit,
     onSelectFrame: (Int) -> Unit,
     onPauseForLifecycle: () -> Unit,
+    onResumeForLifecycle: () -> Unit,
     tileUrlFor: (RadarFrame) -> String,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
@@ -103,6 +104,7 @@ fun PrecipitationMapScreen(
             savedZoom = zoom
         },
         onPause = onPauseForLifecycle,
+        onResume = onResumeForLifecycle,
     )
 
     val radarOverlay = remember(mapView) { createRadarOverlay(mapView) }
@@ -273,6 +275,7 @@ private fun rememberMapView(
     initialCenter: GeoPoint,
     onCameraChanged: (GeoPoint, Double) -> Unit,
     onPause: () -> Unit,
+    onResume: () -> Unit,
 ): MapView {
     val context = androidx.compose.ui.platform.LocalContext.current
     val configuration = LocalConfiguration.current
@@ -304,7 +307,10 @@ private fun rememberMapView(
     DisposableEffect(lifecycleOwner, mapView) {
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
-                Lifecycle.Event.ON_RESUME -> mapView.onResume()
+                Lifecycle.Event.ON_RESUME -> {
+                    mapView.onResume()
+                    onResume()
+                }
                 Lifecycle.Event.ON_PAUSE -> {
                     // Stop the radar the moment the screen stops being visible.
                     onPause()

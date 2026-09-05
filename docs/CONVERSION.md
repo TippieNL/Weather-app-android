@@ -87,10 +87,10 @@ Every row was verified against the original implementation in
 
 ## Verification
 
-- `./gradlew test` — 91 unit and host-side UI tests (formatting, condition
+- `./gradlew test` — 109 unit and host-side UI tests (formatting, condition
   mapping, quote content and selection, provider response mapping, repository
   caching and error translation, settings persistence including "the API key is
-  never written in the clear", geocoding, alert wording, the home state machine,
+  never written in the clear", geocoding, alert wording, the home state machine, the radar timeline,
   and Compose rendering of every UI state).
 - `./gradlew assembleDebug` / `assembleRelease` — both build; release runs R8 and
   `lintVitalRelease` clean.

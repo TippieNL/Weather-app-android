@@ -53,6 +53,7 @@ class PrecipitationScreenUiTest {
                     onTogglePlay = onTogglePlay,
                     onSelectFrame = {},
                     onPauseForLifecycle = {},
+                    onResumeForLifecycle = {},
                     tileUrlFor = {
                         "https://tilecache.rainviewer.com${it.path}/256/{z}/{x}/{y}/2/1_1.png"
                     },

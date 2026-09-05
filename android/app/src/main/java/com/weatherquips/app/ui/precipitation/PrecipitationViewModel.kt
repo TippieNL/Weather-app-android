@@ -47,6 +47,9 @@ class PrecipitationViewModel(
 
     private var animationJob: Job? = null
 
+    /** Whether the animation was running when the screen went to the background. */
+    private var wasPlayingBeforePause = false
+
     init {
         loadTimeline()
     }
@@ -79,6 +82,7 @@ class PrecipitationViewModel(
     }
 
     fun togglePlay() {
+        wasPlayingBeforePause = false
         val playing = !_uiState.value.isPlaying
         _uiState.update { it.copy(isPlaying = playing) }
         if (playing) startAnimation() else stopAnimation()
@@ -93,8 +97,17 @@ class PrecipitationViewModel(
 
     /** Called when the screen leaves the foreground: never animate off-screen. */
     fun pauseForLifecycle() {
+        wasPlayingBeforePause = _uiState.value.isPlaying
         stopAnimation()
         _uiState.update { it.copy(isPlaying = false) }
+    }
+
+    /** Called when the screen is visible again; only resumes what it paused. */
+    fun resumeForLifecycle() {
+        if (!wasPlayingBeforePause || _uiState.value.frames.isEmpty()) return
+        wasPlayingBeforePause = false
+        _uiState.update { it.copy(isPlaying = true) }
+        startAnimation()
     }
 
     fun tileUrl(frame: RadarFrame): String = radarRepository.tileUrlTemplate(frame)

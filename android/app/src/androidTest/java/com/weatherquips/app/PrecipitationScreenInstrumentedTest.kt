@@ -56,6 +56,7 @@ class PrecipitationScreenInstrumentedTest {
                     onTogglePlay = { paused = true },
                     onSelectFrame = {},
                     onPauseForLifecycle = {},
+                    onResumeForLifecycle = {},
                     tileUrlFor = { "https://tilecache.rainviewer.com${it.path}/256/{z}/{x}/{y}/2/1_1.png" },
                     onBack = { backPressed = true },
                 )
@@ -84,6 +85,7 @@ class PrecipitationScreenInstrumentedTest {
                     onTogglePlay = {},
                     onSelectFrame = {},
                     onPauseForLifecycle = {},
+                    onResumeForLifecycle = {},
                     tileUrlFor = { "" },
                     onBack = {},
                 )

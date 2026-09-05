@@ -108,6 +108,7 @@ fun WeatherQuipsNavHost(
                 onTogglePlay = viewModel::togglePlay,
                 onSelectFrame = viewModel::selectFrame,
                 onPauseForLifecycle = viewModel::pauseForLifecycle,
+                onResumeForLifecycle = viewModel::resumeForLifecycle,
                 tileUrlFor = viewModel::tileUrl,
                 onBack = { navController.popBackStack() },
             )
