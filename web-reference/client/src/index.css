@@ -1,0 +1,485 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* LIGHT MODE - Minimalist Black & White Theme */
+:root {
+  --button-outline: rgba(0,0,0, .10);
+  --badge-outline: rgba(0,0,0, .05);
+
+  --opaque-button-border-intensity: -8;
+
+  --elevate-1: rgba(0,0,0, .03);
+  --elevate-2: rgba(0,0,0, .08);
+
+  --background: 0 0% 98%;
+
+  --foreground: 0 0% 9%;
+
+  --border: 0 0% 90%;
+
+  --card: 0 0% 100%;
+
+  --card-foreground: 0 0% 9%;
+
+  --card-border: 0 0% 92%;
+
+  --sidebar: 0 0% 96%;
+
+  --sidebar-foreground: 0 0% 9%;
+
+  --sidebar-border: 0 0% 90%;
+
+  --sidebar-primary: 0 0% 9%;
+
+  --sidebar-primary-foreground: 0 0% 98%;
+
+  --sidebar-accent: 0 0% 92%;
+
+  --sidebar-accent-foreground: 0 0% 9%;
+
+  --sidebar-ring: 0 0% 9%;
+
+  --popover: 0 0% 100%;
+
+  --popover-foreground: 0 0% 9%;
+
+  --popover-border: 0 0% 90%;
+
+  --primary: 0 0% 9%;
+
+  --primary-foreground: 0 0% 98%;
+
+  --secondary: 0 0% 94%;
+
+  --secondary-foreground: 0 0% 20%;
+
+  --muted: 0 0% 94%;
+
+  --muted-foreground: 0 0% 45%;
+
+  --accent: 0 0% 92%;
+
+  --accent-foreground: 0 0% 9%;
+
+  --destructive: 0 72% 51%;
+
+  --destructive-foreground: 0 0% 100%;
+
+  --input: 0 0% 85%;
+  --ring: 0 0% 9%;
+  --chart-1: 0 0% 20%;
+  --chart-2: 0 0% 35%;
+  --chart-3: 0 0% 50%;
+  --chart-4: 0 0% 65%;
+  --chart-5: 0 0% 80%;
+
+  --font-sans: 'DM Sans', 'Inter', sans-serif;
+  --font-display: 'Space Grotesk', 'DM Sans', sans-serif;
+  --font-serif: 'Libre Baskerville', Georgia, serif;
+  --font-mono: 'JetBrains Mono', Menlo, monospace;
+  --radius: .5rem;
+  --shadow-2xs: 0px 2px 0px 0px hsl(0 0% 0% / 0.00);
+  --shadow-xs: 0px 2px 0px 0px hsl(0 0% 0% / 0.00);
+  --shadow-sm: 0px 2px 0px 0px hsl(0 0% 0% / 0.00), 0px 1px 2px -1px hsl(0 0% 0% / 0.00);
+  --shadow: 0px 2px 0px 0px hsl(0 0% 0% / 0.00), 0px 1px 2px -1px hsl(0 0% 0% / 0.00);
+  --shadow-md: 0px 2px 0px 0px hsl(0 0% 0% / 0.00), 0px 2px 4px -1px hsl(0 0% 0% / 0.00);
+  --shadow-lg: 0px 2px 0px 0px hsl(0 0% 0% / 0.00), 0px 4px 6px -1px hsl(0 0% 0% / 0.00);
+  --shadow-xl: 0px 2px 0px 0px hsl(0 0% 0% / 0.00), 0px 8px 10px -1px hsl(0 0% 0% / 0.00);
+  --shadow-2xl: 0px 2px 0px 0px hsl(0 0% 0% / 0.00);
+  --tracking-normal: 0em;
+  --spacing: 0.25rem;
+
+  --sidebar-primary-border: hsl(var(--sidebar-primary));
+  --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+
+  --sidebar-accent-border: hsl(var(--sidebar-accent));
+  --sidebar-accent-border: hsl(from hsl(var(--sidebar-accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+
+  --primary-border: hsl(var(--primary));
+  --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+
+  --secondary-border: hsl(var(--secondary));
+  --secondary-border: hsl(from hsl(var(--secondary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+
+  --muted-border: hsl(var(--muted));
+  --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+
+  --accent-border: hsl(var(--accent));
+  --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+
+  --destructive-border: hsl(var(--destructive));
+  --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+}
+
+.dark {
+  --button-outline: rgba(255,255,255, .10);
+  --badge-outline: rgba(255,255,255, .05);
+
+  --opaque-button-border-intensity: 9;
+
+  --elevate-1: rgba(255,255,255, .04);
+  --elevate-2: rgba(255,255,255, .09);
+
+  --background: 0 0% 5%;
+
+  --foreground: 0 0% 95%;
+
+  --border: 0 0% 18%;
+
+  --card: 0 0% 8%;
+
+  --card-foreground: 0 0% 95%;
+
+  --card-border: 0 0% 15%;
+
+  --sidebar: 0 0% 7%;
+
+  --sidebar-foreground: 0 0% 95%;
+
+  --sidebar-border: 0 0% 18%;
+
+  --sidebar-primary: 0 0% 95%;
+
+  --sidebar-primary-foreground: 0 0% 5%;
+
+  --sidebar-accent: 0 0% 15%;
+
+  --sidebar-accent-foreground: 0 0% 95%;
+
+  --sidebar-ring: 0 0% 95%;
+
+  --popover: 0 0% 8%;
+
+  --popover-foreground: 0 0% 95%;
+
+  --popover-border: 0 0% 18%;
+
+  --primary: 0 0% 95%;
+
+  --primary-foreground: 0 0% 5%;
+
+  --secondary: 0 0% 15%;
+
+  --secondary-foreground: 0 0% 85%;
+
+  --muted: 0 0% 15%;
+
+  --muted-foreground: 0 0% 55%;
+
+  --accent: 0 0% 18%;
+
+  --accent-foreground: 0 0% 95%;
+
+  --destructive: 0 62% 45%;
+
+  --destructive-foreground: 0 0% 100%;
+
+  --input: 0 0% 22%;
+  --ring: 0 0% 95%;
+  --chart-1: 0 0% 85%;
+  --chart-2: 0 0% 70%;
+  --chart-3: 0 0% 55%;
+  --chart-4: 0 0% 40%;
+  --chart-5: 0 0% 25%;
+
+  --shadow-2xs: 0px 2px 0px 0px hsl(0 0% 0% / 0.00);
+  --shadow-xs: 0px 2px 0px 0px hsl(0 0% 0% / 0.00);
+  --shadow-sm: 0px 2px 0px 0px hsl(0 0% 0% / 0.00), 0px 1px 2px -1px hsl(0 0% 0% / 0.00);
+  --shadow: 0px 2px 0px 0px hsl(0 0% 0% / 0.00), 0px 1px 2px -1px hsl(0 0% 0% / 0.00);
+  --shadow-md: 0px 2px 0px 0px hsl(0 0% 0% / 0.00), 0px 2px 4px -1px hsl(0 0% 0% / 0.00);
+  --shadow-lg: 0px 2px 0px 0px hsl(0 0% 0% / 0.00), 0px 4px 6px -1px hsl(0 0% 0% / 0.00);
+  --shadow-xl: 0px 2px 0px 0px hsl(0 0% 0% / 0.00), 0px 8px 10px -1px hsl(0 0% 0% / 0.00);
+  --shadow-2xl: 0px 2px 0px 0px hsl(0 0% 0% / 0.00);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html, body, #root {
+    @apply h-full;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+
+  input[type="search"]::-webkit-search-cancel-button {
+    @apply hidden;
+  }
+
+  [contenteditable][data-placeholder]:empty::before {
+    content: attr(data-placeholder);
+    color: hsl(var(--muted-foreground));
+    pointer-events: none;
+  }
+
+  .no-default-hover-elevate {}
+
+  .no-default-active-elevate {}
+
+  .toggle-elevate::before,
+  .toggle-elevate-2::before {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    inset: 0px;
+    border-radius: inherit;
+    z-index: -1;
+  }
+
+  .toggle-elevate.toggle-elevated::before {
+    background-color: var(--elevate-2);
+  }
+
+  .border.toggle-elevate::before {
+    inset: -1px;
+  }
+
+  .hover-elevate:not(.no-default-hover-elevate),
+  .active-elevate:not(.no-default-active-elevate),
+  .hover-elevate-2:not(.no-default-hover-elevate),
+  .active-elevate-2:not(.no-default-active-elevate) {
+    position: relative;
+    z-index: 0;
+  }
+
+  .hover-elevate:not(.no-default-hover-elevate)::after,
+  .active-elevate:not(.no-default-active-elevate)::after,
+  .hover-elevate-2:not(.no-default-hover-elevate)::after,
+  .active-elevate-2:not(.no-default-active-elevate)::after {
+    content: "";
+    pointer-events: none;
+    position: absolute;
+    inset: 0px;
+    border-radius: inherit;
+    z-index: 999;
+  }
+
+  .hover-elevate:hover:not(.no-default-hover-elevate)::after,
+  .active-elevate:active:not(.no-default-active-elevate)::after {
+    background-color: var(--elevate-1);
+  }
+
+  .hover-elevate-2:hover:not(.no-default-hover-elevate)::after,
+  .active-elevate-2:active:not(.no-default-active-elevate)::after {
+    background-color: var(--elevate-2);
+  }
+
+  .border.hover-elevate:not(.no-hover-interaction-elevate)::after,
+  .border.active-elevate:not(.no-active-interaction-elevate)::after,
+  .border.hover-elevate-2:not(.no-hover-interaction-elevate)::after,
+  .border.active-elevate-2:not(.no-active-interaction-elevate)::after,
+  .border.hover-elevate:not(.no-hover-interaction-elevate)::after {
+    inset: -1px;
+  }
+
+  /* Material Symbols Weather Icon Animations */
+  .weather-icon-spin-slow {
+    animation: weather-spin 12s linear infinite;
+  }
+  @keyframes weather-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  .weather-icon-pulse {
+    animation: weather-pulse 2s ease-in-out infinite;
+  }
+  @keyframes weather-pulse {
+    0%, 100% { transform: scale(1); opacity: 0.85; }
+    50% { transform: scale(1.08); opacity: 1; }
+  }
+
+  .weather-icon-drift {
+    animation: weather-drift 4s ease-in-out infinite;
+  }
+  @keyframes weather-drift {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(4px); }
+  }
+
+  .weather-icon-bounce-subtle {
+    animation: weather-bounce 2s ease-in-out infinite;
+  }
+  @keyframes weather-bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+  }
+
+  .weather-icon-flash {
+    animation: weather-flash 2s ease-in-out infinite;
+  }
+  @keyframes weather-flash {
+    0%, 100% { opacity: 1; }
+    10% { opacity: 0.3; }
+    12% { opacity: 1; }
+    14% { opacity: 0.4; }
+    20% { opacity: 1; }
+  }
+
+  .weather-icon-fade-pulse {
+    animation: weather-fade-pulse 4s ease-in-out infinite;
+  }
+  @keyframes weather-fade-pulse {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+  }
+
+  .weather-icon-sway {
+    animation: weather-sway 2.5s ease-in-out infinite;
+  }
+  @keyframes weather-sway {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(8deg); }
+    75% { transform: rotate(-8deg); }
+  }
+
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 48;
+    user-select: none;
+    display: inline-block;
+  }
+
+  /* Smooth fade + scale when the weather icon swaps (condition or day/night change).
+     Applied to a wrapper keyed by the icon, so it replays only on an actual change. */
+  .weather-icon-enter {
+    animation: weather-icon-enter 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: transform, opacity;
+  }
+  @keyframes weather-icon-enter {
+    from { opacity: 0; transform: scale(0.8); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .weather-icon-enter,
+    .weather-icon-spin-slow,
+    .weather-icon-pulse,
+    .weather-icon-drift,
+    .weather-icon-bounce-subtle,
+    .weather-icon-flash,
+    .weather-icon-fade-pulse,
+    .weather-icon-sway {
+      animation: none;
+    }
+  }
+
+  /* Animated Weather Icon - Explode / Easter Egg */
+  .weather-explode-container {
+    animation: weather-explode-fade 1s ease-out forwards;
+  }
+  .weather-fragment {
+    animation-duration: 0.8s;
+    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+    animation-fill-mode: forwards;
+  }
+  .weather-fragment-1 { animation-name: weather-frag-1; }
+  .weather-fragment-2 { animation-name: weather-frag-2; }
+  .weather-fragment-3 { animation-name: weather-frag-3; }
+  .weather-fragment-4 { animation-name: weather-frag-4; }
+  .weather-fragment-5 { animation-name: weather-frag-5; }
+  .weather-fragment-6 { animation-name: weather-frag-6; }
+
+  @keyframes weather-frag-1 {
+    0% { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 1; }
+    100% { transform: translate(-80px, -60px) rotate(-180deg) scale(0); opacity: 0; }
+  }
+  @keyframes weather-frag-2 {
+    0% { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 1; }
+    100% { transform: translate(70px, -70px) rotate(120deg) scale(0); opacity: 0; }
+  }
+  @keyframes weather-frag-3 {
+    0% { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 1; }
+    100% { transform: translate(5px, -90px) rotate(200deg) scale(0); opacity: 0; }
+  }
+  @keyframes weather-frag-4 {
+    0% { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 1; }
+    100% { transform: translate(-70px, 55px) rotate(160deg) scale(0); opacity: 0; }
+  }
+  @keyframes weather-frag-5 {
+    0% { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 1; }
+    100% { transform: translate(80px, 50px) rotate(-140deg) scale(0); opacity: 0; }
+  }
+  @keyframes weather-frag-6 {
+    0% { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 1; }
+    100% { transform: translate(15px, 85px) rotate(240deg) scale(0); opacity: 0; }
+  }
+  @keyframes weather-explode-fade {
+    0% { opacity: 1; }
+    70% { opacity: 0.5; }
+    100% { opacity: 0; }
+  }
+
+  /* ---- Pokémon Easter Egg ---- */
+
+  /* Gentle floating Poké Ball + optional slow spin */
+  .pokeball-float {
+    animation: pokeball-float 3.2s ease-in-out infinite;
+  }
+  @keyframes pokeball-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+  .pokeball-spin {
+    animation: pokeball-spin 9s linear infinite;
+  }
+  @keyframes pokeball-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  /* Twinkling sparkles around the Poké Ball */
+  .pokeball-sparkle {
+    color: #fbbf24;
+    animation: pokeball-sparkle 1.8s ease-in-out infinite;
+  }
+  @keyframes pokeball-sparkle {
+    0%, 100% { opacity: 0; transform: scale(0.4); }
+    50% { opacity: 1; transform: scale(1); }
+  }
+
+  /* Banner pops in from the top */
+  .pokemon-banner {
+    animation: pokemon-banner-in 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @keyframes pokemon-banner-in {
+    from { opacity: 0; transform: translateY(-12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Mystery silhouette gentle bob */
+  .pokemon-silhouette {
+    animation: pokemon-bob 3.5s ease-in-out infinite;
+  }
+  @keyframes pokemon-bob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+  }
+
+  /* Slightly more playful palette tint while Pokémon mode is active */
+  .pokemon-mode {
+    background:
+      radial-gradient(120% 90% at 50% -10%, rgba(238, 21, 21, 0.10), transparent 60%),
+      radial-gradient(120% 90% at 50% 110%, rgba(59, 130, 246, 0.10), transparent 60%);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pokeball-float,
+    .pokeball-spin,
+    .pokeball-sparkle,
+    .pokemon-banner,
+    .pokemon-silhouette {
+      animation: none;
+    }
+    .pokeball-sparkle { opacity: 0.9; }
+  }
+}

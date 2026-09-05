@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!-- Only preferences are backed up. The weather cache is disposable, and the
+         encrypted API key is bound to this device's keystore, so restoring it
+         somewhere else would be useless anyway. -->
+    <include domain="file" path="datastore/weather_quips_settings.preferences_pb" />
+</full-backup-content>

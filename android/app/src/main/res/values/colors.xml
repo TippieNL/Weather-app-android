@@ -1,0 +1,9 @@
+<resources>
+    <!-- Brand accents shared by both themes (ported from the web app). -->
+    <color name="brand_cold">#FF3B82F6</color>
+    <color name="brand_hot">#FFEF4444</color>
+    <color name="pokemon_red">#FFEE1515</color>
+
+    <color name="background_light">#FFFAFAFA</color>
+    <color name="background_dark">#FF0D0D0D</color>
+</resources>

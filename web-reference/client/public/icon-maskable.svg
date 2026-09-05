@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Dark background (maskable - safe zone is inner 60%) -->
+  <rect width="512" height="512" fill="#0a0a0a"/>
+  <!-- Sun (scaled/padded for safe zone) -->
+  <circle cx="290" cy="195" r="60" fill="white"/>
+  <line x1="290" y1="112" x2="290" y2="96" stroke="white" stroke-width="14" stroke-linecap="round"/>
+  <line x1="290" y1="278" x2="290" y2="294" stroke="white" stroke-width="14" stroke-linecap="round"/>
+  <line x1="207" y1="195" x2="191" y2="195" stroke="white" stroke-width="14" stroke-linecap="round"/>
+  <line x1="373" y1="195" x2="389" y2="195" stroke="white" stroke-width="14" stroke-linecap="round"/>
+  <line x1="231" y1="136" x2="220" y2="125" stroke="white" stroke-width="14" stroke-linecap="round"/>
+  <line x1="349" y1="254" x2="360" y2="265" stroke="white" stroke-width="14" stroke-linecap="round"/>
+  <line x1="349" y1="136" x2="360" y2="125" stroke="white" stroke-width="14" stroke-linecap="round"/>
+  <line x1="231" y1="254" x2="220" y2="265" stroke="white" stroke-width="14" stroke-linecap="round"/>
+  <!-- Cloud -->
+  <circle cx="180" cy="340" r="58" fill="white"/>
+  <circle cx="262" cy="308" r="68" fill="white"/>
+  <circle cx="348" cy="340" r="50" fill="white"/>
+  <rect x="140" y="340" width="240" height="58" fill="white"/>
+</svg>

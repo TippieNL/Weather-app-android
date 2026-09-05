@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Sun -->
+  <circle cx="295" cy="190" r="78" fill="#0a0a0a"/>
+  <!-- Sun rays -->
+  <line x1="295" y1="85" x2="295" y2="60" stroke="#0a0a0a" stroke-width="18" stroke-linecap="round"/>
+  <line x1="295" y1="315" x2="295" y2="340" stroke="#0a0a0a" stroke-width="18" stroke-linecap="round"/>
+  <line x1="190" y1="190" x2="165" y2="190" stroke="#0a0a0a" stroke-width="18" stroke-linecap="round"/>
+  <line x1="400" y1="190" x2="425" y2="190" stroke="#0a0a0a" stroke-width="18" stroke-linecap="round"/>
+  <line x1="221" y1="116" x2="203" y2="98" stroke="#0a0a0a" stroke-width="18" stroke-linecap="round"/>
+  <line x1="369" y1="264" x2="387" y2="282" stroke="#0a0a0a" stroke-width="18" stroke-linecap="round"/>
+  <line x1="369" y1="116" x2="387" y2="98" stroke="#0a0a0a" stroke-width="18" stroke-linecap="round"/>
+  <line x1="221" y1="264" x2="203" y2="282" stroke="#0a0a0a" stroke-width="18" stroke-linecap="round"/>
+  <!-- Cloud -->
+  <circle cx="175" cy="340" r="72" fill="#0a0a0a"/>
+  <circle cx="265" cy="305" r="85" fill="#0a0a0a"/>
+  <circle cx="360" cy="340" r="62" fill="#0a0a0a"/>
+  <rect x="130" y="340" width="295" height="72" fill="#0a0a0a"/>
+</svg>

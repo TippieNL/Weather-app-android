@@ -1,0 +1,106 @@
+<resources>
+    <string name="app_name">Weather Quips</string>
+
+    <!-- Home -->
+    <string name="settings">Settings</string>
+    <string name="refresh">Refresh weather</string>
+    <string name="show_details">Show weather details</string>
+    <string name="hide_details">Hide weather details</string>
+    <string name="weather_icon">Weather icon</string>
+    <string name="location">Location</string>
+    <string name="temperature">Temperature</string>
+    <string name="cached_notice">Showing saved weather from %1$s</string>
+    <string name="offline_notice">No internet connection</string>
+
+    <!-- Permission / error states -->
+    <string name="permission_title">Where are you?</string>
+    <string name="permission_description">Allow location access to get weather for your area.</string>
+    <string name="allow_location">Allow Location</string>
+    <string name="open_settings">Open app settings</string>
+    <string name="use_manual_location">Enter a city instead</string>
+    <string name="error_title">Oops…</string>
+    <string name="try_again">Try Again</string>
+    <string name="error_no_internet">No internet connection.</string>
+    <string name="error_timeout">The weather service took too long to answer.</string>
+    <string name="error_server">The weather service is having a bad day. Try again in a bit.</string>
+    <string name="error_unknown">Something went wrong while fetching the weather.</string>
+    <string name="error_api_key_invalid">That API key was rejected by the provider.</string>
+    <string name="error_api_key_missing">This weather provider needs an API key. Add one in settings.</string>
+    <string name="error_rate_limited">Too many requests to the weather provider. Try again shortly.</string>
+    <string name="error_location_unavailable">Location information is unavailable.</string>
+    <string name="error_location_disabled">Location is turned off on this device.</string>
+    <string name="error_location_denied">Location access was denied. Allow it in Android settings, or pick a city manually.</string>
+    <string name="error_no_manual_location">No city selected yet. Open settings and search for one.</string>
+
+    <!-- Detail panel -->
+    <string name="detail_feels_like">%1$s, feels like %2$s</string>
+    <string name="humidity">humidity</string>
+    <string name="wind">wind</string>
+    <string name="uv_index">uv index</string>
+    <string name="pressure">pressure</string>
+    <string name="precipitation">precipitation</string>
+    <string name="today">today</string>
+    <string name="next_7_days">next 7 days</string>
+    <string name="now">now</string>
+    <string name="precipitation_map">precipitation map</string>
+    <string name="live_radar_overlay">live radar overlay</string>
+    <string name="wind_value">%1$d km/h</string>
+    <string name="percent_value">%1$d%%</string>
+    <string name="high_low">High %1$s, low %2$s</string>
+
+    <!-- Precipitation map -->
+    <string name="precipitation_forecast">Precipitation forecast</string>
+    <string name="back">Back</string>
+    <string name="play_radar">Play radar animation</string>
+    <string name="pause_radar">Pause radar animation</string>
+    <string name="legend_light">Light</string>
+    <string name="legend_heavy">Heavy</string>
+    <string name="radar_loading">Loading radar…</string>
+    <string name="radar_unavailable">Radar unavailable</string>
+    <string name="radar_label">radar</string>
+    <string name="forecast_label">forecast</string>
+    <string name="radar_frame">Radar frame %1$s</string>
+    <string name="map_attribution">© OpenStreetMap contributors · Radar © RainViewer</string>
+
+    <!-- Settings -->
+    <string name="temperature_unit">Temperature Unit</string>
+    <string name="unit">Unit</string>
+    <string name="celsius">Celsius (°C)</string>
+    <string name="fahrenheit">Fahrenheit (°F)</string>
+    <string name="date_and_time">Date &amp; Time</string>
+    <string name="time_format">Time format</string>
+    <string name="hour_12">12-hour</string>
+    <string name="hour_24">24-hour</string>
+    <string name="date_format">Date format</string>
+    <string name="mode">Mode</string>
+    <string name="device_gps">Device GPS</string>
+    <string name="manual">Manual</string>
+    <string name="city_or_place">City / Place</string>
+    <string name="enter_city_name">Enter city name</string>
+    <string name="find">Find</string>
+    <string name="weather_service">Weather Service</string>
+    <string name="provider">Provider</string>
+    <string name="open_meteo_free">Open-Meteo (Free)</string>
+    <string name="openweathermap">OpenWeatherMap</string>
+    <string name="weatherapi">WeatherAPI</string>
+    <string name="api_key">API Key</string>
+    <string name="enter_api_key">Enter API key</string>
+    <string name="api_key_hint">Stored encrypted on this device only. Never sent anywhere except the provider you picked.</string>
+    <string name="notifications">Notifications</string>
+    <string name="precipitation_alerts">Precipitation alerts</string>
+    <string name="precipitation_alerts_description">Get notified when rain or snow is approaching</string>
+    <string name="test_notification">Test notification</string>
+    <string name="notifications_blocked">Notifications are blocked. Enable them in Android settings for Weather Quips.</string>
+    <string name="exit_pokemon_mode">Exit Pokémon Mode</string>
+    <string name="geocode_searching">Searching…</string>
+    <string name="geocode_found">Location found: %1$s</string>
+    <string name="geocode_not_found">Location not found</string>
+    <string name="geocode_failed">Failed to find location</string>
+    <string name="geocode_empty">Type a city name first</string>
+    <string name="geocode_offline">No internet connection</string>
+
+    <!-- Notifications -->
+    <string name="notification_channel_precipitation">Precipitation alerts</string>
+    <string name="notification_channel_precipitation_description">Warnings about approaching rain, snow and storms.</string>
+    <string name="precipitation_alert">Precipitation Alert</string>
+</resources>
