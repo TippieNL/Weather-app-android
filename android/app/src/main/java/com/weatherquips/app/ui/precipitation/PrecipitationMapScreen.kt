@@ -163,6 +163,30 @@ fun PrecipitationMapScreen(
             )
         }
 
+        // Re-centre on the selected location after panning around.
+        IconButton(
+            onClick = {
+                mapView.controller.animateTo(
+                    GeoPoint(coordinates.latitude, coordinates.longitude),
+                    mapView.zoomLevelDouble,
+                    RECENTER_ANIMATION_MILLIS,
+                )
+            },
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .windowInsetsPadding(WindowInsets.statusBars)
+                .padding(12.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(backgroundColor.copy(alpha = 0.85f))
+                .testTag(TAG_RECENTER),
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.ic_map_pin),
+                contentDescription = stringResource(R.string.recenter_map),
+                modifier = Modifier.size(20.dp),
+            )
+        }
+
         Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -310,6 +334,7 @@ private fun rememberMapView(
 
 @Composable
 private fun PrecipitationLegend(modifier: Modifier = Modifier) {
+    val legendDescription = stringResource(R.string.legend_description)
     Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
         Text(
             text = stringResource(R.string.legend_light),
@@ -323,7 +348,7 @@ private fun PrecipitationLegend(modifier: Modifier = Modifier) {
                 .height(12.dp)
                 .clip(RoundedCornerShape(6.dp))
                 .background(Brush.horizontalGradient(LEGEND_COLORS))
-                .semantics { contentDescription = "Precipitation intensity scale, light to heavy" },
+                .semantics { contentDescription = legendDescription },
         )
         Spacer(Modifier.width(12.dp))
         Text(
@@ -403,7 +428,8 @@ private fun RadarTimeline(
                     isPast -> onSurface.copy(alpha = if (isForecast) 0.25f else 0.35f)
                     else -> onSurface.copy(alpha = if (isForecast) 0.12f else 0.2f)
                 }
-                val label = hourFormatter.format(Date(frame.timeEpochSeconds * 1000))
+                val label = timeFormatter.format(Date(frame.timeEpochSeconds * 1000))
+                val frameDescription = stringResource(R.string.radar_frame, label)
                 Box(
                     modifier = Modifier
                         .weight(1f)
@@ -411,9 +437,7 @@ private fun RadarTimeline(
                         .clip(RoundedCornerShape(2.dp))
                         .background(color)
                         .clickable { onSelectFrame(index) }
-                        .semantics {
-                            contentDescription = "Radar frame $label:00"
-                        },
+                        .semantics { contentDescription = frameDescription },
                 )
             }
         }
@@ -447,6 +471,7 @@ private fun RadarTimeline(
 }
 
 private const val DEFAULT_ZOOM = 7.0
+private const val RECENTER_ANIMATION_MILLIS = 500L
 
 private val LEGEND_COLORS = listOf(
     Color(0xFF88FF88),
@@ -463,3 +488,4 @@ const val TAG_PLAY_PAUSE = "precipitation-play-pause"
 const val TAG_CURRENT_TIME = "precipitation-current-time"
 const val TAG_RADAR_STATUS = "precipitation-status"
 const val TAG_TIMELINE = "precipitation-timeline"
+const val TAG_RECENTER = "precipitation-recenter"

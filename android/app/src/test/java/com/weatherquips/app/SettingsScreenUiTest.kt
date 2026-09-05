@@ -74,6 +74,9 @@ class SettingsScreenUiTest {
         override fun setNotificationsEnabled(enabled: Boolean, granted: Boolean) {
             recordedNotifications = enabled to granted
         }
+        override fun toggleNotifications(enabled: Boolean) {
+            recordedNotifications = enabled to true
+        }
         override fun sendTestNotification(): Boolean {
             testNotifications++
             return true
@@ -181,6 +184,15 @@ class SettingsScreenUiTest {
         composeRule.onNodeWithTag(TAG_API_KEY_FIELD).assertExists()
         // Masked: the raw key must never be rendered as plain text.
         composeRule.onNodeWithText("secret-key").assertDoesNotExistSafely()
+    }
+
+    @Test
+    fun `toggling notifications reports the change`() {
+        val actions = RecordingActions()
+        render(SettingsUiState(settings = AppSettings(notificationsEnabled = true)), actions)
+
+        composeRule.onNodeWithTag(TAG_NOTIFICATIONS_SWITCH).performScrollTo().performClick()
+        assertEquals(false to true, actions.recordedNotifications)
     }
 
     @Test

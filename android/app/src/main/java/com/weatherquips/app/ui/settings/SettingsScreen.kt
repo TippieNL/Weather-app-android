@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -181,6 +182,7 @@ fun SettingsScreen(
                         placeholder = { Text(stringResource(R.string.enter_city_name)) },
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                        keyboardActions = KeyboardActions(onSearch = { actions.findLocation() }),
                         modifier = Modifier
                             .weight(1f)
                             .testTag(TAG_CITY_FIELD),
@@ -273,7 +275,7 @@ fun SettingsScreen(
                         if (checked && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                         } else {
-                            actions.setNotificationsEnabled(checked, true)
+                            actions.toggleNotifications(checked)
                         }
                     },
                     modifier = Modifier.testTag(TAG_NOTIFICATIONS_SWITCH),

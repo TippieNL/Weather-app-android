@@ -6,7 +6,6 @@
     <string name="refresh">Refresh weather</string>
     <string name="show_details">Show weather details</string>
     <string name="hide_details">Hide weather details</string>
-    <string name="weather_icon">Weather icon</string>
     <string name="location">Location</string>
     <string name="temperature">Temperature</string>
     <string name="cached_notice">Showing saved weather from %1$s</string>
@@ -16,7 +15,6 @@
     <string name="permission_title">Where are you?</string>
     <string name="permission_description">Allow location access to get weather for your area.</string>
     <string name="allow_location">Allow Location</string>
-    <string name="open_settings">Open app settings</string>
     <string name="use_manual_location">Enter a city instead</string>
     <string name="error_title">Oops…</string>
     <string name="try_again">Try Again</string>
@@ -59,7 +57,9 @@
     <string name="radar_unavailable">Radar unavailable</string>
     <string name="radar_label">radar</string>
     <string name="forecast_label">forecast</string>
-    <string name="radar_frame">Radar frame %1$s</string>
+    <string name="radar_frame">Radar frame at %1$s</string>
+    <string name="legend_description">Precipitation intensity scale, light to heavy</string>
+    <string name="recenter_map">Centre the map on your location</string>
     <string name="map_attribution">© OpenStreetMap contributors · Radar © RainViewer</string>
 
     <!-- Settings -->
@@ -102,5 +102,4 @@
     <!-- Notifications -->
     <string name="notification_channel_precipitation">Precipitation alerts</string>
     <string name="notification_channel_precipitation_description">Warnings about approaching rain, snow and storms.</string>
-    <string name="precipitation_alert">Precipitation Alert</string>
 </resources>

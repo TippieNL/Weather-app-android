@@ -62,6 +62,10 @@ interface SettingsActions {
     fun findLocation()
     fun selectResult(result: GeocodeResult)
     fun setNotificationsEnabled(enabled: Boolean, granted: Boolean)
+
+    /** Toggle using whatever notification permission the app currently holds. */
+    fun toggleNotifications(enabled: Boolean)
+
     fun sendTestNotification(): Boolean
 }
 
@@ -188,6 +192,9 @@ class SettingsViewModel(
         edit { it.copy(notificationsEnabled = enabled) }
         precipitationScheduler.setEnabled(enabled)
     }
+
+    override fun toggleNotifications(enabled: Boolean) =
+        setNotificationsEnabled(enabled, notificationHelper.hasPermission())
 
     /** Posts the sample alert from the settings screen. */
     override fun sendTestNotification(): Boolean =

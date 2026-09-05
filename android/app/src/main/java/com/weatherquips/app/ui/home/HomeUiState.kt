@@ -4,6 +4,7 @@ import androidx.annotation.StringRes
 import com.weatherquips.app.R
 import com.weatherquips.app.domain.model.AppSettings
 import com.weatherquips.app.domain.model.Coordinates
+import com.weatherquips.app.domain.model.WeatherCondition
 import com.weatherquips.app.domain.model.WeatherData
 import com.weatherquips.app.domain.quotes.PokemonQuips
 import com.weatherquips.app.domain.repository.WeatherError
@@ -76,6 +77,8 @@ data class HomeUiState(
     val pokemonQuote: String = "",
     val pokemonSubtitle: String = "",
     val pokemonSilhouette: PokemonQuips.Silhouette = PokemonQuips.Silhouette.SPARK,
+    /** The condition [pokemonQuote] was generated for, so it only changes with it. */
+    val pokemonQuoteCondition: WeatherCondition? = null,
 ) {
     val isPokemonMode: Boolean get() = settings.isPokemonModeActive
 

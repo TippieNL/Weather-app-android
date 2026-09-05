@@ -88,6 +88,11 @@ private fun MainWeatherCard(
 ) {
     val unit = uiState.settings.temperatureUnit
     val accents = LocalAccents.current
+    val rangeDescription = stringResource(
+        R.string.high_low,
+        Formatters.formatTemp(weather.temperatureMax, unit),
+        Formatters.formatTemp(weather.temperatureMin, unit),
+    )
 
     QuipCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(20.dp)) {
@@ -153,10 +158,7 @@ private fun MainWeatherCard(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clearAndSetSemantics {
-                        contentDescription = "High ${Formatters.formatTemp(weather.temperatureMax, unit)}, " +
-                            "low ${Formatters.formatTemp(weather.temperatureMin, unit)}"
-                    },
+                    .clearAndSetSemantics { contentDescription = rangeDescription },
             ) {
                 Text(
                     text = Formatters.formatTemp(weather.temperatureMin, unit),

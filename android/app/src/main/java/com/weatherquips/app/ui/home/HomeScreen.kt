@@ -19,6 +19,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -46,7 +48,9 @@ import androidx.compose.material3.rememberBottomSheetScaffoldState
 import androidx.compose.material3.rememberStandardBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -58,10 +62,13 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -184,19 +191,40 @@ private fun WeatherDisplay(
     val scaffoldState = rememberBottomSheetScaffoldState(bottomSheetState = sheetState)
     val scope = rememberCoroutineScope()
     val expanded = sheetState.targetValue == SheetValue.Expanded
+    // Full height of the scaffold, needed to turn the sheet offset into 0..1.
+    val sheetHeightPx = remember { mutableFloatStateOf(0f) }
 
-    // The hero recedes as the panel comes up, matching the web transition.
-    val heroProgress by animateFloatAsState(
+    // The hero recedes as the panel comes up. Following the sheet's live offset
+    // makes a slow drag feel connected instead of snapping at the end; before the
+    // sheet has been laid out (requireOffset would throw) we fall back to an
+    // animation driven by the target state.
+    val density = LocalDensity.current
+    val fallbackProgress by animateFloatAsState(
         targetValue = if (expanded) 0f else 1f,
         animationSpec = tween(durationMillis = 450, easing = FastOutSlowInEasing),
         label = "hero-progress",
     )
+    val heroProgress by remember(sheetState, density) {
+        derivedStateOf {
+            val offset = runCatching { sheetState.requireOffset() }.getOrNull()
+                ?: return@derivedStateOf fallbackProgress
+            val peekPx = with(density) { SHEET_PEEK_HEIGHT.toPx() }
+            val collapsedOffset = sheetHeightPx.floatValue - peekPx
+            if (collapsedOffset <= 0f) {
+                fallbackProgress
+            } else {
+                (offset / collapsedOffset).coerceIn(0f, 1f)
+            }
+        }
+    }
 
     val accents = LocalAccents.current
 
     BottomSheetScaffold(
         scaffoldState = scaffoldState,
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier
+            .fillMaxSize()
+            .onSizeChanged { sheetHeightPx.floatValue = it.height.toFloat() },
         sheetPeekHeight = SHEET_PEEK_HEIGHT,
         sheetContainerColor = MaterialTheme.colorScheme.background,
         sheetContentColor = MaterialTheme.colorScheme.onBackground,
@@ -275,46 +303,20 @@ private fun HeroContent(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // Top controls fade out while the panel is up.
-        Row(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .windowInsetsPadding(WindowInsets.statusBars)
-                .padding(horizontal = 8.dp, vertical = 4.dp)
-                .graphicsLayer { alpha = progress },
-            horizontalArrangement = Arrangement.End,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IconButton(onClick = onOpenSettings) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_settings),
-                    contentDescription = stringResource(R.string.settings),
-                    modifier = Modifier.size(20.dp),
-                )
-            }
-            RefreshButton(onRefresh = onRefresh, isRefreshing = uiState.isRefreshing)
-        }
-
-        if (uiState.isPokemonMode) {
-            PokemonBanner(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .windowInsetsPadding(WindowInsets.statusBars)
-                    .padding(top = 48.dp, start = 16.dp, end = 16.dp)
-                    .graphicsLayer { alpha = progress },
-            )
-        }
-
+        // Scrollable so the hero can never clip at large system font scales,
+        // while still sitting at the bottom of the screen at normal sizes.
         Column(
             modifier = Modifier
                 .align(Alignment.BottomStart)
-                .fillMaxWidth()
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp)
-                .padding(bottom = 24.dp)
+                .padding(top = 96.dp, bottom = 24.dp)
                 .graphicsLayer {
                     alpha = progress
                     translationY = -(1f - progress) * size.height * 0.4f
                 },
+            verticalArrangement = Arrangement.Bottom,
         ) {
             Row(verticalAlignment = Alignment.Bottom) {
                 Box(
@@ -419,11 +421,43 @@ private fun HeroContent(
                 )
             }
         }
+
+        // Top controls fade out while the panel is up.
+        Row(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .windowInsetsPadding(WindowInsets.statusBars)
+                .padding(horizontal = 8.dp, vertical = 4.dp)
+                .graphicsLayer { alpha = progress },
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconButton(onClick = onOpenSettings) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_settings),
+                    contentDescription = stringResource(R.string.settings),
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+            RefreshButton(onRefresh = onRefresh, isRefreshing = uiState.isRefreshing)
+        }
+
+        if (uiState.isPokemonMode) {
+            PokemonBanner(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .windowInsetsPadding(WindowInsets.statusBars)
+                    .padding(top = 48.dp, start = 16.dp, end = 16.dp)
+                    .graphicsLayer { alpha = progress },
+            )
+        }
+
     }
 }
 
 @Composable
 private fun SheetHandle(expanded: Boolean, onToggle: () -> Unit) {
+    val hideDetails = stringResource(R.string.hide_details)
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -436,7 +470,12 @@ private fun SheetHandle(expanded: Boolean, onToggle: () -> Unit) {
             }
         }
         AnimatedVisibility(visible = expanded, enter = fadeIn(), exit = fadeOut()) {
-            IconButton(onClick = onToggle, modifier = Modifier.testTag(TAG_COLLAPSE)) {
+            IconButton(
+                onClick = onToggle,
+                modifier = Modifier
+                    .testTag(TAG_COLLAPSE)
+                    .semantics { contentDescription = hideDetails },
+            ) {
                 Box(
                     modifier = Modifier
                         .width(40.dp)

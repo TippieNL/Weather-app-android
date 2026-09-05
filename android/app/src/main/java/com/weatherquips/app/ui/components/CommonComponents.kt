@@ -71,13 +71,20 @@ fun RefreshButton(
     modifier: Modifier = Modifier,
     iconSize: androidx.compose.ui.unit.Dp = 20.dp,
 ) {
-    val transition = rememberInfiniteTransition(label = "refresh")
-    val rotation by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = if (isRefreshing) 360f else 0f,
-        animationSpec = infiniteRepeatable(tween(900, easing = LinearEasing)),
-        label = "refresh-rotation",
-    )
+    // The transition is only created while refreshing, so an idle screen runs no
+    // animation at all.
+    val rotation = if (isRefreshing) {
+        val transition = rememberInfiniteTransition(label = "refresh")
+        val animated by transition.animateFloat(
+            initialValue = 0f,
+            targetValue = 360f,
+            animationSpec = infiniteRepeatable(tween(900, easing = LinearEasing)),
+            label = "refresh-rotation",
+        )
+        animated
+    } else {
+        0f
+    }
 
     IconButton(onClick = onRefresh, enabled = !isRefreshing, modifier = modifier) {
         Icon(
@@ -85,7 +92,7 @@ fun RefreshButton(
             contentDescription = stringResource(R.string.refresh),
             modifier = Modifier
                 .size(iconSize)
-                .rotate(if (isRefreshing) rotation else 0f),
+                .rotate(rotation),
         )
     }
 }

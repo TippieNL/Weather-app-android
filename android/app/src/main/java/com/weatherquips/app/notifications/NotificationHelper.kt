@@ -23,7 +23,6 @@ import com.weatherquips.app.R
 class NotificationHelper(private val context: Context) {
 
     fun ensureChannel() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val manager = ContextCompat.getSystemService(context, NotificationManager::class.java) ?: return
         if (manager.getNotificationChannel(CHANNEL_PRECIPITATION) != null) return
 

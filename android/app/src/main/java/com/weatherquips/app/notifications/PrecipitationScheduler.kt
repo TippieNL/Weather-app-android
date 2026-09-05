@@ -11,11 +11,17 @@ import java.util.concurrent.TimeUnit
 /** Starts and stops the background precipitation check with the settings toggle. */
 class PrecipitationScheduler(private val context: Context) {
 
-    fun setEnabled(enabled: Boolean) {
+    /**
+     * @return true when the schedule was actually changed. Scheduling is best
+     *         effort: WorkManager may be unavailable (a host without its
+     *         initializer, for instance) and that must never crash the app —
+     *         the user simply gets no background checks.
+     */
+    fun setEnabled(enabled: Boolean): Boolean = runCatching {
         val workManager = WorkManager.getInstance(context)
         if (!enabled) {
             workManager.cancelUniqueWork(PrecipitationWorker.WORK_NAME)
-            return
+            return@runCatching true
         }
 
         val request = PeriodicWorkRequestBuilder<PrecipitationWorker>(
@@ -34,7 +40,8 @@ class PrecipitationScheduler(private val context: Context) {
             ExistingPeriodicWorkPolicy.KEEP,
             request,
         )
-    }
+        true
+    }.getOrDefault(false)
 
     private companion object {
         const val REPEAT_INTERVAL_HOURS = 2L

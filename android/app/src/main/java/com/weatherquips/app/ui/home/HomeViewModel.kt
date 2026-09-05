@@ -24,6 +24,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
@@ -34,6 +35,7 @@ import kotlinx.coroutines.launch
  * lives here rather than in the Activity — a configuration change never drops
  * the loaded weather.
  */
+@OptIn(kotlinx.coroutines.FlowPreview::class)
 class HomeViewModel(
     private val weatherRepository: WeatherRepository,
     private val settingsRepository: SettingsRepository,
@@ -66,6 +68,9 @@ class HomeViewModel(
             settingsRepository.settings
                 .map { WeatherInputs(it.locationMode, it.manualCoords, it.weatherService, it.weatherApiKey) }
                 .distinctUntilChanged()
+                // An API key is typed one character at a time; without this the
+                // app would fire (and fail) a request per keystroke.
+                .debounce(INPUT_DEBOUNCE_MILLIS)
                 .collect { load(showLoading = _uiState.value.weather == null) }
         }
     }
@@ -207,16 +212,19 @@ class HomeViewModel(
         settings: AppSettings,
     ): HomeUiState {
         if (condition == null || !settings.isPokemonModeActive) return this
-        if (pokemonQuote.isNotEmpty() && weather?.condition == condition) return this
+        if (pokemonQuote.isNotEmpty() && pokemonQuoteCondition == condition) return this
         val quip = PokemonQuips.quote(condition)
         return copy(
             pokemonQuote = quip.quote,
             pokemonSubtitle = quip.subtitle,
             pokemonSilhouette = PokemonQuips.randomSilhouette(),
+            pokemonQuoteCondition = condition,
         )
     }
 
     companion object {
+        private const val INPUT_DEBOUNCE_MILLIS = 350L
+
         fun factory(container: AppContainer? = null): ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 val resolved = container ?: requireContainer()
