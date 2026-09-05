@@ -62,6 +62,16 @@ android {
     }
 }
 
+// Compose UI tests need the ComponentActivity that `ui-test-manifest` supplies,
+// and that is a debug-only dependency on purpose — shipping a test activity in
+// the release manifest would be wrong. So unit tests run on the debug variant
+// and `./gradlew test` means the debug suite.
+androidComponents {
+    beforeVariants(selector().withBuildType("release")) { variant ->
+        variant.enableUnitTest = false
+    }
+}
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
