@@ -5,8 +5,13 @@ import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeUp
 import com.weatherquips.app.domain.model.AppSettings
 import com.weatherquips.app.domain.model.Coordinates
 import com.weatherquips.app.domain.model.TemperatureUnit
@@ -14,6 +19,7 @@ import com.weatherquips.app.ui.home.HomePhase
 import com.weatherquips.app.ui.home.HomeScreen
 import com.weatherquips.app.ui.home.HomeUiState
 import com.weatherquips.app.ui.home.LocationIssue
+import com.weatherquips.app.ui.home.TAG_COLLAPSE
 import com.weatherquips.app.ui.home.TAG_ERROR
 import com.weatherquips.app.ui.home.TAG_EXPAND
 import com.weatherquips.app.ui.home.TAG_LOADING
@@ -102,6 +108,39 @@ class HomeScreenUiTest {
     @Test
     fun `the detail panel can be pulled up from the collapsed handle`() {
         render(successState)
+        composeRule.onNodeWithTag(TAG_EXPAND).assertIsDisplayed()
+    }
+
+    @Test
+    fun `swiping up anywhere on the screen opens the detail panel`() {
+        // Regression test: the panel used to be draggable only by its 56dp
+        // handle, so a swipe on the body of the screen did nothing.
+        render(successState)
+
+        // Deliberately mid-screen: a swipe starting at the bottom edge would
+        // land on the sheet's own drag handle and pass either way.
+        composeRule.onRoot().performTouchInput {
+            val startY = height * 0.6f
+            swipeUp(startY = startY, endY = startY - height * 0.35f)
+        }
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodes(hasTestTag(TAG_COLLAPSE)).fetchSemanticsNodes().isNotEmpty()
+        }
+
+        composeRule.onNodeWithTag(TAG_COLLAPSE).assertIsDisplayed()
+    }
+
+    @Test
+    fun `a small drag does not open the panel by accident`() {
+        render(successState)
+
+        composeRule.onRoot().performTouchInput {
+            down(center)
+            moveBy(Offset(0f, -30f))
+            up()
+        }
+        composeRule.waitForIdle()
+
         composeRule.onNodeWithTag(TAG_EXPAND).assertIsDisplayed()
     }
 

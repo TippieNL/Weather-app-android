@@ -24,6 +24,7 @@ import com.weatherquips.app.notifications.PrecipitationAlerts
 import com.weatherquips.app.notifications.PrecipitationScheduler
 import com.weatherquips.app.ui.home.requireContainer
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -44,6 +45,16 @@ data class SettingsUiState(
     val settings: AppSettings = AppSettings(),
     val geocodeState: GeocodeState = GeocodeState.Idle,
     val notificationPermissionBlocked: Boolean = false,
+    /**
+     * Live contents of the text fields.
+     *
+     * Text input must never round-trip through DataStore to reach the screen:
+     * the write is asynchronous, so a fast typist outruns it and sees
+     * characters disappear. These mirror the stored values but update
+     * synchronously; persistence happens on a short debounce behind them.
+     */
+    val manualLocationInput: String = "",
+    val apiKeyInput: String = "",
 )
 
 /**
@@ -80,11 +91,37 @@ class SettingsViewModel(
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
 
     private var geocodeJob: Job? = null
+    private var manualLocationPersistJob: Job? = null
+    private var apiKeyPersistJob: Job? = null
+
+    /**
+     * Once the user has typed in a field, the field is theirs: storage follows
+     * it and never the other way round. Without this, the value written back by
+     * the debounced save (trimmed, or simply late) would land in the field while
+     * they were still typing.
+     */
+    private var manualLocationEdited = false
+    private var apiKeyEdited = false
 
     init {
         viewModelScope.launch {
             settingsRepository.settings.collect { settings ->
-                _uiState.update { it.copy(settings = settings) }
+                _uiState.update { current ->
+                    current.copy(
+                        settings = settings,
+                        // Stored values only seed a field the user has not touched.
+                        manualLocationInput = if (manualLocationEdited) {
+                            current.manualLocationInput
+                        } else {
+                            settings.manualLocation
+                        },
+                        apiKeyInput = if (apiKeyEdited) {
+                            current.apiKeyInput
+                        } else {
+                            settings.weatherApiKey
+                        },
+                    )
+                }
             }
         }
     }
@@ -98,19 +135,40 @@ class SettingsViewModel(
     override fun setLocationMode(mode: LocationMode) = edit { it.copy(locationMode = mode) }
 
     override fun setManualLocation(value: String) {
-        _uiState.update { it.copy(geocodeState = GeocodeState.Idle) }
-        edit { it.copy(manualLocation = value) }
+        manualLocationEdited = true
+        _uiState.update { it.copy(manualLocationInput = value, geocodeState = GeocodeState.Idle) }
+        manualLocationPersistJob?.cancel()
+        manualLocationPersistJob = viewModelScope.launch {
+            delay(PERSIST_DEBOUNCE_MILLIS)
+            settingsRepository.update { it.copy(manualLocation = value) }
+        }
     }
 
     override fun setWeatherService(service: WeatherService) = edit { it.copy(weatherService = service) }
 
-    override fun setApiKey(value: String) = edit { it.copy(weatherApiKey = value.trim()) }
+    override fun setApiKey(value: String) {
+        // Trimming happens on the way to storage, never on the way to the field —
+        // trimming what the user is typing moves their cursor around.
+        apiKeyEdited = true
+        _uiState.update { it.copy(apiKeyInput = value) }
+        apiKeyPersistJob?.cancel()
+        apiKeyPersistJob = viewModelScope.launch {
+            delay(PERSIST_DEBOUNCE_MILLIS)
+            settingsRepository.update { it.copy(weatherApiKey = value.trim()) }
+        }
+    }
 
     /** Turns the Easter egg off but keeps whatever city the weather is showing. */
-    override fun exitPokemonMode() = edit { it.copy(pokemonMode = false, manualLocation = "") }
+    override fun exitPokemonMode() {
+        manualLocationPersistJob?.cancel()
+        manualLocationEdited = false
+        _uiState.update { it.copy(manualLocationInput = "") }
+        edit { it.copy(pokemonMode = false, manualLocation = "") }
+    }
 
     override fun findLocation() {
-        val query = _uiState.value.settings.manualLocation.trim()
+        // Search what is on screen, not what has been persisted so far.
+        val query = _uiState.value.manualLocationInput.trim()
         if (query.isEmpty()) {
             _uiState.update { it.copy(geocodeState = GeocodeState.Message(R.string.geocode_empty)) }
             return
@@ -119,6 +177,7 @@ class SettingsViewModel(
         // Secret Pallet Town Easter egg: fictional, so it bypasses geocoding and
         // keeps the currently selected city's weather when there is one.
         if (PokemonQuips.isPalletTown(query)) {
+            manualLocationPersistJob?.cancel()
             viewModelScope.launch {
                 settingsRepository.update { current ->
                     current.copy(
@@ -163,6 +222,10 @@ class SettingsViewModel(
     }
 
     override fun selectResult(result: GeocodeResult) {
+        // The chosen name replaces whatever was typed, and hands the field back.
+        manualLocationPersistJob?.cancel()
+        manualLocationEdited = false
+        _uiState.update { it.copy(manualLocationInput = result.name) }
         viewModelScope.launch {
             settingsRepository.update { current ->
                 current.copy(
@@ -205,6 +268,9 @@ class SettingsViewModel(
     }
 
     companion object {
+        /** Long enough to outlast a burst of typing, short enough to feel instant. */
+        const val PERSIST_DEBOUNCE_MILLIS = 400L
+
         fun factory(container: AppContainer? = null): ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 val resolved = container ?: requireContainer()

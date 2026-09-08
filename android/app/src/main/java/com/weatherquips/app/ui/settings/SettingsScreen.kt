@@ -176,7 +176,7 @@ fun SettingsScreen(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     OutlinedTextField(
-                        value = settings.manualLocation,
+                        value = uiState.manualLocationInput,
                         onValueChange = actions::setManualLocation,
                         label = { Text(stringResource(R.string.city_or_place)) },
                         placeholder = { Text(stringResource(R.string.enter_city_name)) },
@@ -233,7 +233,7 @@ fun SettingsScreen(
 
             if (settings.weatherService.requiresApiKey) {
                 OutlinedTextField(
-                    value = settings.weatherApiKey,
+                    value = uiState.apiKeyInput,
                     onValueChange = actions::setApiKey,
                     label = { Text(stringResource(R.string.api_key)) },
                     placeholder = { Text(stringResource(R.string.enter_api_key)) },

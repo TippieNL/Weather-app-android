@@ -17,10 +17,9 @@ import androidx.compose.animation.fadeOut
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -62,6 +61,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
@@ -272,6 +272,7 @@ private fun WeatherDisplay(
                 staleSinceMillis = staleSinceMillis,
                 onRefresh = onRefresh,
                 onOpenSettings = onOpenSettings,
+                onExpand = { scope.launch { sheetState.expand() } },
             )
         }
     }
@@ -290,6 +291,7 @@ private fun HeroContent(
     staleSinceMillis: Long?,
     onRefresh: () -> Unit,
     onOpenSettings: () -> Unit,
+    onExpand: () -> Unit,
 ) {
     val settings = uiState.settings
     var explodeTaps by remember { mutableStateOf(TapStreak()) }
@@ -302,16 +304,34 @@ private fun HeroContent(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        // Scrollable so the hero can never clip at large system font scales,
-        // while still sitting at the bottom of the screen at normal sizes.
+    // The whole screen responds to a swipe, not just the handle at the bottom —
+    // the web app expanded on any upward drag past a threshold, and grabbing a
+    // 56dp strip to open the panel feels broken on a phone.
+    var dragTotal by remember { mutableFloatStateOf(0f) }
+    // The threshold is a physical distance, so it must be expressed in dp and
+    // converted — a raw pixel count means a different swipe on every density.
+    val swipeThresholdPx = with(LocalDensity.current) { SWIPE_THRESHOLD.toPx() }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .pointerInput(swipeThresholdPx) {
+                detectVerticalDragGestures(
+                    onDragStart = { dragTotal = 0f },
+                    onDragCancel = { dragTotal = 0f },
+                    onDragEnd = {
+                        if (dragTotal <= -swipeThresholdPx) onExpand()
+                        dragTotal = 0f
+                    },
+                ) { _, delta -> dragTotal += delta }
+            },
+    ) {
         Column(
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp)
-                .padding(top = 96.dp, bottom = 24.dp)
+                .padding(top = 72.dp, bottom = 24.dp)
                 .graphicsLayer {
                     alpha = progress
                     translationY = -(1f - progress) * size.height * 0.4f
@@ -573,6 +593,9 @@ internal data class TapStreak(val count: Int = 0, val lastTapMillis: Long = 0L) 
         const val TAP_WINDOW_MILLIS = 300L
     }
 }
+
+/** Matches the web app's 50px swipe threshold. */
+internal val SWIPE_THRESHOLD = 56.dp
 
 internal const val EXPLODE_TAP_COUNT = 5
 internal val SHEET_PEEK_HEIGHT = 56.dp
