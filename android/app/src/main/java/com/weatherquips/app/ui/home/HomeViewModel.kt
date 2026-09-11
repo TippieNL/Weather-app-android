@@ -139,7 +139,7 @@ class HomeViewModel(
                         )
                         .withPokemonQuote(weather.condition, settings)
                 }
-                maybeNotifyPrecipitation(settings, weather)
+                maybeNotifyPrecipitation(settings, weather, coordinates)
             } catch (error: Throwable) {
                 if (error is kotlinx.coroutines.CancellationException) throw error
                 val uiError = UiError.from(error)
@@ -195,13 +195,14 @@ class HomeViewModel(
     private suspend fun maybeNotifyPrecipitation(
         settings: AppSettings,
         weather: com.weatherquips.app.domain.model.WeatherData,
+        coordinates: Coordinates,
     ) {
         if (!settings.notificationsEnabled) return
         if (!notificationHelper.hasPermission()) return
         if (!PrecipitationAlerts.shouldNotify(weather)) return
         if (!alertThrottle.shouldSend()) return
 
-        if (notificationHelper.notifyPrecipitation(PrecipitationAlerts.build(weather))) {
+        if (notificationHelper.notifyPrecipitation(PrecipitationAlerts.build(weather), coordinates)) {
             alertThrottle.markSent()
         }
     }

@@ -129,4 +129,5 @@
     <!-- Notifications -->
     <string name="notification_channel_precipitation">Precipitation alerts</string>
     <string name="notification_channel_precipitation_description">Warnings about approaching rain, snow and storms.</string>
+    <string name="notification_action_radar">See the radar</string>
 </resources>

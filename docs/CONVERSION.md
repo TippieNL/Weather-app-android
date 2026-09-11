@@ -63,7 +63,7 @@ Every row was verified against the original implementation in
 | --- | --- |
 | Browser geolocation | `LocationManager` (no Play Services), last-known fix reused, single live request |
 | `localStorage` | DataStore Preferences |
-| Service Worker + Notification API | Notification channel, `POST_NOTIFICATIONS`, WorkManager periodic check |
+| Service Worker + Notification API | Notification channel, `POST_NOTIFICATIONS`, WorkManager periodic check; the alert copy is written in the app's voice, with a per-type icon and an action that opens the radar |
 | PWA offline page / cache | Cached last result + "showing saved weather" labelling |
 | Express `/api/weather` | `WeatherRepository` with three providers |
 | Express `/api/geocode` | `GeocodingRepository` (Nominatim, with a descriptive User-Agent) |

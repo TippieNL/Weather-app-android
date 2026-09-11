@@ -17,6 +17,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.compose.runtime.DisposableEffect
+import com.weatherquips.app.PendingDestination
 import com.weatherquips.app.domain.model.Coordinates
 import com.weatherquips.app.ui.home.HomeScreen
 import com.weatherquips.app.ui.home.HomeViewModel
@@ -50,8 +51,21 @@ object Routes {
 fun WeatherQuipsNavHost(
     startDestination: String,
     modifier: Modifier = Modifier,
+    pendingDestination: PendingDestination? = null,
+    onPendingDestinationHandled: () -> Unit = {},
     navController: NavHostController = rememberNavController(),
 ) {
+    // A notification tap lands here. It is consumed once, so returning to the
+    // app later does not bounce the user back onto the radar.
+    LaunchedEffect(pendingDestination) {
+        val target = pendingDestination ?: return@LaunchedEffect
+        val coordinates = target.coordinates
+        if (target.route == Routes.PRECIPITATION && coordinates != null) {
+            navController.navigate(Routes.precipitation(coordinates)) { launchSingleTop = true }
+        }
+        onPendingDestinationHandled()
+    }
+
     NavHost(
         navController = navController,
         startDestination = startDestination,

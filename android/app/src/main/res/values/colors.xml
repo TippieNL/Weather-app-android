@@ -3,4 +3,6 @@
          (ui/theme/Color.kt), which is the single source of truth. -->
     <color name="background_light">#FFFAFAFA</color>
     <color name="background_dark">#FF0D0D0D</color>
+    <!-- Tints the small icon and the app name in the notification shade. -->
+    <color name="notification_accent">#FF3B82F6</color>
 </resources>
