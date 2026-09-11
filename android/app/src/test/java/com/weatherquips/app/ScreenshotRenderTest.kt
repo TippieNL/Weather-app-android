@@ -7,6 +7,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.performClick
 import com.weatherquips.app.domain.model.AppSettings
 import com.weatherquips.app.domain.model.Coordinates
 import com.weatherquips.app.ui.home.HomePhase
@@ -159,6 +161,38 @@ class ScreenshotRenderTest {
             }
         }
         settleAndCapture("detail-panel-dark")
+    }
+
+    @Test
+    fun onboardingWelcome() {
+        composeRule.setContent {
+            WeatherQuipsTheme(darkTheme = false) {
+                com.weatherquips.app.ui.onboarding.OnboardingScreen(
+                    uiState = com.weatherquips.app.ui.onboarding.OnboardingUiState(),
+                    onLocationResult = {},
+                    onFinish = {},
+                )
+            }
+        }
+        settleAndCapture("onboarding-welcome")
+    }
+
+    @Test
+    fun onboardingLocation() {
+        composeRule.setContent {
+            WeatherQuipsTheme(darkTheme = false) {
+                com.weatherquips.app.ui.onboarding.OnboardingScreen(
+                    uiState = com.weatherquips.app.ui.onboarding.OnboardingUiState(),
+                    onLocationResult = {},
+                    onFinish = {},
+                )
+            }
+        }
+        composeRule.onNodeWithTag(com.weatherquips.app.ui.onboarding.TAG_NEXT).performClick()
+        composeRule.waitForIdle()
+        composeRule.onNodeWithTag(com.weatherquips.app.ui.onboarding.TAG_NEXT).performClick()
+        composeRule.waitForIdle()
+        settleAndCapture("onboarding-location")
     }
 
     @Test

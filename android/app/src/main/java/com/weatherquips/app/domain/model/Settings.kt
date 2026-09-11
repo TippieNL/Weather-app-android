@@ -12,6 +12,8 @@ data class AppSettings(
     val weatherApiKey: String = "",
     val notificationsEnabled: Boolean = false,
     val pokemonMode: Boolean = false,
+    /** False until the first-run introduction has been seen. */
+    val onboardingCompleted: Boolean = false,
 ) {
     /** The Easter egg only runs while a manual location is selected, as on the web. */
     val isPokemonModeActive: Boolean

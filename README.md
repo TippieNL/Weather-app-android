@@ -7,9 +7,9 @@ Weather-Quips React/Express PWA. The Android app is a real Kotlin/Compose
 application — there is no WebView, no bundled web assets, and no dependency on
 the Express backend.
 
-| Home | Detail panel | Radar | Settings |
-| --- | --- | --- | --- |
-| ![Home](docs/screenshots/home-light.png) | ![Detail](docs/screenshots/detail-panel-light.png) | ![Radar](docs/screenshots/precipitation-map.png) | ![Settings](docs/screenshots/settings-light.png) |
+| Onboarding | Home | Detail panel | Radar | Settings |
+| --- | --- | --- | --- | --- |
+| ![Onboarding](docs/screenshots/onboarding-welcome.png) | ![Home](docs/screenshots/home-light.png) | ![Detail](docs/screenshots/detail-panel-light.png) | ![Radar](docs/screenshots/precipitation-map.png) | ![Settings](docs/screenshots/settings-light.png) |
 
 ## Build
 

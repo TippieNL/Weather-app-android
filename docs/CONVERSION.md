@@ -85,7 +85,12 @@ Every row was verified against the original implementation in
    convention and makes back navigation unambiguous.
 5. **Sunrise/sunset** are requested from Open-Meteo (the web app did not) and
    used only as a day/night fallback.
-6. **The detail panel was reworked** (see below) — it shows the same data plus
+6. **A first-run introduction was added.** The web app had none: it asked for
+   browser geolocation the moment the page loaded. Three pages in the app's own
+   voice explain what it does and what location is for *before* the system
+   dialog appears, and declining leads to the city search rather than a
+   permission wall. It is shown once, tracked by a flag in DataStore.
+7. **The detail panel was reworked** (see below) — it shows the same data plus
    rain chance, but the presentation is not a copy of the web layout.
 
 ## Detail panel rework

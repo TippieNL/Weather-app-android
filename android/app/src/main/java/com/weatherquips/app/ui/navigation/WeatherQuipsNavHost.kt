@@ -20,6 +20,8 @@ import androidx.compose.runtime.DisposableEffect
 import com.weatherquips.app.domain.model.Coordinates
 import com.weatherquips.app.ui.home.HomeScreen
 import com.weatherquips.app.ui.home.HomeViewModel
+import com.weatherquips.app.ui.onboarding.OnboardingScreen
+import com.weatherquips.app.ui.onboarding.OnboardingViewModel
 import com.weatherquips.app.ui.precipitation.PrecipitationMapScreen
 import com.weatherquips.app.ui.precipitation.PrecipitationViewModel
 import com.weatherquips.app.ui.settings.SettingsScreen
@@ -30,6 +32,7 @@ import com.weatherquips.app.ui.settings.SettingsViewModel
  * web app used `?lat=&lon=`, so the screen is restorable and deep-linkable.
  */
 object Routes {
+    const val ONBOARDING = "onboarding"
     const val HOME = "home"
     const val SETTINGS = "settings"
     const val PRECIPITATION = "precipitation/{lat}/{lon}"
@@ -45,14 +48,37 @@ object Routes {
  */
 @Composable
 fun WeatherQuipsNavHost(
+    startDestination: String,
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
 ) {
     NavHost(
         navController = navController,
-        startDestination = Routes.HOME,
+        startDestination = startDestination,
         modifier = modifier.fillMaxSize(),
     ) {
+        composable(Routes.ONBOARDING) {
+            val viewModel: OnboardingViewModel = viewModel(factory = OnboardingViewModel.factory())
+            val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+            // Leaving onboarding behind on the back stack would let the back
+            // gesture drop the user straight back into the intro.
+            LaunchedEffect(uiState.finished) {
+                if (uiState.finished) {
+                    navController.navigate(Routes.HOME) {
+                        popUpTo(Routes.ONBOARDING) { inclusive = true }
+                        launchSingleTop = true
+                    }
+                }
+            }
+
+            OnboardingScreen(
+                uiState = uiState,
+                onLocationResult = viewModel::onLocationResult,
+                onFinish = viewModel::finish,
+            )
+        }
+
         composable(Routes.HOME) {
             val viewModel: HomeViewModel = viewModel(factory = HomeViewModel.factory())
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()

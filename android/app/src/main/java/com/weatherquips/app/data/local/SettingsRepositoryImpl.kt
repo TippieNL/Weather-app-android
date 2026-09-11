@@ -45,6 +45,7 @@ class SettingsRepositoryImpl(
             prefs[Keys.WEATHER_SERVICE] = updated.weatherService.id
             prefs[Keys.NOTIFICATIONS_ENABLED] = updated.notificationsEnabled
             prefs[Keys.POKEMON_MODE] = updated.pokemonMode
+            prefs[Keys.ONBOARDING_COMPLETED] = updated.onboardingCompleted
 
             val coords = updated.manualCoords
             if (coords == null) {
@@ -86,6 +87,7 @@ class SettingsRepositoryImpl(
             weatherApiKey = this[Keys.API_KEY]?.let { crypto.decrypt(it) }.orEmpty(),
             notificationsEnabled = this[Keys.NOTIFICATIONS_ENABLED] ?: false,
             pokemonMode = this[Keys.POKEMON_MODE] ?: false,
+            onboardingCompleted = this[Keys.ONBOARDING_COMPLETED] ?: false,
         )
     }
 
@@ -101,5 +103,6 @@ class SettingsRepositoryImpl(
         val API_KEY = stringPreferencesKey("weather_api_key_encrypted")
         val NOTIFICATIONS_ENABLED = booleanPreferencesKey("notifications_enabled")
         val POKEMON_MODE = booleanPreferencesKey("pokemon_mode")
+        val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
     }
 }

@@ -106,6 +106,26 @@
     <string name="geocode_empty">Type a city name first</string>
     <string name="geocode_offline">No internet connection</string>
 
+    <!-- Onboarding. The voice is the app's own: blunt, deadpan, mildly rude.
+         **word** marks the highlighted word, the same syntax the quips use. -->
+    <string name="onboarding_skip">Skip</string>
+    <string name="onboarding_next">Next</string>
+    <string name="onboarding_start">Let\'s get miserable</string>
+    <string name="onboarding_page_indicator">Page %1$d of %2$d</string>
+
+    <string name="onboarding_welcome_title">Every other weather app is **polite** about it</string>
+    <string name="onboarding_welcome_body">This one tells you the forecast and then says what it really thinks. Nobody asked for the opinion. You are getting it anyway.</string>
+
+    <string name="onboarding_quips_title">The forecast comes with **commentary**</string>
+    <string name="onboarding_quips_body">Rain means the sky is having a meltdown. A heatwave means the pavement is melting under your feet. Drag the screen up when you want the boring numbers instead.</string>
+
+    <string name="onboarding_location_title">We need to know **where** you are suffering</string>
+    <string name="onboarding_location_body">Location access is how the app knows which sky to insult. Precise pins your neighbourhood, approximate settles for your region — honestly, both are fine for weather. Your coordinates go to the weather service and nowhere else.</string>
+    <string name="onboarding_location_allow">Allow location</string>
+    <string name="onboarding_location_manual">I\'ll type a city myself</string>
+    <string name="onboarding_location_granted">Found you. Bad news incoming.</string>
+    <string name="onboarding_location_denied">Fine. Keep your secrets — pick a city in settings instead.</string>
+
     <!-- Notifications -->
     <string name="notification_channel_precipitation">Precipitation alerts</string>
     <string name="notification_channel_precipitation_description">Warnings about approaching rain, snow and storms.</string>
