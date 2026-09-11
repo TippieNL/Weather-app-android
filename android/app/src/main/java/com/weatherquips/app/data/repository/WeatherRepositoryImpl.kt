@@ -27,6 +27,12 @@ class WeatherRepositoryImpl(
     private val cache: WeatherCache,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val random: Random = Random.Default,
+    /**
+     * Called after a fresh result is cached. The home-screen widget renders
+     * from that cache, so this is what keeps it in step with the app without
+     * the repository knowing anything about widgets.
+     */
+    private val onCacheUpdated: suspend () -> Unit = {},
 ) : WeatherRepository {
 
     override suspend fun getWeather(
@@ -60,6 +66,7 @@ class WeatherRepositoryImpl(
                 coordinates = coordinates,
             ),
         )
+        onCacheUpdated()
         withQuote
     }
 

@@ -108,6 +108,19 @@ obvious against real data:
 | Forecast colour was relative to whatever was on screen, so a 1 °C spread rendered as a full blue→red swing and the same temperature took a different colour in each card | Colour is anchored to actual degrees, so a temperature always looks the same; mild weather sits near-neutral and colour appears when it means something |
 | The hourly chart normalised to the visible min and max, turning a flat evening into dramatic peaks | The strip holds a minimum span, so a flat night looks flat |
 
+## Home-screen widget
+
+New to the Android version; the PWA had nothing equivalent.
+
+| Aspect | Decision |
+| --- | --- |
+| Content | Chance of precipitation for the next six hours, led by the fact that matters — "Rain by 16:00", "Raining now", "Dry for now" — with the app's remark as small print underneath |
+| Copy | The notification puts the joke first because it is read once; the widget is glanced at all day, so the fact leads and the remark is secondary. The remark rotates with the hour, so it is never stale but never changes mid-refresh |
+| Data | Renders from the same cache the app uses offline, so it shows something sensible with no network and without the app ever running |
+| Refresh | WorkManager, hourly, started when the first widget is placed and cancelled when the last is removed. The app also redraws it whenever it caches a fresh result |
+| Tap | Opens the radar on the place the widget is reporting, reusing the notification's deep link |
+| Toolkit | Glance. It draws through RemoteViews, which cannot use a bundled font, so the widget is set in the system sans rather than Space Grotesk — every other identity cue (palette, weight, lowercase labels, blue for water) carries over |
+
 ## Night rework
 
 The web app had one set of quotes per condition, written for daylight, and

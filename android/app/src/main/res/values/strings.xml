@@ -126,6 +126,10 @@
     <string name="onboarding_location_granted">Found you. Bad news incoming.</string>
     <string name="onboarding_location_denied">Fine. Keep your secrets — pick a city in settings instead.</string>
 
+    <!-- Widget -->
+    <string name="widget_name">Rain check</string>
+    <string name="widget_description">How likely it is to rain over the next few hours.</string>
+
     <!-- Notifications -->
     <string name="notification_channel_precipitation">Precipitation alerts</string>
     <string name="notification_channel_precipitation_description">Warnings about approaching rain, snow and storms.</string>

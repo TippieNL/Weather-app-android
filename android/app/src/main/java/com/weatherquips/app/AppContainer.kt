@@ -22,6 +22,8 @@ import com.weatherquips.app.location.LocationProvider
 import com.weatherquips.app.notifications.AlertThrottle
 import com.weatherquips.app.notifications.NotificationHelper
 import com.weatherquips.app.notifications.PrecipitationScheduler
+import com.weatherquips.app.widget.PrecipitationWidget
+import androidx.glance.appwidget.updateAll
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -70,6 +72,11 @@ class AppContainer(private val context: Context) {
             ),
             geocodingRepository = geocodingRepository,
             cache = weatherCache,
+            onCacheUpdated = {
+                // Best effort: a widget that fails to redraw must never break a
+                // weather fetch, and there may be no widget placed at all.
+                runCatching { PrecipitationWidget().updateAll(context) }
+            },
         )
     }
 
