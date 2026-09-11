@@ -2,9 +2,13 @@ package com.weatherquips.app.widget
 
 import android.content.Context
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.glance.ColorFilter
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
@@ -18,8 +22,8 @@ import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
 import androidx.glance.layout.Alignment
-import androidx.glance.layout.Box
 import androidx.glance.layout.Column
+import androidx.glance.layout.ContentScale
 import androidx.glance.layout.Row
 import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxSize
@@ -27,7 +31,6 @@ import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
 import androidx.glance.layout.padding
 import androidx.glance.layout.size
-import androidx.glance.layout.width
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
@@ -38,16 +41,16 @@ import com.weatherquips.app.ui.components.weatherIconRes
 import java.util.Calendar
 
 /**
- * Home-screen widget: how likely it is to rain over the next few hours.
+ * Home-screen widget: how hard it is about to rain, and when.
  *
  * It renders from the same cache the app uses offline, so it shows something
  * sensible even when the phone has been off the network — and the app itself
  * never has to be running.
  *
- * Glance draws through RemoteViews, which cannot use an app's bundled font, so
- * the widget is set in the system sans rather than Space Grotesk. Everything
- * else — the palette, the weight, the lowercase labels, the blue for water —
- * follows the app.
+ * Glance draws through RemoteViews, which cannot use an app's bundled font or
+ * draw a path, so the widget is set in the system sans and the graph arrives
+ * as a bitmap from [PrecipitationGraph]. Everything else — the palette, the
+ * weight, the lowercase labels, the blue for water — follows the app.
  */
 class PrecipitationWidget : GlanceAppWidget() {
 
@@ -75,8 +78,8 @@ class PrecipitationWidget : GlanceAppWidget() {
     }
 
     companion object {
-        val SMALL_SIZE = androidx.compose.ui.unit.DpSize(180.dp, 110.dp)
-        val WIDE_SIZE = androidx.compose.ui.unit.DpSize(280.dp, 110.dp)
+        val SMALL_SIZE = DpSize(180.dp, 140.dp)
+        val WIDE_SIZE = DpSize(280.dp, 140.dp)
     }
 }
 
@@ -88,150 +91,142 @@ fun WidgetContent(
 ) {
     val copy = outlook?.let { WidgetCopyWriter.write(it.outlook, hourOfDay) }
         ?: WidgetCopyWriter.empty()
-    val wide = LocalSize.current.width >= PrecipitationWidget.WIDE_SIZE.width
+    val size = LocalSize.current
+    val wide = size.width >= PrecipitationWidget.WIDE_SIZE.width
 
     Column(
         modifier = modifier
             .fillMaxSize()
             .background(GlanceTheme.colors.background)
             .cornerRadius(20.dp)
-            .padding(horizontal = 16.dp, vertical = 14.dp),
+            .padding(horizontal = SIDE_PADDING.dp, vertical = TOP_PADDING.dp),
     ) {
-        Row(modifier = GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
-            Column(modifier = GlanceModifier.defaultWeight()) {
-                Text(
-                    text = copy.headline,
-                    style = TextStyle(
-                        color = GlanceTheme.colors.onBackground,
-                        fontSize = if (wide) 21.sp else 18.sp,
-                        fontWeight = FontWeight.Bold,
-                    ),
-                    maxLines = 1,
-                )
-                Text(
-                    text = copy.aside,
-                    style = TextStyle(
-                        color = GlanceTheme.colors.onSurfaceVariant,
-                        fontSize = 12.sp,
-                    ),
-                    maxLines = 1,
-                )
-            }
+        Row(
+            modifier = GlanceModifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = copy.headline,
+                style = TextStyle(
+                    color = GlanceTheme.colors.onBackground,
+                    fontSize = if (wide) 20.sp else 17.sp,
+                    fontWeight = FontWeight.Bold,
+                ),
+                maxLines = 1,
+                modifier = GlanceModifier.defaultWeight(),
+            )
             if (outlook != null) {
                 Image(
                     provider = ImageProvider(
                         weatherIconRes(weatherIconKey(outlook.condition, outlook.isDay)),
                     ),
                     contentDescription = outlook.condition.id,
-                    colorFilter = androidx.glance.ColorFilter.tint(GlanceTheme.colors.onBackground),
-                    modifier = GlanceModifier.size(24.dp),
+                    colorFilter = ColorFilter.tint(GlanceTheme.colors.onBackground),
+                    modifier = GlanceModifier.size(22.dp),
                 )
             }
         }
 
-        Spacer(modifier = GlanceModifier.height(10.dp))
-
-        if (outlook != null && outlook.hours.isNotEmpty()) {
-            ChanceChart(
-                hours = if (wide) outlook.hours else outlook.hours.take(4),
-                modifier = GlanceModifier.fillMaxWidth().defaultWeight(),
-            )
+        Row(modifier = GlanceModifier.fillMaxWidth()) {
             Text(
-                text = outlook.location.lowercase(),
+                text = copy.aside,
                 style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 11.sp),
                 maxLines = 1,
-            )
-        }
-    }
-}
-
-/**
- * Chance of precipitation per hour.
- *
- * Every bar is drawn full height in a faint track with the coloured part
- * on top, so an hour at 10% and an hour with no data look different — an
- * empty column would otherwise read as "no information".
- */
-@Composable
-private fun ChanceChart(hours: List<OutlookHour>, modifier: GlanceModifier) {
-    Row(modifier = modifier, verticalAlignment = Alignment.Bottom) {
-        hours.forEachIndexed { index, hour ->
-            if (index > 0) Spacer(modifier = GlanceModifier.width(6.dp))
-            Column(
                 modifier = GlanceModifier.defaultWeight(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
+            )
+            if (outlook != null && wide) {
                 Text(
-                    text = "${hour.chancePercent}%",
+                    text = meta(outlook),
                     style = TextStyle(
-                        color = if (hour.chancePercent >= PrecipitationOutlooks.LIKELY_THRESHOLD) {
+                        color = if (outlook.nowMillimetresPerHour >= IntensityScale.WET_MM_PER_HOUR) {
                             ColorProvider(WidgetColors.Wet)
                         } else {
                             GlanceTheme.colors.onSurfaceVariant
                         },
-                        fontSize = 10.sp,
-                        fontWeight = if (hour.isNow) FontWeight.Bold else FontWeight.Normal,
-                    ),
-                    maxLines = 1,
-                )
-                Spacer(modifier = GlanceModifier.height(3.dp))
-                Bar(chancePercent = hour.chancePercent)
-                Spacer(modifier = GlanceModifier.height(3.dp))
-                Text(
-                    text = if (hour.isNow) "now" else hour.label.take(2),
-                    style = TextStyle(
-                        color = GlanceTheme.colors.onSurfaceVariant,
-                        fontSize = 10.sp,
-                        fontWeight = if (hour.isNow) FontWeight.Bold else FontWeight.Normal,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
                     ),
                     maxLines = 1,
                 )
             }
         }
+
+        if (outlook != null && !outlook.chart.isEmpty) {
+            Spacer(modifier = GlanceModifier.height(GRAPH_GAP.dp))
+            Graph(
+                chart = outlook.chart,
+                widthDp = size.width.value,
+                widgetHeightDp = size.height.value,
+                modifier = GlanceModifier.fillMaxWidth().defaultWeight(),
+            )
+        }
+    }
+}
+
+/** The location, plus the current rate once there is one worth printing. */
+private fun meta(outlook: PrecipitationOutlook): String {
+    val place = outlook.location.lowercase()
+    return if (outlook.nowMillimetresPerHour >= IntensityScale.WET_MM_PER_HOUR) {
+        "$place · ${IntensityScale.format(outlook.nowMillimetresPerHour)}"
+    } else {
+        place
     }
 }
 
 @Composable
-private fun Bar(chancePercent: Int) {
-    val filled = (BAR_HEIGHT_DP * chancePercent / 100f).coerceAtLeast(MIN_FILL_DP)
-    Box(
-        modifier = GlanceModifier
-            .width(BAR_WIDTH_DP.dp)
-            .height(BAR_HEIGHT_DP.dp)
-            .background(GlanceTheme.colors.surfaceVariant)
-            .cornerRadius(4.dp),
-        contentAlignment = Alignment.BottomCenter,
-    ) {
-        Box(
-            modifier = GlanceModifier
-                .width(BAR_WIDTH_DP.dp)
-                .height(filled.dp)
-                .background(
-                    ColorProvider(
-                        if (chancePercent >= PrecipitationOutlooks.LIKELY_THRESHOLD) {
-                            WidgetColors.Wet
-                        } else {
-                            WidgetColors.Damp
-                        },
-                    ),
-                )
-                .cornerRadius(4.dp),
-            content = {},
-        )
-    }
+private fun Graph(
+    chart: PrecipitationChart,
+    widthDp: Float,
+    widgetHeightDp: Float,
+    modifier: GlanceModifier,
+) {
+    val graphWidth = (widthDp - 2 * SIDE_PADDING).coerceAtLeast(MIN_GRAPH_WIDTH)
+    val graphHeight = (widgetHeightDp - CHROME_HEIGHT).coerceAtLeast(MIN_GRAPH_HEIGHT)
+    val bitmap = remember(chart, graphWidth, graphHeight) {
+        PrecipitationGraph.render(chart, graphWidth, graphHeight, WidgetColors.graph)
+    } ?: return
+
+    Image(
+        provider = ImageProvider(bitmap),
+        contentDescription = null,
+        contentScale = ContentScale.FillBounds,
+        modifier = modifier,
+    )
 }
 
-private const val BAR_HEIGHT_DP = 30f
-private const val BAR_WIDTH_DP = 10
-private const val MIN_FILL_DP = 3f
+private const val SIDE_PADDING = 14f
+private const val TOP_PADDING = 12f
+
+/** Gap between the two text lines and the graph. */
+private const val GRAPH_GAP = 6f
+
+/** Padding plus the two text lines plus the gap: what the graph does not get. */
+private const val CHROME_HEIGHT = 2 * TOP_PADDING + 26f + 15f + GRAPH_GAP
+
+private const val MIN_GRAPH_WIDTH = 80f
+private const val MIN_GRAPH_HEIGHT = 28f
 
 /** The app's palette, mapped onto the slots Glance exposes. */
 internal object WidgetColors {
-    /** Likely enough to matter — the app's cold accent, which reads as water. */
+    /** Wet enough to matter — the app's cold accent, which reads as water. */
     val Wet = Color(0xFF3B82F6)
 
-    /** Possible, not likely. */
-    val Damp = Color(0xFF93B9F7)
+    /** "Now", borrowed from the app's hot end. */
+    val Now = Color(0xFFEF4444)
+
+    /**
+     * Graph colours, chosen to work on both themes: the bitmap is drawn before
+     * Glance resolves a theme, so there is only one palette to get right.
+     */
+    val graph = GraphPalette(
+        line = Wet.toArgb(),
+        fillTop = Wet.copy(alpha = 0.55f).toArgb(),
+        fillBottom = Wet.copy(alpha = 0.04f).toArgb(),
+        grid = Color(0xFF909090).copy(alpha = 0.35f).toArgb(),
+        bandLabel = Color(0xFF9A9A9A).toArgb(),
+        axisLabel = Color(0xFF8A8A8A).toArgb(),
+        nowLine = Now.toArgb(),
+    )
 
     val providers = androidx.glance.material3.ColorProviders(
         light = androidx.compose.material3.lightColorScheme(

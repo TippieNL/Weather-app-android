@@ -59,6 +59,7 @@ class WeatherApiProvider(private val api: WeatherApiApi) : WeatherProvider {
                     time = ProviderSupport.hourLabel(hour.time.replace(' ', 'T')),
                     temperature = hour.tempC,
                     precipitationChance = hour.chanceOfRain ?: 0,
+                    precipitationMm = hour.precipMm,
                 )
             }
 
@@ -89,6 +90,8 @@ class WeatherApiProvider(private val api: WeatherApiApi) : WeatherProvider {
             pressure = current.pressureMb.roundToInt(),
             dailyForecast = dailyForecast,
             hourlyForecast = hourlyForecast,
+            // Hourly totals are the finest resolution this API offers.
+            nowcast = ProviderSupport.nowcastFromHourly(hourlyForecast),
         )
     }
 }

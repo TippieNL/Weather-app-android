@@ -40,6 +40,26 @@ data class HourlyForecast(
     val time: String,
     val temperature: Double,
     val precipitationChance: Int = 0,
+    /** How much is expected to fall during the hour, in millimetres. */
+    val precipitationMm: Double = 0.0,
+)
+
+/**
+ * One sample of the short-term precipitation nowcast.
+ *
+ * The hourly forecast answers "will it rain this afternoon"; this answers
+ * "should I leave now", which is what the widget's graph is for. Intensity
+ * rather than probability, because a 90% chance of drizzle and a 90% chance
+ * of a downpour are not the same errand.
+ */
+@Serializable
+data class NowcastPoint(
+    /** "HH:mm" in the location's local time. */
+    val time: String,
+    /** Offset from the moment the forecast was made; negative is the recent past. */
+    val minutesFromNow: Int,
+    /** Rate in millimetres per hour, not millimetres per bucket. */
+    val millimetresPerHour: Double,
 )
 
 @Serializable
@@ -75,6 +95,11 @@ data class WeatherData(
     val pressure: Int,
     val dailyForecast: List<DailyForecast>,
     val hourlyForecast: List<HourlyForecast>,
+    /**
+     * Fine-grained precipitation for the next couple of hours. Empty when the
+     * chosen provider has nothing better than hourly totals to offer.
+     */
+    val nowcast: List<NowcastPoint> = emptyList(),
 )
 
 /** A weather payload plus the moment it was fetched, used for offline display. */

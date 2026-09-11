@@ -11,6 +11,12 @@ the Express backend.
 | --- | --- | --- | --- | --- |
 | ![Onboarding](docs/screenshots/onboarding-welcome.png) | ![Home](docs/screenshots/home-light.png) | ![Detail](docs/screenshots/detail-panel-light.png) | ![Radar](docs/screenshots/precipitation-map.png) | ![Settings](docs/screenshots/settings-light.png) |
 
+The home-screen widget graphs precipitation intensity for the next two hours:
+
+| Light | Dark |
+| --- | --- |
+| ![Widget](docs/screenshots/widget-light.png) | ![Widget, dark](docs/screenshots/widget-dark.png) |
+
 ## Build
 
 ```bash

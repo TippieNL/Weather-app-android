@@ -1,6 +1,8 @@
 package com.weatherquips.app.data.repository
 
 import com.weatherquips.app.domain.model.Coordinates
+import com.weatherquips.app.domain.model.HourlyForecast
+import com.weatherquips.app.domain.model.NowcastPoint
 import com.weatherquips.app.domain.model.WeatherData
 import com.weatherquips.app.domain.model.WeatherService
 import com.weatherquips.app.domain.repository.WeatherError
@@ -9,7 +11,9 @@ import retrofit2.HttpException
 import java.io.IOException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
+import java.time.Duration
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.format.DateTimeParseException
 
 /** One weather provider. Each normalizes its API into the app's [WeatherData]. */
@@ -50,6 +54,40 @@ internal object ProviderSupport {
     /** "2026-09-05T14:00" or "2026-09-05 14:00" → "14:00". */
     fun hourLabel(timestamp: String): String =
         if (timestamp.length >= 13) timestamp.substring(11, 13) + ":00" else timestamp
+
+    /** "2026-09-05T14:15" or "2026-09-05 14:15" -> "14:15". */
+    fun minuteLabel(timestamp: String): String =
+        if (timestamp.length >= 16) timestamp.substring(11, 16) else hourLabel(timestamp)
+
+    /** Whole minutes from [from] to [to], or null when either cannot be parsed. */
+    fun minutesBetween(from: String, to: String): Int? {
+        val start = parseLocalDateTime(from) ?: return null
+        val end = parseLocalDateTime(to) ?: return null
+        return Duration.between(start, end).toMinutes().toInt()
+    }
+
+    private fun parseLocalDateTime(timestamp: String): LocalDateTime? = try {
+        LocalDateTime.parse(timestamp.take(16).replace(' ', 'T'))
+    } catch (_: DateTimeParseException) {
+        null
+    }
+
+    /**
+     * Nowcast for providers that only publish hourly totals.
+     *
+     * Coarse by necessity: one sample an hour, so the widget's graph is a
+     * rough shape rather than the minute-by-minute picture Open-Meteo gives.
+     * The chart labels itself hourly in this case, so it does not pretend
+     * otherwise.
+     */
+    fun nowcastFromHourly(hours: List<HourlyForecast>, count: Int = 4): List<NowcastPoint> =
+        hours.take(count).mapIndexed { index, hour ->
+            NowcastPoint(
+                time = hour.time,
+                minutesFromNow = index * 60,
+                millimetresPerHour = hour.precipitationMm.coerceAtLeast(0.0),
+            )
+        }
 
     /**
      * Index of the first hourly entry at or after [nowLocal].

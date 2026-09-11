@@ -40,4 +40,10 @@ data class OwmForecastEntry(
     val dt: Long,
     val main: OwmMain,
     val pop: Double? = null,
+    val rain: OwmVolume? = null,
+    val snow: OwmVolume? = null,
 )
+
+/** Volume over the entry's three-hour window, in millimetres. */
+@Serializable
+data class OwmVolume(@SerialName("3h") val threeHours: Double = 0.0)

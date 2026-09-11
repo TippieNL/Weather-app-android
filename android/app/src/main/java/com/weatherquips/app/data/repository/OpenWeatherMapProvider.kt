@@ -1,6 +1,7 @@
 package com.weatherquips.app.data.repository
 
 import com.weatherquips.app.data.api.OpenWeatherMapApi
+import com.weatherquips.app.data.model.OwmForecastEntry
 import com.weatherquips.app.domain.model.Coordinates
 import com.weatherquips.app.domain.model.DailyForecast
 import com.weatherquips.app.domain.model.HourlyForecast
@@ -36,6 +37,8 @@ class OpenWeatherMapProvider(private val api: OpenWeatherMapApi) : WeatherProvid
                 time = utcHourLabel(entry.dt),
                 temperature = entry.main.temp,
                 precipitationChance = entry.pop?.let { (it * 100).roundToInt() } ?: 0,
+                // OWM reports a volume per three-hour slot; the app wants per hour.
+                precipitationMm = entry.precipitationMm() / OWM_SLOT_HOURS,
             )
         }
 
@@ -94,7 +97,17 @@ class OpenWeatherMapProvider(private val api: OpenWeatherMapApi) : WeatherProvid
             pressure = current.main.pressure,
             dailyForecast = dailyForecast,
             hourlyForecast = hourlyForecast,
+            // No sub-hourly feed on the free plan, so the widget's graph gets
+            // a step per slot rather than a curve.
+            nowcast = ProviderSupport.nowcastFromHourly(hourlyForecast),
         )
+    }
+
+    private fun OwmForecastEntry.precipitationMm(): Double =
+        (rain?.threeHours ?: 0.0) + (snow?.threeHours ?: 0.0)
+
+    private companion object {
+        const val OWM_SLOT_HOURS = 3.0
     }
 
     private fun utcHourLabel(epochSeconds: Long): String {

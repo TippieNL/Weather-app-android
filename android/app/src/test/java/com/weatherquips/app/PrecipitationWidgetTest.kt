@@ -7,6 +7,7 @@ import androidx.glance.testing.unit.hasText
 import com.weatherquips.app.domain.model.CachedWeather
 import com.weatherquips.app.domain.model.Coordinates
 import com.weatherquips.app.domain.model.HourlyForecast
+import com.weatherquips.app.domain.model.NowcastPoint
 import com.weatherquips.app.domain.model.WeatherCondition
 import com.weatherquips.app.widget.PrecipitationOutlooks
 import com.weatherquips.app.widget.WidgetContent
@@ -18,20 +19,41 @@ import org.robolectric.annotation.Config
 /**
  * The widget's composition, checked without a launcher.
  *
- * A widget cannot be rendered to a bitmap here, so these assert what it puts
- * on screen rather than how it looks.
+ * Glance renders through RemoteViews and cannot be rasterised here, so these
+ * assert what the widget puts on screen rather than how it looks — the graph
+ * itself is covered by WidgetGraphTest and drawn to PNG by WidgetRenderTest.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
 class PrecipitationWidgetTest {
 
-    private fun cached(
+    private val wide = DpSize(280.dp, 140.dp)
+    private val narrow = DpSize(180.dp, 140.dp)
+
+    private fun hourly(
         condition: WeatherCondition = WeatherCondition.CLOUDY,
-        hourly: List<Pair<String, Int>>,
+        hours: List<Pair<String, Int>>,
     ) = CachedWeather(
         data = TestWeather.sample(condition = condition).copy(
-            hourlyForecast = hourly.map { (time, chance) ->
-                HourlyForecast(time, 12.0, chance)
+            hourlyForecast = hours.map { (time, chance) -> HourlyForecast(time, 12.0, chance) },
+            nowcast = emptyList(),
+        ),
+        fetchedAtEpochMillis = 1_757_000_000_000,
+        coordinates = Coordinates(52.99, 6.56),
+    )
+
+    private fun nowcast(
+        vararg rates: Double,
+        condition: WeatherCondition = WeatherCondition.CLOUDY,
+    ) = CachedWeather(
+        data = TestWeather.sample(condition = condition).copy(
+            nowcast = rates.mapIndexed { i, mm ->
+                val minutes = 17 * 60 + 30 + i * 15
+                NowcastPoint(
+                    time = "%02d:%02d".format((minutes / 60) % 24, minutes % 60),
+                    minutesFromNow = i * 15 - 30,
+                    millimetresPerHour = mm,
+                )
             },
         ),
         fetchedAtEpochMillis = 1_757_000_000_000,
@@ -39,62 +61,59 @@ class PrecipitationWidgetTest {
     )
 
     @Test
-    fun `an approaching shower is spelled out with its hour`() = runGlanceAppWidgetUnitTest {
-        setAppWidgetSize(DpSize(280.dp, 110.dp))
+    fun `an approaching shower is counted down in minutes`() = runGlanceAppWidgetUnitTest {
+        setAppWidgetSize(wide)
         val outlook = PrecipitationOutlooks.from(
-            cached(hourly = listOf("14:00" to 5, "15:00" to 20, "16:00" to 70)),
+            nowcast(0.0, 0.0, 0.0, 0.0, 0.0, 1.4, 2.2),
         )
 
         provideComposable { WidgetContent(outlook = outlook, hourOfDay = 9) }
 
-        onNode(hasText("Rain by 16:00")).assertExists()
+        onNode(hasText("Rain in 45 min")).assertExists()
         onNode(hasText("Clock is ticking.")).assertExists()
         // The place it is reporting on, so two widgets are told apart.
         onNode(hasText("assen")).assertExists()
     }
 
     @Test
-    fun `a dry window says so without inventing a time`() = runGlanceAppWidgetUnitTest {
-        setAppWidgetSize(DpSize(280.dp, 110.dp))
-        val outlook = PrecipitationOutlooks.from(
-            cached(hourly = listOf("14:00" to 0, "15:00" to 5, "16:00" to 10)),
-        )
-
-        provideComposable { WidgetContent(outlook = outlook, hourOfDay = 9) }
-
-        onNode(hasText("Dry for now")).assertExists()
-    }
-
-    @Test
-    fun `rain already falling leads with that`() = runGlanceAppWidgetUnitTest {
-        setAppWidgetSize(DpSize(280.dp, 110.dp))
-        val outlook = PrecipitationOutlooks.from(
-            cached(condition = WeatherCondition.RAINY, hourly = listOf("14:00" to 80)),
-        )
+    fun `rain already falling leads with the rate`() = runGlanceAppWidgetUnitTest {
+        setAppWidgetSize(wide)
+        val outlook = PrecipitationOutlooks.from(nowcast(0.8, 1.4, 1.8, 1.2, 0.4))
 
         provideComposable { WidgetContent(outlook = outlook, hourOfDay = 9) }
 
         onNode(hasText("Raining now")).assertExists()
+        onNode(hasText("assen · 1.8 mm/h")).assertExists()
     }
 
     @Test
-    fun `each hour shows its chance, with the first marked as now`() = runGlanceAppWidgetUnitTest {
-        setAppWidgetSize(DpSize(280.dp, 110.dp))
+    fun `a dry window says so without inventing a time`() = runGlanceAppWidgetUnitTest {
+        setAppWidgetSize(wide)
+        val outlook = PrecipitationOutlooks.from(nowcast(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0))
+
+        provideComposable { WidgetContent(outlook = outlook, hourOfDay = 9) }
+
+        onNode(hasText("Dry for now")).assertExists()
+        // No rate to report, so the place stands alone.
+        onNode(hasText("assen")).assertExists()
+    }
+
+    @Test
+    fun `a provider without a nowcast still names the hour`() = runGlanceAppWidgetUnitTest {
+        setAppWidgetSize(wide)
         val outlook = PrecipitationOutlooks.from(
-            cached(hourly = listOf("14:00" to 15, "15:00" to 25, "16:00" to 70)),
+            hourly(hours = listOf("14:00" to 5, "15:00" to 20, "16:00" to 70)),
         )
 
         provideComposable { WidgetContent(outlook = outlook, hourOfDay = 9) }
 
-        onNode(hasText("now")).assertExists()
-        onNode(hasText("15%")).assertExists()
-        onNode(hasText("70%")).assertExists()
+        onNode(hasText("Rain by 16:00")).assertExists()
     }
 
     @Test
     fun `with nothing cached it asks to be opened rather than showing blank`() =
         runGlanceAppWidgetUnitTest {
-            setAppWidgetSize(DpSize(280.dp, 110.dp))
+            setAppWidgetSize(wide)
 
             provideComposable { WidgetContent(outlook = null, hourOfDay = 9) }
 
@@ -103,13 +122,11 @@ class PrecipitationWidgetTest {
 
     @Test
     fun `the narrow size still leads with the headline`() = runGlanceAppWidgetUnitTest {
-        setAppWidgetSize(DpSize(180.dp, 110.dp))
-        val outlook = PrecipitationOutlooks.from(
-            cached(hourly = listOf("14:00" to 0, "15:00" to 55)),
-        )
+        setAppWidgetSize(narrow)
+        val outlook = PrecipitationOutlooks.from(nowcast(0.0, 0.0, 0.0, 0.9, 1.6))
 
         provideComposable { WidgetContent(outlook = outlook, hourOfDay = 9) }
 
-        onNode(hasText("Rain by 15:00")).assertExists()
+        onNode(hasText("Rain in 15 min")).assertExists()
     }
 }

@@ -18,8 +18,11 @@ interface OpenMeteoApi {
         @Query("current") current: String = CURRENT_FIELDS,
         @Query("daily") daily: String = DAILY_FIELDS,
         @Query("hourly") hourly: String = HOURLY_FIELDS,
+        @Query("minutely_15") minutely15: String = MINUTELY_15_FIELDS,
         @Query("timezone") timezone: String = "auto",
         @Query("forecast_days") forecastDays: Int = 7,
+        @Query("forecast_minutely_15") forecastMinutely15: Int = NOWCAST_FORECAST_STEPS,
+        @Query("past_minutely_15") pastMinutely15: Int = NOWCAST_PAST_STEPS,
     ): OpenMeteoResponse
 
     companion object {
@@ -31,7 +34,19 @@ interface OpenMeteoApi {
         const val DAILY_FIELDS =
             "temperature_2m_max,temperature_2m_min,precipitation_probability_max," +
                 "uv_index_max,weather_code,sunrise,sunset"
-        const val HOURLY_FIELDS = "temperature_2m,precipitation_probability"
+        const val HOURLY_FIELDS = "temperature_2m,precipitation_probability,precipitation"
+
+        /** Drives the widget's intensity graph; free and key-less like the rest. */
+        const val MINUTELY_15_FIELDS = "precipitation"
+
+        /** Two hours ahead in quarter-hour steps, counting the current bucket. */
+        const val NOWCAST_FORECAST_STEPS = 9
+
+        /**
+         * Half an hour of history, so the graph can show a "now" line with
+         * something behind it rather than starting at the left edge.
+         */
+        const val NOWCAST_PAST_STEPS = 2
     }
 }
 

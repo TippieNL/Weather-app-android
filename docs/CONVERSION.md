@@ -114,12 +114,24 @@ New to the Android version; the PWA had nothing equivalent.
 
 | Aspect | Decision |
 | --- | --- |
-| Content | Chance of precipitation for the next six hours, led by the fact that matters — "Rain by 16:00", "Raining now", "Dry for now" — with the app's remark as small print underneath |
+| Content | A precipitation-intensity graph for the next two hours, led by the fact that matters — "Rain in 30 min", "Raining now", "Dry for now" — with the app's remark as small print underneath and the current rate beside the place name |
 | Copy | The notification puts the joke first because it is read once; the widget is glanced at all day, so the fact leads and the remark is secondary. The remark rotates with the hour, so it is never stale but never changes mid-refresh |
 | Data | Renders from the same cache the app uses offline, so it shows something sensible with no network and without the app ever running |
 | Refresh | WorkManager, hourly, started when the first widget is placed and cancelled when the last is removed. The app also redraws it whenever it caches a fresh result |
 | Tap | Opens the radar on the place the widget is reporting, reusing the notification's deep link |
 | Toolkit | Glance. It draws through RemoteViews, which cannot use a bundled font, so the widget is set in the system sans rather than Space Grotesk — every other identity cue (palette, weight, lowercase labels, blue for water) carries over |
+
+### The graph
+
+| Decision | Why |
+| --- | --- |
+| Intensity, not probability | "70% chance" does not distinguish a drizzle from a downpour. Open-Meteo's `minutely_15` feed gives millimetres per quarter-hour, converted to the mm/h figure a rain radar prints |
+| Eleven quarter-hour samples, half an hour of which is history | A "now" line needs something behind it, otherwise it sits on the left edge and means nothing. `past_minutely_15=2` supplies it |
+| A non-linear vertical axis | On a linear 0–15 mm/h scale a 0.3 mm/h drizzle is two percent of the height and effectively invisible. Light, moderate, heavy and violent each get a quarter of the plot, which also gives evenly spaced gridlines to label |
+| Drawn to a bitmap | RemoteViews has no canvas and no path support, so anything beyond boxes and text has to arrive as an image. It is rendered at a fixed 2.5 px/dp and scaled to fit, which keeps it identical in tests and on a phone |
+| One palette for both themes | The bitmap is drawn before Glance resolves a theme, and a Glance composable cannot read the resolved colour without a context. Every colour in the graph is picked to work on both the near-white and the near-black card |
+| Whole hours are labelled first | On a 180 dp widget there is room for about three clock labels. Half hours fill what is left rather than crowding the hours out |
+| Hourly fallback | OpenWeatherMap and WeatherAPI have no sub-hourly feed, so the graph falls back to their hourly millimetre totals and labels itself hourly instead of pretending to minute resolution |
 
 ## Night rework
 

@@ -1,9 +1,11 @@
 package com.weatherquips.app.data.repository
 
 import com.weatherquips.app.data.api.OpenMeteoApi
+import com.weatherquips.app.data.model.OpenMeteoMinutely15
 import com.weatherquips.app.domain.model.Coordinates
 import com.weatherquips.app.domain.model.DailyForecast
 import com.weatherquips.app.domain.model.HourlyForecast
+import com.weatherquips.app.domain.model.NowcastPoint
 import com.weatherquips.app.domain.model.WeatherCodeMapper
 import com.weatherquips.app.domain.model.WeatherData
 import com.weatherquips.app.domain.model.WeatherService
@@ -57,8 +59,12 @@ class OpenMeteoProvider(private val api: OpenMeteoApi) : WeatherProvider {
                     time = ProviderSupport.hourLabel(hourly.time[i]),
                     temperature = temperature,
                     precipitationChance = hourly.precipitationProbability.getOrNull(i) ?: 0,
+                    precipitationMm = hourly.precipitation.getOrNull(i) ?: 0.0,
                 )
             }
+
+        val nowcast = nowcastFrom(response.minutely15, current.time)
+            .ifEmpty { ProviderSupport.nowcastFromHourly(hourlyForecast) }
 
         val daily = response.daily
         val dailyForecast = daily.time.indices
@@ -92,6 +98,40 @@ class OpenMeteoProvider(private val api: OpenMeteoApi) : WeatherProvider {
             pressure = (current.surfacePressure ?: 0.0).roundToInt(),
             dailyForecast = dailyForecast,
             hourlyForecast = hourlyForecast,
+            nowcast = nowcast,
         )
+    }
+
+    /**
+     * Quarter-hourly totals turned into a rate.
+     *
+     * Open-Meteo reports millimetres *per bucket*, so a 0.4 mm quarter is
+     * 1.6 mm/h — the figure people recognise from rain radars, and the one
+     * the widget's intensity bands are calibrated against.
+     */
+    private fun nowcastFrom(
+        minutely: OpenMeteoMinutely15?,
+        nowLocal: String?,
+    ): List<NowcastPoint> {
+        if (minutely == null || minutely.time.isEmpty()) return emptyList()
+
+        // Without a reference time there is no "now", and a graph whose now
+        // line is a guess is worse than one drawn from hourly figures.
+        val now = nowLocal ?: return emptyList()
+
+        return minutely.time.indices.mapNotNull { i ->
+            val millimetres = minutely.precipitation.getOrNull(i) ?: return@mapNotNull null
+            val offset = ProviderSupport.minutesBetween(now, minutely.time[i]) ?: return@mapNotNull null
+            NowcastPoint(
+                time = ProviderSupport.minuteLabel(minutely.time[i]),
+                minutesFromNow = offset,
+                millimetresPerHour = (millimetres * MINUTES_PER_HOUR / BUCKET_MINUTES).coerceAtLeast(0.0),
+            )
+        }
+    }
+
+    private companion object {
+        const val BUCKET_MINUTES = 15.0
+        const val MINUTES_PER_HOUR = 60.0
     }
 }

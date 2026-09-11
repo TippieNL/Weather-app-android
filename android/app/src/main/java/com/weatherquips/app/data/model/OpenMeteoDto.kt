@@ -8,6 +8,7 @@ data class OpenMeteoResponse(
     val current: OpenMeteoCurrent,
     val hourly: OpenMeteoHourly,
     val daily: OpenMeteoDaily,
+    @SerialName("minutely_15") val minutely15: OpenMeteoMinutely15? = null,
 )
 
 @Serializable
@@ -28,6 +29,14 @@ data class OpenMeteoHourly(
     val time: List<String> = emptyList(),
     @SerialName("temperature_2m") val temperature: List<Double?> = emptyList(),
     @SerialName("precipitation_probability") val precipitationProbability: List<Int?> = emptyList(),
+    val precipitation: List<Double?> = emptyList(),
+)
+
+/** Quarter-hourly precipitation totals in millimetres per bucket. */
+@Serializable
+data class OpenMeteoMinutely15(
+    val time: List<String> = emptyList(),
+    val precipitation: List<Double?> = emptyList(),
 )
 
 @Serializable

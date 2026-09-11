@@ -4,6 +4,7 @@ import com.weatherquips.app.data.api.OpenMeteoApi
 import com.weatherquips.app.data.model.OpenMeteoCurrent
 import com.weatherquips.app.data.model.OpenMeteoDaily
 import com.weatherquips.app.data.model.OpenMeteoHourly
+import com.weatherquips.app.data.model.OpenMeteoMinutely15
 import com.weatherquips.app.data.model.OpenMeteoResponse
 import com.weatherquips.app.data.repository.OpenMeteoProvider
 import com.weatherquips.app.domain.model.Coordinates
@@ -22,6 +23,11 @@ class OpenMeteoProviderTest {
         windSpeed: Double = 11.0,
         isDay: Int? = 0,
         currentTime: String = "2026-09-05T18:00",
+        minutely15: OpenMeteoMinutely15? = OpenMeteoMinutely15(
+            // Half an hour behind the current time, then two hours ahead.
+            time = (0..9).map { "2026-09-05T%02d:%02d".format(17 + (30 + it * 15) / 60, (30 + it * 15) % 60) },
+            precipitation = listOf(0.0, 0.0, 0.0, 0.1, 0.25, 0.5, 0.3, 0.0, 0.0, 0.0),
+        ),
     ) = OpenMeteoResponse(
         current = OpenMeteoCurrent(
             time = currentTime,
@@ -38,6 +44,7 @@ class OpenMeteoProviderTest {
             time = (0..23).map { "2026-09-05T%02d:00".format(it) },
             temperature = (0..23).map { 10.0 + it },
             precipitationProbability = (0..23).map { it },
+            precipitation = (0..23).map { it * 0.1 },
         ),
         daily = OpenMeteoDaily(
             time = listOf(
@@ -50,6 +57,7 @@ class OpenMeteoProviderTest {
             uvIndexMax = listOf(4.0, 5.0, 6.0, 5.0, 4.0, 3.0, 2.0),
             weatherCode = listOf(3, 1, 0, 2, 61, 80, 95),
         ),
+        minutely15 = minutely15,
     )
 
     private class FakeApi(private val response: OpenMeteoResponse) : OpenMeteoApi {
@@ -59,8 +67,11 @@ class OpenMeteoProviderTest {
             current: String,
             daily: String,
             hourly: String,
+            minutely15: String,
             timezone: String,
             forecastDays: Int,
+            forecastMinutely15: Int,
+            pastMinutely15: Int,
         ): OpenMeteoResponse = response
     }
 
@@ -100,6 +111,32 @@ class OpenMeteoProviderTest {
         assertEquals(6, weather.hourlyForecast.size)
         assertEquals(28.0, weather.hourlyForecast.first().temperature, 0.001)
         assertEquals(18, weather.hourlyForecast.first().precipitationChance)
+        assertEquals(1.8, weather.hourlyForecast.first().precipitationMm, 0.001)
+    }
+
+    @Test
+    fun `quarter-hourly totals become a rate, anchored on the current time`() = runTest {
+        val weather = OpenMeteoProvider(FakeApi(response())).fetch(coordinates, "", "Assen")
+
+        assertEquals(10, weather.nowcast.size)
+        // 17:30 is half an hour before the 18:00 reading.
+        assertEquals("17:30", weather.nowcast.first().time)
+        assertEquals(-30, weather.nowcast.first().minutesFromNow)
+        assertEquals(105, weather.nowcast.last().minutesFromNow)
+        // 0.5 mm in a quarter of an hour is 2 mm/h, which is the figure a
+        // rain radar would print.
+        assertEquals(2.0, weather.nowcast[5].millimetresPerHour, 0.001)
+    }
+
+    @Test
+    fun `without a minutely feed the nowcast falls back to hourly millimetres`() = runTest {
+        val weather = OpenMeteoProvider(FakeApi(response(minutely15 = null)))
+            .fetch(coordinates, "", "Assen")
+
+        assertEquals(4, weather.nowcast.size)
+        assertEquals(0, weather.nowcast.first().minutesFromNow)
+        assertEquals(60, weather.nowcast[1].minutesFromNow)
+        assertEquals(1.8, weather.nowcast.first().millimetresPerHour, 0.001)
     }
 
     @Test

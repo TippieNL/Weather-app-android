@@ -50,4 +50,5 @@ data class WeatherApiHour(
     val time: String,
     @SerialName("temp_c") val tempC: Double,
     @SerialName("chance_of_rain") val chanceOfRain: Int? = null,
+    @SerialName("precip_mm") val precipMm: Double = 0.0,
 )
