@@ -32,10 +32,16 @@
 
     <!-- Detail panel -->
     <string name="detail_feels_like">%1$s, feels like %2$s</string>
+    <string name="feels_like">feels like</string>
+    <string name="rain_chance">rain chance</string>
     <string name="humidity">humidity</string>
     <string name="wind">wind</string>
     <string name="uv_index">uv index</string>
     <string name="pressure">pressure</string>
+    <string name="pressure_value">%1$d hPa</string>
+    <string name="today_low">low</string>
+    <string name="today_high">high</string>
+    <string name="range_description">Low %1$s, high %2$s, now %3$s</string>
     <string name="precipitation">precipitation</string>
     <string name="today">today</string>
     <string name="next_7_days">next 7 days</string>

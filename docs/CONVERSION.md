@@ -15,8 +15,8 @@ Every row was verified against the original implementation in
 | Feels-like | ✅ | ✅ | In the detail card, as on the web |
 | Today min / max | ✅ | ✅ | |
 | Humidity, wind, UV, pressure | ✅ | ✅ | |
-| Precipitation probability | data only | ✅ **shown** | The web fetched it but only used it for notifications; it is now displayed in the stats grid |
-| Hourly forecast | ✅ | ✅ | 12 columns, same stem-and-dot encoding and colour ramp |
+| Precipitation probability | data only | ✅ **shown** | The web fetched it but only used it for notifications; it is now shown as "rain chance" in the stats grid and per hour in the hourly strip |
+| Hourly forecast | ✅ | ✅ | 12 columns, stem-and-dot encoding, plus per-hour rain chance |
 | Daily forecast (7 days) | ✅ | ✅ | Same "tomorrow" + weekday labels and min→max gradient bars |
 | Animated hero icon | ✅ | ✅ | Per-condition motion ported from the CSS keyframes |
 | Day/night icon variants | ✅ | ✅ | Only for clear/cloudy/rainy, as in `weatherIcons.ts` |
@@ -84,6 +84,23 @@ Every row was verified against the original implementation in
    convention and makes back navigation unambiguous.
 5. **Sunrise/sunset** are requested from Open-Meteo (the web app did not) and
    used only as a day/night fallback.
+6. **The detail panel was reworked** (see below) — it shows the same data plus
+   rain chance, but the presentation is not a copy of the web layout.
+
+## Detail panel rework
+
+The ported layout had problems the web version also had, which only became
+obvious against real data:
+
+| Problem | Fix |
+| --- | --- |
+| The day-range bar was a full-width cold→hot gradient whatever the weather — decoration shaped like data | It now spans today's low→high on a real scale, with a marker for the current temperature |
+| The high and low were printed twice: beside the bar, then again as arrow chips below | The chips are gone; the bar carries both, and the marker says where "now" falls |
+| The stats box mixed three alignments and left one orphaned cell with a gap beside it | Six uniform tiles in a 2×3 grid, each with an icon, a label and a value |
+| Pressure was a bare number with no unit | Shown as hPa |
+| "precipitation" was ambiguous next to a current-conditions readout | Relabelled "rain chance", and added per-hour rain chance to the hourly strip |
+| Forecast colour was relative to whatever was on screen, so a 1 °C spread rendered as a full blue→red swing and the same temperature took a different colour in each card | Colour is anchored to actual degrees, so a temperature always looks the same; mild weather sits near-neutral and colour appears when it means something |
+| The hourly chart normalised to the visible min and max, turning a flat evening into dramatic peaks | The strip holds a minimum span, so a flat night looks flat |
 
 ## Verification
 

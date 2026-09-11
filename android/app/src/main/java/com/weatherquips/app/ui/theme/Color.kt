@@ -52,3 +52,52 @@ fun temperatureColor(normalized: Float): Color {
     val b = 246 + (68 - 246) * t
     return Color(r / 255f, g / 255f, b / 255f)
 }
+
+/**
+ * Colour for an actual temperature, on a fixed scale.
+ *
+ * The web app coloured each forecast relative to the min and max currently on
+ * screen, which made a 1 °C spread look dramatic: 16° came out cold-blue and
+ * 17° hot-red in the same row. Anchoring the scale means a temperature always
+ * has the same colour — across the hourly strip, the week and the range bars —
+ * so colour carries information instead of noise.
+ *
+ * A straight blue→red interpolation is useless here, because everything
+ * between about 8 °C and 22 °C — which is most weather, most of the time —
+ * lands on the same muddy purple. These stops keep that band legible while
+ * still ending at the app's cold blue and hot red.
+ */
+fun temperatureColorFor(celsius: Double): Color {
+    val stops = TEMPERATURE_STOPS
+    if (celsius <= stops.first().first) return stops.first().second
+    if (celsius >= stops.last().first) return stops.last().second
+
+    val upperIndex = stops.indexOfFirst { celsius <= it.first }.coerceAtLeast(1)
+    val (lowTemp, lowColor) = stops[upperIndex - 1]
+    val (highTemp, highColor) = stops[upperIndex]
+    val t = ((celsius - lowTemp) / (highTemp - lowTemp)).toFloat().coerceIn(0f, 1f)
+
+    return Color(
+        red = lowColor.red + (highColor.red - lowColor.red) * t,
+        green = lowColor.green + (highColor.green - lowColor.green) * t,
+        blue = lowColor.blue + (highColor.blue - lowColor.blue) * t,
+    )
+}
+
+/**
+ * Temperature → colour anchors, in °C.
+ *
+ * Blue at the cold end and red at the hot end are the app's own accents. The
+ * middle deliberately passes through a neutral rather than a third hue: mild
+ * weather then reads as monochrome, which suits the design, and colour only
+ * appears when the temperature is genuinely notable.
+ */
+private val TEMPERATURE_STOPS = listOf(
+    -10.0 to Color(0xFF1D4ED8), // deep freeze
+    0.0 to Color(0xFF3B82F6), // the app's cold accent
+    8.0 to Color(0xFF60A5FA), // chilly
+    15.0 to Color(0xFFAEB4BB), // mild — near-neutral on purpose
+    21.0 to Color(0xFFFB923C), // warm
+    27.0 to Color(0xFFEF4444), // the app's hot accent
+    35.0 to Color(0xFFB91C1C), // scorching
+)

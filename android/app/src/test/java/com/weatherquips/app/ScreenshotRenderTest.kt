@@ -117,6 +117,7 @@ class ScreenshotRenderTest {
         settleAndCapture("home-error")
     }
 
+    @Config(sdk = [34], qualifiers = "w411dp-h1500dp-xhdpi")
     @Test
     fun detailPanelLight() {
         composeRule.setContent {
@@ -127,7 +128,7 @@ class ScreenshotRenderTest {
                 ) {
                     com.weatherquips.app.ui.home.WeatherDetailPanel(
                         uiState = weatherState,
-                        weather = TestWeather.sample(),
+                        weather = TestWeather.assenEvening(),
                         staleSinceMillis = null,
                         onRefresh = {},
                         onOpenPrecipitationMap = {},
@@ -138,6 +139,7 @@ class ScreenshotRenderTest {
         settleAndCapture("detail-panel-light")
     }
 
+    @Config(sdk = [34], qualifiers = "w411dp-h1500dp-xhdpi")
     @Test
     fun detailPanelDark() {
         composeRule.setContent {
@@ -148,7 +150,7 @@ class ScreenshotRenderTest {
                 ) {
                     com.weatherquips.app.ui.home.WeatherDetailPanel(
                         uiState = weatherState,
-                        weather = TestWeather.sample(),
+                        weather = TestWeather.assenEvening(),
                         staleSinceMillis = null,
                         onRefresh = {},
                         onOpenPrecipitationMap = {},
