@@ -27,6 +27,18 @@ sealed interface LocationResult {
 }
 
 /**
+ * Where the device is. An interface so screens can be tested without a real
+ * device, a granted permission or a location fix.
+ */
+interface DeviceLocationSource {
+    fun hasPermission(): Boolean
+
+    fun isLocationEnabled(): Boolean
+
+    suspend fun currentLocation(): LocationResult
+}
+
+/**
  * Device location on the platform APIs — no Google Play Services, so the app
  * also works on de-Googled devices.
  *
@@ -34,12 +46,12 @@ sealed interface LocationResult {
  * live fix is requested exactly once (never a continuous stream), which is the
  * Android equivalent of the web app's single `getCurrentPosition` call.
  */
-class LocationProvider(private val context: Context) {
+class LocationProvider(private val context: Context) : DeviceLocationSource {
 
     private val locationManager: LocationManager?
         get() = ContextCompat.getSystemService(context, LocationManager::class.java)
 
-    fun hasPermission(): Boolean =
+    override fun hasPermission(): Boolean =
         hasPermission(Manifest.permission.ACCESS_COARSE_LOCATION) ||
             hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)
 
@@ -49,10 +61,10 @@ class LocationProvider(private val context: Context) {
     private fun hasPermission(permission: String): Boolean =
         ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
 
-    fun isLocationEnabled(): Boolean =
+    override fun isLocationEnabled(): Boolean =
         locationManager?.let { LocationManagerCompat.isLocationEnabled(it) } ?: false
 
-    suspend fun currentLocation(): LocationResult {
+    override suspend fun currentLocation(): LocationResult {
         if (!hasPermission()) return LocationResult.PermissionDenied
         val manager = locationManager ?: return LocationResult.Unavailable
         if (!isLocationEnabled()) return LocationResult.LocationDisabled

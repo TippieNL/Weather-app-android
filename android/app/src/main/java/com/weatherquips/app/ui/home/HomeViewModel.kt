@@ -15,7 +15,7 @@ import com.weatherquips.app.domain.model.WeatherCondition
 import com.weatherquips.app.domain.quotes.PokemonQuips
 import com.weatherquips.app.domain.repository.SettingsRepository
 import com.weatherquips.app.domain.repository.WeatherRepository
-import com.weatherquips.app.location.LocationProvider
+import com.weatherquips.app.location.DeviceLocationSource
 import com.weatherquips.app.location.LocationResult
 import com.weatherquips.app.notifications.AlertThrottle
 import com.weatherquips.app.notifications.NotificationHelper
@@ -39,7 +39,7 @@ import kotlinx.coroutines.launch
 class HomeViewModel(
     private val weatherRepository: WeatherRepository,
     private val settingsRepository: SettingsRepository,
-    private val locationProvider: LocationProvider,
+    private val locationProvider: DeviceLocationSource,
     private val notificationHelper: NotificationHelper,
     private val alertThrottle: AlertThrottle,
 ) : ViewModel() {

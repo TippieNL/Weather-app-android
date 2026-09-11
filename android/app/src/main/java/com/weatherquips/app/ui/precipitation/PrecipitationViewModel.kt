@@ -7,7 +7,10 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.weatherquips.app.AppContainer
 import com.weatherquips.app.domain.repository.RadarFrame
+import com.weatherquips.app.domain.model.Coordinates
 import com.weatherquips.app.domain.repository.RadarRepository
+import com.weatherquips.app.location.DeviceLocationSource
+import com.weatherquips.app.location.LocationResult
 import com.weatherquips.app.ui.home.requireContainer
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -24,6 +27,8 @@ data class RadarUiState(
     val isPlaying: Boolean = false,
     val isLoading: Boolean = true,
     val hasError: Boolean = false,
+    /** Where the device is, when it is known and permitted. */
+    val userLocation: Coordinates? = null,
 ) {
     val currentFrame: RadarFrame? get() = frames.getOrNull(currentIndex)
 
@@ -40,6 +45,7 @@ data class RadarUiState(
  */
 class PrecipitationViewModel(
     private val radarRepository: RadarRepository,
+    private val locationProvider: DeviceLocationSource? = null,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(RadarUiState())
@@ -52,6 +58,23 @@ class PrecipitationViewModel(
 
     init {
         loadTimeline()
+        loadUserLocation()
+    }
+
+    /**
+     * One fix, once, and only if location is already permitted — the radar
+     * screen is not a reason to prompt for a permission or to start streaming
+     * GPS updates.
+     */
+    private fun loadUserLocation() {
+        val provider = locationProvider ?: return
+        if (!provider.hasPermission()) return
+        viewModelScope.launch {
+            val result = provider.currentLocation()
+            if (result is LocationResult.Success) {
+                _uiState.update { it.copy(userLocation = result.coordinates) }
+            }
+        }
     }
 
     fun loadTimeline() {
@@ -142,7 +165,7 @@ class PrecipitationViewModel(
         fun factory(container: AppContainer? = null): ViewModelProvider.Factory = viewModelFactory {
             initializer {
                 val resolved = container ?: requireContainer()
-                PrecipitationViewModel(resolved.radarRepository)
+                PrecipitationViewModel(resolved.radarRepository, resolved.locationProvider)
             }
         }
     }

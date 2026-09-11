@@ -15,9 +15,18 @@ import com.weatherquips.app.ui.precipitation.TAG_CURRENT_TIME
 import com.weatherquips.app.ui.precipitation.TAG_PLAY_PAUSE
 import com.weatherquips.app.ui.precipitation.TAG_RADAR_STATUS
 import com.weatherquips.app.ui.precipitation.TAG_RECENTER
+import com.weatherquips.app.ui.precipitation.TAG_MY_LOCATION
+import com.weatherquips.app.ui.precipitation.TAG_RECENTER
 import com.weatherquips.app.ui.precipitation.TAG_TIMELINE
 import com.weatherquips.app.ui.theme.WeatherQuipsTheme
+import android.view.View
+import android.view.ViewGroup
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
+import org.osmdroid.tileprovider.MapTileProviderBase
+import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.TilesOverlay
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -70,7 +79,14 @@ class PrecipitationScreenUiTest {
         var toggled = false
         var backPressed = false
         render(
-            RadarUiState(frames = frames, pastCount = 2, currentIndex = 0, isPlaying = true, isLoading = false),
+            RadarUiState(
+                frames = frames,
+                pastCount = 2,
+                currentIndex = 0,
+                isPlaying = true,
+                isLoading = false,
+                userLocation = Coordinates(53.22, 6.57),
+            ),
             onTogglePlay = { toggled = true },
             onBack = { backPressed = true },
         )
@@ -90,11 +106,87 @@ class PrecipitationScreenUiTest {
     }
 
     @Test
+    fun `the map is centred on the forecast location once it is laid out`() {
+        // Regression test for a blank map: the camera used to be set while the
+        // MapView still had no size, so osmdroid could not resolve a centre and
+        // nothing was drawn until a touch forced it to recompute.
+        render(
+            RadarUiState(frames = frames, pastCount = 2, currentIndex = 0, isLoading = false),
+        )
+
+        val map = composeRule.activity.window.decorView.findMapView()
+        assertNotNull("no MapView in the hierarchy", map)
+        assertTrue("map was never laid out", map!!.width > 0 && map.height > 0)
+        assertEquals(52.99, map.mapCenter.latitude, 0.01)
+        assertEquals(6.56, map.mapCenter.longitude, 0.01)
+        assertEquals(7.0, map.zoomLevelDouble, 0.01)
+    }
+
+    @Test
+    fun `finished radar tiles can ask the map to repaint`() {
+        // Regression test for a radar that never appeared: the hand-made tile
+        // provider had no completion handler, so tiles arriving from the
+        // network never invalidated the map and nothing was drawn until an
+        // unrelated repaint happened — a touch, in practice.
+        render(
+            RadarUiState(frames = frames, pastCount = 2, currentIndex = 0, isLoading = false),
+        )
+
+        val map = composeRule.activity.window.decorView.findMapView()
+        assertNotNull("no MapView in the hierarchy", map)
+
+        val radarProviders = map!!.overlays
+            .filterIsInstance<TilesOverlay>()
+            .map { overlay ->
+                TilesOverlay::class.java.getDeclaredField("mTileProvider")
+                    .apply { isAccessible = true }
+                    .get(overlay) as MapTileProviderBase
+            }
+        assertTrue("no radar tiles overlay was added", radarProviders.isNotEmpty())
+        radarProviders.forEach { provider ->
+            // osmdroid seeds the collection with the handler passed to the
+            // constructor, which is null here — so the test has to look for a
+            // real one, not just a non-empty collection.
+            assertTrue(
+                "a tile provider cannot repaint the map",
+                provider.tileRequestCompleteHandlers.any { it != null },
+            )
+        }
+    }
+
+    @Test
+    fun `the my-location control only appears once a fix is known`() {
+        render(RadarUiState(frames = frames, pastCount = 2, isLoading = false))
+        composeRule.onNodeWithTag(TAG_MY_LOCATION).assertDoesNotExist()
+        composeRule.onNodeWithTag(TAG_RECENTER).assertExists()
+    }
+
+    @Test
+    fun `a known position adds the my-location control`() {
+        render(
+            RadarUiState(
+                frames = frames,
+                pastCount = 2,
+                isLoading = false,
+                userLocation = Coordinates(53.2, 6.6),
+            ),
+        )
+        composeRule.onNodeWithTag(TAG_MY_LOCATION).assertExists()
+    }
+
+    @Test
     fun `radar failure still leaves a usable screen`() {
         render(RadarUiState(isLoading = false, hasError = true))
 
         composeRule.onNodeWithTag(TAG_RADAR_STATUS).assertIsDisplayed()
         composeRule.onNodeWithTag(TAG_BACK).assertIsDisplayed()
+    }
+
+    /** Walks the hierarchy for the real MapView behind the AndroidView. */
+    private fun View.findMapView(): MapView? = when {
+        this is MapView -> this
+        this is ViewGroup -> (0 until childCount).firstNotNullOfOrNull { getChildAt(it).findMapView() }
+        else -> null
     }
 
     private fun capture(name: String) {

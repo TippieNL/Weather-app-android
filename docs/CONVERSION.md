@@ -53,8 +53,9 @@ Every row was verified against the original implementation in
 | Frame scrubbing + hour labels | ✅ | ✅ |
 | Past vs nowcast distinction | ✅ | ✅ |
 | Precipitation legend | ✅ | ✅ (same colour stops) |
-| Current-location marker | ✅ | ✅ |
-| Map controls | zoom | zoom + re-centre |
+| Forecast-location marker | ✅ | ✅ |
+| Device-location marker | ❌ | ✅ (a "you are here" dot, shown when location is already permitted) |
+| Map controls | zoom | zoom, re-centre on the forecast location, and centre on the device when its position is known |
 
 ## Platform translations
 

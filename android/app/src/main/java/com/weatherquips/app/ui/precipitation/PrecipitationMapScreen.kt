@@ -49,12 +49,15 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.view.doOnLayout
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.weatherquips.app.R
 import com.weatherquips.app.domain.model.Coordinates
 import com.weatherquips.app.domain.repository.RadarFrame
+import com.weatherquips.app.ui.theme.LocalAccents
 import org.osmdroid.tileprovider.MapTileProviderBasic
+import org.osmdroid.tileprovider.util.SimpleInvalidationHandler
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.CustomZoomButtonsController
 import org.osmdroid.views.MapView
@@ -85,6 +88,8 @@ fun PrecipitationMapScreen(
 ) {
     val darkTheme = isSystemInDarkTheme()
     val markerColor = MaterialTheme.colorScheme.onBackground.toArgb()
+    val userMarkerColor = LocalAccents.current.cold.toArgb()
+    val userOutlineColor = Color.White.toArgb()
     val backgroundColor = MaterialTheme.colorScheme.background
 
     // Restored across rotation so the user keeps their pan/zoom.
@@ -92,9 +97,11 @@ fun PrecipitationMapScreen(
     var savedLatitude by rememberSaveable { mutableDoubleStateOf(coordinates.latitude) }
     var savedLongitude by rememberSaveable { mutableDoubleStateOf(coordinates.longitude) }
 
-    val mapView = rememberMapView(
+    val (mapView, markers) = rememberMapView(
         darkTheme = darkTheme,
         markerColor = markerColor,
+        userMarkerColor = userMarkerColor,
+        userOutlineColor = userOutlineColor,
         coordinates = coordinates,
         initialZoom = savedZoom,
         initialCenter = GeoPoint(savedLatitude, savedLongitude),
@@ -109,18 +116,6 @@ fun PrecipitationMapScreen(
 
     val radarOverlay = remember(mapView) { createRadarOverlay(mapView) }
 
-    // Swapping the tile source on one provider keeps memory flat: osmdroid's
-    // disk cache makes the loop smooth after the first pass, and no per-frame
-    // overlay stack is left behind to leak.
-    LaunchedEffect(uiState.currentFrame, radarOverlay) {
-        val frame = uiState.currentFrame ?: return@LaunchedEffect
-        radarOverlay.provider.setTileSource(
-            RadarTileSource(frameName = "rainviewer-${frame.timeEpochSeconds}", urlTemplate = tileUrlFor(frame)),
-        )
-        radarOverlay.overlay.isEnabled = true
-        mapView.invalidate()
-    }
-
     DisposableEffect(radarOverlay) {
         onDispose {
             radarOverlay.overlay.onDetach(mapView)
@@ -131,6 +126,27 @@ fun PrecipitationMapScreen(
     Box(modifier = modifier.fillMaxSize().background(backgroundColor)) {
         AndroidView(
             factory = { mapView },
+            // Applying state here rather than in a LaunchedEffect guarantees it
+            // lands after the view is attached, and that every change ends in an
+            // invalidate — the map does not redraw itself.
+            update = { view ->
+                val frame = uiState.currentFrame
+                if (frame != null) {
+                    // Swapping the tile source on one provider keeps memory flat:
+                    // osmdroid's disk cache makes the loop smooth after the first
+                    // pass, and no per-frame overlay stack is left behind to leak.
+                    radarOverlay.provider.setTileSource(
+                        RadarTileSource(
+                            frameName = "rainviewer-${frame.timeEpochSeconds}",
+                            urlTemplate = tileUrlFor(frame),
+                        ),
+                    )
+                    radarOverlay.overlay.isEnabled = true
+                }
+                markers.userPoint = uiState.userLocation
+                    ?.let { GeoPoint(it.latitude, it.longitude) }
+                view.invalidate()
+            },
             modifier = Modifier.fillMaxSize().testTag(TAG_MAP),
         )
 
@@ -165,8 +181,38 @@ fun PrecipitationMapScreen(
             )
         }
 
-        // Re-centre on the selected location after panning around.
-        IconButton(
+        Column(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .windowInsetsPadding(WindowInsets.statusBars)
+                .padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalAlignment = Alignment.End,
+        ) {
+            uiState.userLocation?.let { userLocation ->
+                IconButton(
+                    onClick = {
+                        mapView.controller.animateTo(
+                            GeoPoint(userLocation.latitude, userLocation.longitude),
+                            mapView.zoomLevelDouble,
+                            RECENTER_ANIMATION_MILLIS,
+                        )
+                    },
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(backgroundColor.copy(alpha = 0.85f))
+                        .testTag(TAG_MY_LOCATION),
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_locate),
+                        contentDescription = stringResource(R.string.center_on_me),
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+            }
+
+            // Re-centre on the forecast location after panning around.
+            IconButton(
             onClick = {
                 mapView.controller.animateTo(
                     GeoPoint(coordinates.latitude, coordinates.longitude),
@@ -174,19 +220,17 @@ fun PrecipitationMapScreen(
                     RECENTER_ANIMATION_MILLIS,
                 )
             },
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .windowInsetsPadding(WindowInsets.statusBars)
-                .padding(12.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(backgroundColor.copy(alpha = 0.85f))
-                .testTag(TAG_RECENTER),
-        ) {
-            Icon(
-                painter = painterResource(R.drawable.ic_map_pin),
-                contentDescription = stringResource(R.string.recenter_map),
-                modifier = Modifier.size(20.dp),
-            )
+                modifier = Modifier
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(backgroundColor.copy(alpha = 0.85f))
+                    .testTag(TAG_RECENTER),
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_map_pin),
+                    contentDescription = stringResource(R.string.recenter_map),
+                    modifier = Modifier.size(20.dp),
+                )
+            }
         }
 
         Column(
@@ -222,7 +266,13 @@ private data class RadarOverlayHandle(
 )
 
 private fun createRadarOverlay(mapView: MapView): RadarOverlayHandle {
-    val provider = MapTileProviderBasic(mapView.context)
+    val provider = MapTileProviderBasic(mapView.context).apply {
+        // MapView wires this up for its own base-map provider, but a second
+        // provider added by hand gets nothing — so finished radar tiles never
+        // asked the map to repaint, and the radar stayed invisible until some
+        // unrelated event (a touch) redrew it.
+        setTileRequestCompleteHandler(SimpleInvalidationHandler(mapView))
+    }
     val overlay = TilesOverlay(provider, mapView.context).apply {
         loadingBackgroundColor = android.graphics.Color.TRANSPARENT
         loadingLineColor = android.graphics.Color.TRANSPARENT
@@ -270,15 +320,26 @@ private fun baseMapFilter(darkTheme: Boolean): ColorMatrixColorFilter {
 private fun rememberMapView(
     darkTheme: Boolean,
     markerColor: Int,
+    userMarkerColor: Int,
+    userOutlineColor: Int,
     coordinates: Coordinates,
     initialZoom: Double,
     initialCenter: GeoPoint,
     onCameraChanged: (GeoPoint, Double) -> Unit,
     onPause: () -> Unit,
     onResume: () -> Unit,
-): MapView {
+): Pair<MapView, MapMarkersOverlay> {
     val context = androidx.compose.ui.platform.LocalContext.current
     val configuration = LocalConfiguration.current
+
+    val markers = remember(coordinates, markerColor, userMarkerColor, userOutlineColor) {
+        MapMarkersOverlay(
+            forecastPoint = GeoPoint(coordinates.latitude, coordinates.longitude),
+            forecastColor = markerColor,
+            userColor = userMarkerColor,
+            userOutlineColor = userOutlineColor,
+        )
+    }
 
     val mapView = remember {
         MapView(context).apply {
@@ -286,15 +347,16 @@ private fun rememberMapView(
             setMultiTouchControls(true)
             zoomController.setVisibility(CustomZoomButtonsController.Visibility.SHOW_AND_FADEOUT)
             isTilesScaledToDpi = true
-            controller.setZoom(initialZoom)
-            controller.setCenter(initialCenter)
-            overlays.add(
-                LocationMarkerOverlay(
-                    point = GeoPoint(coordinates.latitude, coordinates.longitude),
-                    color = markerColor,
-                    haloColor = markerColor,
-                ),
-            )
+            overlays.add(markers)
+            // The camera has to wait for a size. osmdroid cannot resolve a
+            // centre on a view that has not been laid out, and the map then
+            // stays blank until something else forces it to recompute the
+            // projection — which is why it only appeared once it was touched.
+            doOnLayout {
+                controller.setZoom(initialZoom)
+                controller.setCenter(initialCenter)
+                invalidate()
+            }
         }
     }
 
@@ -324,6 +386,11 @@ private fun rememberMapView(
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
+        // Navigating to this screen does not always produce a fresh ON_RESUME,
+        // so start the map's tile threads explicitly rather than waiting for one.
+        if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
+            mapView.onResume()
+        }
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
             onCameraChanged(
@@ -335,7 +402,7 @@ private fun rememberMapView(
         }
     }
 
-    return mapView
+    return mapView to markers
 }
 
 @Composable
@@ -495,3 +562,4 @@ const val TAG_CURRENT_TIME = "precipitation-current-time"
 const val TAG_RADAR_STATUS = "precipitation-status"
 const val TAG_TIMELINE = "precipitation-timeline"
 const val TAG_RECENTER = "precipitation-recenter"
+const val TAG_MY_LOCATION = "precipitation-my-location"

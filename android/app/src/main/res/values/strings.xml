@@ -65,7 +65,8 @@
     <string name="forecast_label">forecast</string>
     <string name="radar_frame">Radar frame at %1$s</string>
     <string name="legend_description">Precipitation intensity scale, light to heavy</string>
-    <string name="recenter_map">Centre the map on your location</string>
+    <string name="recenter_map">Centre on the forecast location</string>
+    <string name="center_on_me">Centre on my location</string>
     <string name="map_attribution">© OpenStreetMap contributors · Radar © RainViewer</string>
 
     <!-- Settings -->
