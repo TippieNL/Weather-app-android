@@ -220,9 +220,16 @@ private fun WeatherDisplay(
 
     val accents = LocalAccents.current
 
+    val tint = if (uiState.isPokemonMode) {
+        Modifier.background(pokemonTint(accents.pokemonRed, accents.cold))
+    } else {
+        Modifier
+    }
+
+    Box(modifier = modifier.fillMaxSize().then(tint)) {
     BottomSheetScaffold(
         scaffoldState = scaffoldState,
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
             .onSizeChanged { sheetHeightPx.floatValue = it.height.toFloat() },
         sheetPeekHeight = SHEET_PEEK_HEIGHT,
@@ -251,19 +258,18 @@ private fun WeatherDisplay(
                 onOpenPrecipitationMap = { onOpenPrecipitationMap(coordinates) },
             )
         },
-        containerColor = MaterialTheme.colorScheme.background,
+        // Transparent so the mode's wash runs behind the whole screen rather
+        // than stopping at the sheet's peek height.
+        containerColor = if (uiState.isPokemonMode) {
+            Color.Transparent
+        } else {
+            MaterialTheme.colorScheme.background
+        },
     ) { innerPadding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
-                .then(
-                    if (uiState.isPokemonMode) {
-                        Modifier.background(pokemonTint(accents.pokemonRed, accents.cold))
-                    } else {
-                        Modifier
-                    },
-                ),
+                .padding(innerPadding),
         ) {
             HeroContent(
                 uiState = uiState,
@@ -275,6 +281,7 @@ private fun WeatherDisplay(
                 onExpand = { scope.launch { sheetState.expand() } },
             )
         }
+    }
     }
 
     // Back collapses the panel before it ever leaves the screen.
@@ -371,8 +378,8 @@ private fun HeroContent(
                 if (uiState.isPokemonMode) {
                     PokemonSilhouette(
                         silhouette = uiState.pokemonSilhouette,
-                        size = 64.dp,
-                        modifier = Modifier.padding(bottom = 24.dp),
+                        size = 76.dp,
+                        modifier = Modifier.padding(bottom = 16.dp),
                     )
                 }
             }
@@ -574,8 +581,18 @@ private fun PokemonBanner(modifier: Modifier = Modifier) {
     }
 }
 
+/**
+ * A hint of red at the top and blue at the bottom. Kept to the very edges with
+ * a wide clear middle: a full-height wash tinted the whole screen pink and
+ * fought with the artwork.
+ */
 private fun pokemonTint(red: Color, blue: Color) = Brush.verticalGradient(
-    listOf(red.copy(alpha = 0.10f), Color.Transparent, blue.copy(alpha = 0.10f)),
+    colorStops = arrayOf(
+        0f to red.copy(alpha = 0.12f),
+        0.28f to Color.Transparent,
+        0.72f to Color.Transparent,
+        1f to blue.copy(alpha = 0.12f),
+    ),
 )
 
 /** Tap streak used by the "explode" Easter egg (5 taps within 300 ms of each other). */

@@ -23,7 +23,7 @@ Every row was verified against the original implementation in
 | Five-taps "explode" Easter egg | ✅ | ✅ | Same six fragments and trajectories |
 | Pull-up detail panel | ✅ | ✅ | Material 3 bottom sheet (anchored drag + nested scroll) |
 | Refresh (new quote each time) | ✅ | ✅ | |
-| Pokémon "Pallet Town" mode | ✅ | ✅ | Banner, Poké Ball, silhouettes, themed quotes, background tint |
+| Pokémon "Pallet Town" mode | ✅ | ✅ | Banner, Poké Ball, silhouettes, themed quotes, background tint — redrawn, see below |
 
 ## Settings
 
@@ -107,6 +107,16 @@ obvious against real data:
 | "precipitation" was ambiguous next to a current-conditions readout | Relabelled "rain chance", and added per-hour rain chance to the hourly strip |
 | Forecast colour was relative to whatever was on screen, so a 1 °C spread rendered as a full blue→red swing and the same temperature took a different colour in each card | Colour is anchored to actual degrees, so a temperature always looks the same; mild weather sits near-neutral and colour appears when it means something |
 | The hourly chart normalised to the visible min and max, turning a flat evening into dramatic peaks | The strip holds a minimum span, so a flat night looks flat |
+
+## Easter-egg rework
+
+| Problem | Fix |
+| --- | --- |
+| Turning the mode on left the quote and subtitle blank: the themed quip was only generated during a weather load, and switching the mode changes no input that triggers one | The quip is derived from whatever weather is already loaded, so it appears the moment the mode is switched on and reverts when it is switched off |
+| The Poké Ball rotated a full 360°, which tilted its band until it stopped reading as a Poké Ball | A gentle float and a ±6° wobble; the shell keeps a gloss highlight and a properly proportioned button |
+| Sparkles sat on top of the shell rather than around it | The shell is inset, so the sparkles have room outside it |
+| The silhouettes were a circle with two spikes, and the translucent fill stacked at every overlap into visible seams | Four creatures sharing one body — head, torso, feet, plus a distinguishing tail or crest — each unioned into a single flat path |
+| The mode's wash stopped at the sheet's peek height, leaving a band along the bottom | The wash runs behind the whole screen, with a wide clear middle so it tints the edges rather than the artwork |
 
 ## Verification
 

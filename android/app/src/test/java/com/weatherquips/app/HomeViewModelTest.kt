@@ -10,6 +10,7 @@ import com.weatherquips.app.domain.model.CachedWeather
 import com.weatherquips.app.domain.model.Coordinates
 import com.weatherquips.app.domain.model.LocationMode
 import com.weatherquips.app.domain.model.WeatherCondition
+import com.weatherquips.app.domain.quotes.PokemonQuips
 import com.weatherquips.app.domain.repository.WeatherError
 import com.weatherquips.app.location.LocationProvider
 import com.weatherquips.app.notifications.AlertThrottle
@@ -173,6 +174,70 @@ class HomeViewModelTest {
 
         assertEquals(2, repository.callCount)
         assertTrue(viewModel.uiState.value.phase is HomePhase.Success)
+    }
+
+    @Test
+    fun `switching the easter egg on rewrites the quote straight away`() = runTest(dispatcher) {
+        // Regression test: turning the mode on changes no input that triggers a
+        // reload, so the themed quip was never generated. The banner and the
+        // Poke Ball appeared while the quote stayed blank.
+        val settings = FakeSettingsRepository(
+            AppSettings(
+                locationMode = LocationMode.MANUAL,
+                manualCoords = Coordinates(52.99, 6.56),
+            ),
+        )
+        val viewModel = HomeViewModel(
+            weatherRepository = FakeWeatherRepository(
+                result = Result.success(TestWeather.sample(condition = WeatherCondition.STORMY)),
+            ),
+            settingsRepository = settings,
+            locationProvider = LocationProvider(context),
+            notificationHelper = NotificationHelper(context),
+            alertThrottle = AlertThrottle(throttleStore),
+        )
+        advanceUntilIdle()
+        val weatherQuote = viewModel.uiState.value.displayQuote
+        assertTrue(weatherQuote.isNotBlank())
+
+        settings.update { it.copy(pokemonMode = true) }
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue("the easter egg never engaged", state.isPokemonMode)
+        assertTrue("the quote stayed empty", state.displayQuote.isNotBlank())
+        assertTrue(
+            "not a themed quote: ${state.displayQuote}",
+            state.displayQuote in PokemonQuips.quotesFor(WeatherCondition.STORMY),
+        )
+        assertTrue(state.displaySubtitle.isNotBlank())
+    }
+
+    @Test
+    fun `switching it off restores the ordinary quip`() = runTest(dispatcher) {
+        val settings = FakeSettingsRepository(
+            AppSettings(
+                locationMode = LocationMode.MANUAL,
+                manualCoords = Coordinates(52.99, 6.56),
+                pokemonMode = true,
+            ),
+        )
+        val weather = TestWeather.sample(condition = WeatherCondition.STORMY)
+        val viewModel = HomeViewModel(
+            weatherRepository = FakeWeatherRepository(result = Result.success(weather)),
+            settingsRepository = settings,
+            locationProvider = LocationProvider(context),
+            notificationHelper = NotificationHelper(context),
+            alertThrottle = AlertThrottle(throttleStore),
+        )
+        advanceUntilIdle()
+        assertTrue(viewModel.uiState.value.displayQuote in PokemonQuips.quotesFor(WeatherCondition.STORMY))
+
+        settings.update { it.copy(pokemonMode = false) }
+        advanceUntilIdle()
+
+        assertEquals(weather.funnyQuote, viewModel.uiState.value.displayQuote)
+        assertEquals(weather.subtitle, viewModel.uiState.value.displaySubtitle)
     }
 
     @Test

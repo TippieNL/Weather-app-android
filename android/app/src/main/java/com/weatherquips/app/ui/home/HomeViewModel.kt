@@ -61,7 +61,11 @@ class HomeViewModel(
     init {
         viewModelScope.launch {
             settingsRepository.settings.collect { settings ->
-                _uiState.update { it.copy(settings = settings) }
+                // Switching the Easter egg on does not change any input that
+                // triggers a reload, so the themed quip has to be derived here
+                // too — otherwise the banner and the ball appear while the
+                // quote stays empty.
+                _uiState.update { it.copy(settings = settings).withPokemonQuote(settings) }
             }
         }
         viewModelScope.launch {
@@ -137,7 +141,7 @@ class HomeViewModel(
                             phase = HomePhase.Success(weather, coordinates),
                             isRefreshing = false,
                         )
-                        .withPokemonQuote(weather.condition, settings)
+                        .withPokemonQuote(settings)
                 }
                 maybeNotifyPrecipitation(settings, weather, coordinates)
             } catch (error: Throwable) {
@@ -159,7 +163,7 @@ class HomeViewModel(
                     }
                     current
                         .copy(phase = phase, isRefreshing = false)
-                        .withPokemonQuote(cached?.data?.condition, settings)
+                        .withPokemonQuote(settings)
                 }
             }
         }
@@ -207,12 +211,20 @@ class HomeViewModel(
         }
     }
 
-    /** Themed quote + silhouette stay stable until the condition changes. */
-    private fun HomeUiState.withPokemonQuote(
-        condition: WeatherCondition?,
-        settings: AppSettings,
-    ): HomeUiState {
-        if (condition == null || !settings.isPokemonModeActive) return this
+    /**
+     * Themed quote + silhouette for whatever weather is currently loaded. They
+     * stay stable until the condition changes, and are dropped when the Easter
+     * egg is switched off so re-entering it picks a fresh one.
+     */
+    private fun HomeUiState.withPokemonQuote(settings: AppSettings): HomeUiState {
+        if (!settings.isPokemonModeActive) {
+            return if (pokemonQuote.isEmpty()) {
+                this
+            } else {
+                copy(pokemonQuote = "", pokemonSubtitle = "", pokemonQuoteCondition = null)
+            }
+        }
+        val condition = weather?.condition ?: return this
         if (pokemonQuote.isNotEmpty() && pokemonQuoteCondition == condition) return this
         val quip = PokemonQuips.quote(condition)
         return copy(

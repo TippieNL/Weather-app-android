@@ -23,6 +23,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import androidx.compose.ui.unit.dp
 import java.io.File
 
 /**
@@ -161,6 +162,62 @@ class ScreenshotRenderTest {
             }
         }
         settleAndCapture("detail-panel-dark")
+    }
+
+    @Test
+    fun pokemonMode() {
+        renderHome(
+            HomeUiState(
+                phase = HomePhase.Success(
+                    TestWeather.sample(condition = com.weatherquips.app.domain.model.WeatherCondition.STORMY),
+                    Coordinates(34.68, 138.95),
+                ),
+                settings = AppSettings(
+                    locationMode = com.weatherquips.app.domain.model.LocationMode.MANUAL,
+                    pokemonMode = true,
+                ),
+                pokemonQuote = "Pikachu seems unusually excited about today's forecast.",
+                pokemonSubtitle = "The Power Plant is buzzing with energy.",
+                pokemonSilhouette = com.weatherquips.app.domain.quotes.PokemonQuips.Silhouette.SPARK,
+            ),
+            dark = false,
+        )
+        settleAndCapture("pokemon-mode")
+    }
+
+    /** All four creatures side by side, to check they read as a set. */
+    @Test
+    fun pokemonSilhouettes() {
+        composeRule.setContent {
+            WeatherQuipsTheme(darkTheme = false) {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background,
+                ) {
+                    androidx.compose.foundation.layout.Column(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
+                        horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+                    ) {
+                        com.weatherquips.app.ui.components.PokeballIcon(size = 180.dp)
+                        androidx.compose.foundation.layout.Row(
+                            horizontalArrangement =
+                                androidx.compose.foundation.layout.Arrangement.spacedBy(4.dp),
+                        ) {
+                            com.weatherquips.app.domain.quotes.PokemonQuips.Silhouette.entries
+                                .forEach { silhouette ->
+                                    com.weatherquips.app.ui.components.PokemonSilhouette(
+                                        silhouette = silhouette,
+                                        size = 96.dp,
+                                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                                    )
+                                }
+                        }
+                    }
+                }
+            }
+        }
+        settleAndCapture("pokemon-parts")
     }
 
     @Test
