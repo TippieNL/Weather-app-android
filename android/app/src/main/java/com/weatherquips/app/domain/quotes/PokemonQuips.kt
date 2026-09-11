@@ -24,7 +24,7 @@ object PokemonQuips {
 
     fun isPalletTown(name: String): Boolean = name.trim().lowercase() == "pallet town"
 
-    private val quotes: Map<WeatherCondition, List<String>> = mapOf(
+    private val dayQuotes: Map<WeatherCondition, List<String>> = mapOf(
         WeatherCondition.CLEAR to listOf(
             "Professor Oak says it's a perfect day to start your Pokémon journey!",
             "Pikachu is soaking up the sunshine outside.",
@@ -72,7 +72,7 @@ object PokemonQuips {
         ),
     )
 
-    private val subtitles: Map<WeatherCondition, String> = mapOf(
+    private val daySubtitles: Map<WeatherCondition, String> = mapOf(
         WeatherCondition.CLEAR to "Route 1 is wide open. Go catch 'em all.",
         WeatherCondition.HOT to "Quick — grab a Fresh Water from the vending machine.",
         WeatherCondition.CLOUDY to "Keep your eyes on the tall grass.",
@@ -84,16 +84,87 @@ object PokemonQuips {
         WeatherCondition.WINDY to "A perfect tailwind for your next adventure.",
     )
 
-    fun quote(condition: WeatherCondition, random: Random = Random.Default): Quip {
-        val list = quotes[condition] ?: quotes.getValue(WeatherCondition.CLEAR)
+    /**
+     * After dark. The daytime lines talk about sunshine and setting off on a
+     * journey, which reads oddly at midnight.
+     */
+    private val nightQuotes: Map<WeatherCondition, List<String>> = mapOf(
+        WeatherCondition.CLEAR to listOf(
+            "Clear night. Perfect for spotting a Clefairy.",
+            "The stars are out over Pallet Town, Trainer.",
+            "Professor Oak is still awake in the lab, apparently.",
+        ),
+        WeatherCondition.HOT to listOf(
+            "Even the night is warm. Fire-types are delighted.",
+            "A muggy night on Route 1. Nobody is sleeping.",
+            "Growlithe has given up and sprawled on the floor.",
+        ),
+        WeatherCondition.CLOUDY to listOf(
+            "No stars tonight. The tall grass looks darker than usual.",
+            "Something rustled out there. Probably a Rattata.",
+            "A good night to stay in the Pokémon Center.",
+        ),
+        WeatherCondition.RAINY to listOf(
+            "Rain on the roof all night. Squirtle approves.",
+            "Water-types are having the time of their lives out there.",
+            "A wet night for anyone caught between towns.",
+        ),
+        WeatherCondition.STORMY to listOf(
+            "Thunder after dark. Pikachu is wide awake.",
+            "The Power Plant is lit up from here.",
+            "Electric-types do not believe in bedtime tonight.",
+        ),
+        WeatherCondition.SNOWY to listOf(
+            "Snow falling in the dark. Very Snowpoint of it.",
+            "Ice-types are out there enjoying the quiet.",
+            "Everything will be buried by sunrise, Trainer.",
+        ),
+        WeatherCondition.COLD to listOf(
+            "A freezing night. Glaceon is thriving, you are not.",
+            "Cold enough to see your breath on Route 1.",
+            "Even the Pokémon Center heating is struggling.",
+        ),
+        WeatherCondition.FOGGY to listOf(
+            "Fog at night. Anything could be out in that.",
+            "Visibility zero. Bring a Pokémon that knows Flash.",
+            "The route signs have vanished entirely, Trainer.",
+        ),
+        WeatherCondition.WINDY to listOf(
+            "The wind is rattling the windows all night.",
+            "Flying-types are somewhere up there, enjoying it.",
+            "A rough night to be camping between towns.",
+        ),
+    )
+
+    private val nightSubtitles: Map<WeatherCondition, String> = mapOf(
+        WeatherCondition.CLEAR to "Save your game and look up for a minute.",
+        WeatherCondition.HOT to "Grab a Fresh Water. Sleep is optional.",
+        WeatherCondition.CLOUDY to "Stay on the path after dark.",
+        WeatherCondition.RAINY to "Good night for fishing, if you are brave.",
+        WeatherCondition.STORMY to "Unplug the PC box. Just in case.",
+        WeatherCondition.SNOWY to "Pack Burn Heals and a very thick coat.",
+        WeatherCondition.COLD to "Mt. Coronet weather, right outside.",
+        WeatherCondition.FOGGY to "Defog would be extremely useful right now.",
+        WeatherCondition.WINDY to "Tie down the tent, Trainer.",
+    )
+
+    fun quote(
+        condition: WeatherCondition,
+        isDay: Boolean = true,
+        random: Random = Random.Default,
+    ): Quip {
+        val list = quotesFor(condition, isDay)
+        val subtitles = if (isDay) daySubtitles else nightSubtitles
         return Quip(
             quote = list[random.nextInt(list.size)],
             subtitle = subtitles[condition] ?: subtitles.getValue(WeatherCondition.CLEAR),
         )
     }
 
-    fun quotesFor(condition: WeatherCondition): List<String> =
-        quotes[condition] ?: quotes.getValue(WeatherCondition.CLEAR)
+    fun quotesFor(condition: WeatherCondition, isDay: Boolean = true): List<String> {
+        val quotes = if (isDay) dayQuotes else nightQuotes
+        return quotes[condition] ?: quotes.getValue(WeatherCondition.CLEAR)
+    }
 
     enum class Silhouette { SPARK, LEAF, FLAME, SPLASH }
 

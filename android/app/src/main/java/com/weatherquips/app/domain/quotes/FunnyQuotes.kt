@@ -9,7 +9,12 @@ data class Quip(val quote: String, val subtitle: String)
 private data class QuipSet(val quotes: List<String>, val subtitles: List<String>)
 
 /**
- * The Weather-Quips personality, ported verbatim from `server/routes.ts`.
+ * The Weather-Quips personality.
+ *
+ * The daytime lines are the web app's, ported verbatim from `server/routes.ts`.
+ * The night ones are new: the originals talk about the sun whatever the hour,
+ * so at half past ten at night a clear sky was described as being roasted by a
+ * sun that set hours ago.
  *
  * The web app regenerated a quote on *every* response (even cache hits), so the
  * same selection happens here on every successful load or refresh. `**word**`
@@ -17,7 +22,7 @@ private data class QuipSet(val quotes: List<String>, val subtitles: List<String>
  */
 object FunnyQuotes {
 
-    private val quips: Map<WeatherCondition, QuipSet> = mapOf(
+    private val dayQuips: Map<WeatherCondition, QuipSet> = mapOf(
         WeatherCondition.CLEAR to QuipSet(
             quotes = listOf(
                 "The sun is absolutely **roasting** the sky right now",
@@ -146,14 +151,152 @@ object FunnyQuotes {
         ),
     )
 
-    /** Every quote for a condition — used by tests and by the highlight parser. */
-    fun quotesFor(condition: WeatherCondition): List<String> = quips.getValue(condition).quotes
+    private val nightQuips: Map<WeatherCondition, QuipSet> = mapOf(
+        WeatherCondition.CLEAR to QuipSet(
+            quotes = listOf(
+                "Not a cloud up there, just **stars** judging you",
+                "The sky is perfectly clear and you are **inside**",
+                "A gorgeous night you will **sleep** straight through",
+                "The moon is doing all the **work** tonight",
+            ),
+            subtitles = listOf(
+                "Go outside. Look up. Be briefly amazed.",
+                "Clear skies, and nobody awake to see them.",
+                "The stars turned up. You didn't.",
+                "Astronomically lovely. Practically bedtime.",
+            ),
+        ),
+        WeatherCondition.CLOUDY to QuipSet(
+            quotes = listOf(
+                "The clouds **swallowed** every last star",
+                "There is a moon up there. **Allegedly**.",
+                "The sky closed the **curtains** on you",
+                "Just grey **nothing**, all the way up",
+            ),
+            subtitles = listOf(
+                "Stargazing is cancelled. Again.",
+                "The sky is a ceiling tonight.",
+                "Nothing to see up there. Literally.",
+                "Even the moon called in sick.",
+            ),
+        ),
+        WeatherCondition.RAINY to QuipSet(
+            quotes = listOf(
+                "It is raining in the **dark**, the worst kind",
+                "Rain on the window **all** night, apparently",
+                "The sky is crying **quietly** so nobody notices",
+                "Everything out there is soaked and **invisible**",
+            ),
+            subtitles = listOf(
+                "At least you can't see how bad it is.",
+                "Great for sleeping. Awful for leaving.",
+                "The puddles are out there. Somewhere.",
+                "Nothing dries overnight. Nothing.",
+            ),
+        ),
+        WeatherCondition.STORMY to QuipSet(
+            quotes = listOf(
+                "Thunder at night, because **sleep** was optional",
+                "The sky is having a **breakdown** in the dark",
+                "Lightning is handling the **lighting** tonight",
+                "Something out there just went **bang**",
+            ),
+            subtitles = listOf(
+                "Good luck sleeping through that.",
+                "The dog has opinions about this.",
+                "Count the seconds between flashes. Enjoy.",
+                "Stay in. Obviously.",
+            ),
+        ),
+        WeatherCondition.SNOWY to QuipSet(
+            quotes = listOf(
+                "Snow is piling up while you **sleep**",
+                "It will be **white** and awful by morning",
+                "The world is being quietly **buried** out there",
+                "Silent, freezing and utterly **relentless**",
+            ),
+            subtitles = listOf(
+                "Tomorrow's commute is already ruined.",
+                "Quiet now. Chaos at eight.",
+                "Set the alarm earlier. Trust me.",
+                "It looks lovely. It is not.",
+            ),
+        ),
+        WeatherCondition.FOGGY to QuipSet(
+            quotes = listOf(
+                "Fog after dark, an **excellent** combination",
+                "You cannot see a **thing**, and it is worse at night",
+                "The streetlights have given up **entirely**",
+                "Something is out there. Probably **nothing**.",
+            ),
+            subtitles = listOf(
+                "Driving is a bad idea tonight.",
+                "Peak horror-film conditions.",
+                "The world ends at ten metres.",
+                "Headlights are purely decorative now.",
+            ),
+        ),
+        WeatherCondition.WINDY to QuipSet(
+            quotes = listOf(
+                "The wind is **howling** and you will hear every bit",
+                "Something outside is **banging** and it is not stopping",
+                "The trees are having a **rough** night of it",
+                "Wind always sounds **worse** in the dark",
+            ),
+            subtitles = listOf(
+                "Bring the bins in. Now.",
+                "That noise is probably nothing. Probably.",
+                "The garden furniture is migrating.",
+                "Sleep with one ear open.",
+            ),
+        ),
+        WeatherCondition.HOT to QuipSet(
+            quotes = listOf(
+                "Still **boiling**, and the sun left hours ago",
+                "Too hot to sleep, too late to **complain**",
+                "The heat flatly **refuses** to leave tonight",
+                "Your bedroom is a **sauna** with a bed in it",
+            ),
+            subtitles = listOf(
+                "Fan on, duvet off, sleep never.",
+                "The night forgot to cool down.",
+                "Flip the pillow. It won't help.",
+                "Tropical, if you squint. Unbearable if you don't.",
+            ),
+        ),
+        WeatherCondition.COLD to QuipSet(
+            quotes = listOf(
+                "It is **freezing** out there and still dropping",
+                "The cold is **waiting** just outside the door",
+                "Everything will be **frozen** solid by morning",
+                "Your windscreen is already **plotting** against you",
+            ),
+            subtitles = listOf(
+                "Scraper in the car. You'll thank yourself.",
+                "Heating on. No debate.",
+                "Do not go out in that jacket.",
+                "The frost is coming for your morning.",
+            ),
+        ),
+    )
 
-    fun subtitlesFor(condition: WeatherCondition): List<String> = quips.getValue(condition).subtitles
+    private fun setFor(condition: WeatherCondition, isDay: Boolean): QuipSet =
+        if (isDay) dayQuips.getValue(condition) else nightQuips.getValue(condition)
+
+    /** Every quote for a condition — used by tests and by the highlight parser. */
+    fun quotesFor(condition: WeatherCondition, isDay: Boolean = true): List<String> =
+        setFor(condition, isDay).quotes
+
+    fun subtitlesFor(condition: WeatherCondition, isDay: Boolean = true): List<String> =
+        setFor(condition, isDay).subtitles
 
     /** Random quote + subtitle, matching `getRandomQuote()` on the web server. */
-    fun random(condition: WeatherCondition, random: Random = Random.Default): Quip {
-        val set = quips.getValue(condition)
+    fun random(
+        condition: WeatherCondition,
+        isDay: Boolean = true,
+        random: Random = Random.Default,
+    ): Quip {
+        val set = setFor(condition, isDay)
         return Quip(
             quote = set.quotes[random.nextInt(set.quotes.size)],
             subtitle = set.subtitles[random.nextInt(set.subtitles.size)],

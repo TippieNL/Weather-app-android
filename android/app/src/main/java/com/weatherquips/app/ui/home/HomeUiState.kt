@@ -77,8 +77,9 @@ data class HomeUiState(
     val pokemonQuote: String = "",
     val pokemonSubtitle: String = "",
     val pokemonSilhouette: PokemonQuips.Silhouette = PokemonQuips.Silhouette.SPARK,
-    /** The condition [pokemonQuote] was generated for, so it only changes with it. */
+    /** What [pokemonQuote] was generated for, so it only changes when they do. */
     val pokemonQuoteCondition: WeatherCondition? = null,
+    val pokemonQuoteIsDay: Boolean? = null,
 ) {
     val isPokemonMode: Boolean get() = settings.isPokemonModeActive
 

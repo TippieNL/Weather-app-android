@@ -49,7 +49,9 @@ fun weatherIconRes(key: WeatherIconKey): Int = when (key) {
     WeatherIconKey.RAINY_DAY -> R.drawable.ic_weather_rainy_day
     WeatherIconKey.RAINY_NIGHT -> R.drawable.ic_weather_rainy_night
     WeatherIconKey.STORMY -> R.drawable.ic_weather_stormy
+    WeatherIconKey.STORMY_NIGHT -> R.drawable.ic_weather_stormy_night
     WeatherIconKey.SNOWY -> R.drawable.ic_weather_snowy
+    WeatherIconKey.SNOWY_NIGHT -> R.drawable.ic_weather_snowy_night
     WeatherIconKey.FOGGY -> R.drawable.ic_weather_foggy
     WeatherIconKey.WINDY -> R.drawable.ic_weather_windy
     WeatherIconKey.HOT -> R.drawable.ic_weather_hot

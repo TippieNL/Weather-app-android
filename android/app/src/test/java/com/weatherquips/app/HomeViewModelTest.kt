@@ -208,7 +208,7 @@ class HomeViewModelTest {
         assertTrue("the quote stayed empty", state.displayQuote.isNotBlank())
         assertTrue(
             "not a themed quote: ${state.displayQuote}",
-            state.displayQuote in PokemonQuips.quotesFor(WeatherCondition.STORMY),
+            state.displayQuote in PokemonQuips.quotesFor(WeatherCondition.STORMY, isDay = false),
         )
         assertTrue(state.displaySubtitle.isNotBlank())
     }
@@ -231,7 +231,7 @@ class HomeViewModelTest {
             alertThrottle = AlertThrottle(throttleStore),
         )
         advanceUntilIdle()
-        assertTrue(viewModel.uiState.value.displayQuote in PokemonQuips.quotesFor(WeatherCondition.STORMY))
+        assertTrue(viewModel.uiState.value.displayQuote in PokemonQuips.quotesFor(WeatherCondition.STORMY, isDay = false))
 
         settings.update { it.copy(pokemonMode = false) }
         advanceUntilIdle()
@@ -259,7 +259,7 @@ class HomeViewModelTest {
         assertTrue(state.displayQuote.isNotBlank())
         assertTrue(
             state.displayQuote in
-                com.weatherquips.app.domain.quotes.PokemonQuips.quotesFor(WeatherCondition.STORMY),
+                PokemonQuips.quotesFor(WeatherCondition.STORMY, isDay = false),
         )
     }
 }

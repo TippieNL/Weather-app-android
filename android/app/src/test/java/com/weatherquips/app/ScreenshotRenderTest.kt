@@ -23,6 +23,8 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.unit.dp
 import java.io.File
 
@@ -162,6 +164,40 @@ class ScreenshotRenderTest {
             }
         }
         settleAndCapture("detail-panel-dark")
+    }
+
+    /** Every condition, day row over night row, to check the pairs differ sensibly. */
+    @Test
+    fun weatherIconMatrix() {
+        composeRule.setContent {
+            WeatherQuipsTheme(darkTheme = false) {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background,
+                ) {
+                    androidx.compose.foundation.layout.Column(
+                        modifier = Modifier.fillMaxSize().padding(8.dp),
+                        verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center,
+                    ) {
+                        listOf(true, false).forEach { isDay ->
+                            androidx.compose.material3.Text(if (isDay) "day" else "night")
+                            androidx.compose.foundation.layout.Row {
+                                com.weatherquips.app.domain.model.WeatherCondition.entries
+                                    .forEach { condition ->
+                                        com.weatherquips.app.ui.components.WeatherGlyph(
+                                            condition = condition,
+                                            isDay = isDay,
+                                            size = 40.dp,
+                                        )
+                                    }
+                            }
+                            androidx.compose.foundation.layout.Spacer(Modifier.height(12.dp))
+                        }
+                    }
+                }
+            }
+        }
+        settleAndCapture("icon-matrix")
     }
 
     @Test

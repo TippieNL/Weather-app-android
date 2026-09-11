@@ -221,17 +221,30 @@ class HomeViewModel(
             return if (pokemonQuote.isEmpty()) {
                 this
             } else {
-                copy(pokemonQuote = "", pokemonSubtitle = "", pokemonQuoteCondition = null)
+                copy(
+                    pokemonQuote = "",
+                    pokemonSubtitle = "",
+                    pokemonQuoteCondition = null,
+                    pokemonQuoteIsDay = null,
+                )
             }
         }
-        val condition = weather?.condition ?: return this
-        if (pokemonQuote.isNotEmpty() && pokemonQuoteCondition == condition) return this
-        val quip = PokemonQuips.quote(condition)
+        val current = weather ?: return this
+        val condition = current.condition
+        // Day and night have separate sets, so crossing sunset has to re-pick.
+        if (pokemonQuote.isNotEmpty() &&
+            pokemonQuoteCondition == condition &&
+            pokemonQuoteIsDay == current.isDay
+        ) {
+            return this
+        }
+        val quip = PokemonQuips.quote(condition, current.isDay)
         return copy(
             pokemonQuote = quip.quote,
             pokemonSubtitle = quip.subtitle,
             pokemonSilhouette = PokemonQuips.randomSilhouette(),
             pokemonQuoteCondition = condition,
+            pokemonQuoteIsDay = current.isDay,
         )
     }
 

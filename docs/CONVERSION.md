@@ -19,7 +19,7 @@ Every row was verified against the original implementation in
 | Hourly forecast | ✅ | ✅ | 12 columns, stem-and-dot encoding, plus per-hour rain chance |
 | Daily forecast (7 days) | ✅ | ✅ | Same "tomorrow" + weekday labels and min→max gradient bars |
 | Animated hero icon | ✅ | ✅ | Per-condition motion ported from the CSS keyframes |
-| Day/night icon variants | ✅ | ✅ | Only for clear/cloudy/rainy, as in `weatherIcons.ts` |
+| Day/night icon variants | ✅ | ✅ + storms and snow, see below |
 | Five-taps "explode" Easter egg | ✅ | ✅ | Same six fragments and trajectories |
 | Pull-up detail panel | ✅ | ✅ | Material 3 bottom sheet (anchored drag + nested scroll) |
 | Refresh (new quote each time) | ✅ | ✅ | |
@@ -107,6 +107,23 @@ obvious against real data:
 | "precipitation" was ambiguous next to a current-conditions readout | Relabelled "rain chance", and added per-hour rain chance to the hourly strip |
 | Forecast colour was relative to whatever was on screen, so a 1 °C spread rendered as a full blue→red swing and the same temperature took a different colour in each card | Colour is anchored to actual degrees, so a temperature always looks the same; mild weather sits near-neutral and colour appears when it means something |
 | The hourly chart normalised to the visible min and max, turning a flat evening into dramatic peaks | The strip holds a minimum span, so a flat night looks flat |
+
+## Night rework
+
+The web app had one set of quotes per condition, written for daylight, and
+day/night icons only for clear, cloudy and rainy. At half past ten at night a
+clear sky was therefore described as being roasted by a sun that had set hours
+earlier.
+
+| Change | Detail |
+| --- | --- |
+| Night quotes | A second set of four quotes and four subtitles per condition, in the same voice, used when the provider reports `is_day = 0`. The daytime lines are the web app's originals, untouched. |
+| Night quotes in Pallet Town | The Easter egg had the same problem — "Pikachu is soaking up the sunshine" at midnight — so it gets night lines too. |
+| Night icons for storms and snow | The rule is whether the sky is part of the picture: storms and snow fall out of a sky you can still see, so they now show a crescent. Fog replaces the sky rather than sitting under it, and wind, heat and cold describe the air, so those are unchanged. |
+
+Tests assert the split holds as content, not just as plumbing: no night line
+claims the sun is out, no daytime line talks about stars or the moon, and the
+two sets never share a quote.
 
 ## Easter-egg rework
 

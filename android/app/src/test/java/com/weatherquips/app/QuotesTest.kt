@@ -65,7 +65,7 @@ class QuotesTest {
         val random = Random(42)
         repeat(50) {
             WeatherCondition.entries.forEach { condition ->
-                val quip = FunnyQuotes.random(condition, random)
+                val quip = FunnyQuotes.random(condition, random = random)
                 assertTrue(quip.quote in FunnyQuotes.quotesFor(condition))
                 assertTrue(quip.subtitle in FunnyQuotes.subtitlesFor(condition))
             }
@@ -74,8 +74,8 @@ class QuotesTest {
 
     @Test
     fun `random selection is reproducible for a given seed`() {
-        val first = FunnyQuotes.random(WeatherCondition.RAINY, Random(7))
-        val second = FunnyQuotes.random(WeatherCondition.RAINY, Random(7))
+        val first = FunnyQuotes.random(WeatherCondition.RAINY, random = Random(7))
+        val second = FunnyQuotes.random(WeatherCondition.RAINY, random = Random(7))
         assertEquals(first, second)
     }
 
@@ -104,7 +104,7 @@ class QuotesTest {
     @Test
     fun `pokemon mode has a quote for every condition`() {
         WeatherCondition.entries.forEach { condition ->
-            val quip = PokemonQuips.quote(condition, Random(1))
+            val quip = PokemonQuips.quote(condition, random = Random(1))
             assertTrue(quip.quote.isNotBlank())
             assertTrue(quip.subtitle.isNotBlank())
             assertTrue(quip.quote in PokemonQuips.quotesFor(condition))

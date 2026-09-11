@@ -111,8 +111,29 @@ class WeatherRepositoryTest {
 
         val weather = repository(provider).getWeather(coordinates, WeatherService.OPEN_METEO, "")
 
-        assertTrue(weather.funnyQuote in FunnyQuotes.quotesFor(WeatherCondition.CLOUDY))
-        assertTrue(weather.subtitle in FunnyQuotes.subtitlesFor(WeatherCondition.CLOUDY))
+        assertTrue(weather.funnyQuote in FunnyQuotes.quotesFor(WeatherCondition.CLOUDY, isDay = false))
+        assertTrue(weather.subtitle in FunnyQuotes.subtitlesFor(WeatherCondition.CLOUDY, isDay = false))
+    }
+
+    @Test
+    fun `the quote follows the sun at the location`() = runTest {
+        // TestWeather.sample() is a night reading (isDay = false).
+        val night = repository(FakeProvider(WeatherService.OPEN_METEO))
+            .getWeather(coordinates, WeatherService.OPEN_METEO, "")
+        assertTrue(
+            "used a daytime quote after dark: ${night.funnyQuote}",
+            night.funnyQuote in FunnyQuotes.quotesFor(WeatherCondition.CLOUDY, isDay = false),
+        )
+
+        val dayProvider = FakeProvider(
+            WeatherService.OPEN_METEO,
+            Result.success(TestWeather.sample().copy(isDay = true)),
+        )
+        val day = repository(dayProvider).getWeather(coordinates, WeatherService.OPEN_METEO, "")
+        assertTrue(
+            "used a night quote in daylight: ${day.funnyQuote}",
+            day.funnyQuote in FunnyQuotes.quotesFor(WeatherCondition.CLOUDY, isDay = true),
+        )
     }
 
     @Test

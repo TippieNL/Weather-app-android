@@ -48,8 +48,9 @@ class WeatherRepositoryImpl(
         }
 
         // The web server regenerated the quote on every response — even cache
-        // hits — so refreshing always produces a new quip. Same here.
-        val quip = FunnyQuotes.random(data.condition, random)
+        // hits — so refreshing always produces a new quip. Same here, and the
+        // set depends on whether the sun is up at the location.
+        val quip = FunnyQuotes.random(data.condition, data.isDay, random)
         val withQuote = data.copy(funnyQuote = quip.quote, subtitle = quip.subtitle)
 
         cache.write(

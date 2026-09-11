@@ -15,17 +15,29 @@ enum class WeatherIconKey(val id: String) {
     RAINY_DAY("rainy-day"),
     RAINY_NIGHT("rainy-night"),
     STORMY("stormy"),
+    STORMY_NIGHT("stormy-night"),
     SNOWY("snowy"),
+    SNOWY_NIGHT("snowy-night"),
     FOGGY("foggy"),
     WINDY("windy"),
     HOT("hot"),
     COLD("cold"),
 }
 
+/**
+ * Conditions whose icon changes with the sun.
+ *
+ * The rule is whether the sky itself is part of the picture. Storms and snow
+ * fall out of a sky you can still see, so they get a moon after dark. Fog
+ * replaces the sky rather than sitting under it, and wind, heat and cold are
+ * about the air rather than the sky at all — those look the same at any hour.
+ */
 private val DAY_NIGHT_AWARE = setOf(
     WeatherCondition.CLEAR,
     WeatherCondition.CLOUDY,
     WeatherCondition.RAINY,
+    WeatherCondition.STORMY,
+    WeatherCondition.SNOWY,
 )
 
 fun weatherIconKey(condition: WeatherCondition, isDay: Boolean): WeatherIconKey =
@@ -35,6 +47,10 @@ fun weatherIconKey(condition: WeatherCondition, isDay: Boolean): WeatherIconKey 
                 if (isDay) WeatherIconKey.CLEAR_DAY else WeatherIconKey.CLEAR_NIGHT
             WeatherCondition.CLOUDY ->
                 if (isDay) WeatherIconKey.CLOUDY_DAY else WeatherIconKey.CLOUDY_NIGHT
+            WeatherCondition.STORMY ->
+                if (isDay) WeatherIconKey.STORMY else WeatherIconKey.STORMY_NIGHT
+            WeatherCondition.SNOWY ->
+                if (isDay) WeatherIconKey.SNOWY else WeatherIconKey.SNOWY_NIGHT
             else ->
                 if (isDay) WeatherIconKey.RAINY_DAY else WeatherIconKey.RAINY_NIGHT
         }
