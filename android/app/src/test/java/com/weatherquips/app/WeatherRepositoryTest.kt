@@ -8,11 +8,13 @@ import com.weatherquips.app.data.repository.WeatherProvider
 import com.weatherquips.app.data.repository.WeatherRepositoryImpl
 import com.weatherquips.app.domain.model.Coordinates
 import com.weatherquips.app.domain.model.GeocodeResult
+import com.weatherquips.app.domain.model.NowcastPoint
 import com.weatherquips.app.domain.model.WeatherCondition
 import com.weatherquips.app.domain.model.WeatherData
 import com.weatherquips.app.domain.model.WeatherService
 import com.weatherquips.app.domain.quotes.FunnyQuotes
 import com.weatherquips.app.domain.repository.GeocodingRepository
+import com.weatherquips.app.domain.repository.RadarNowcastRepository
 import com.weatherquips.app.domain.repository.WeatherError
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -83,12 +85,80 @@ class WeatherRepositoryTest {
         override suspend fun reverseGeocode(coordinates: Coordinates): String = name
     }
 
-    private fun repository(vararg providers: WeatherProvider) = WeatherRepositoryImpl(
+    private class FakeRadar(
+        private val result: Result<List<NowcastPoint>?>,
+    ) : RadarNowcastRepository {
+        var calls = 0
+            private set
+
+        override suspend fun nowcast(coordinates: Coordinates): List<NowcastPoint>? {
+            calls++
+            return result.getOrThrow()
+        }
+    }
+
+    private fun repository(
+        vararg providers: WeatherProvider,
+        radar: RadarNowcastRepository? = null,
+    ) = WeatherRepositoryImpl(
         providers = providers.toList(),
         geocodingRepository = FakeGeocoding(),
         cache = cache,
+        radarNowcast = radar,
         dispatcher = dispatcher,
     )
+
+    private val radarSeries = listOf(
+        NowcastPoint("18:00", 0, 0.4),
+        NowcastPoint("18:05", 5, 1.2),
+        NowcastPoint("18:10", 10, 0.8),
+    )
+
+    @Test
+    fun `radar replaces the provider's own minute-level figures`() = runTest {
+        val provider = FakeProvider(
+            WeatherService.OPEN_METEO,
+            Result.success(
+                TestWeather.sample().copy(
+                    nowcast = listOf(NowcastPoint("18:00", 0, 0.0)),
+                ),
+            ),
+        )
+
+        val weather = repository(provider, radar = FakeRadar(Result.success(radarSeries)))
+            .getWeather(coordinates, WeatherService.OPEN_METEO, "")
+
+        assertEquals(radarSeries, weather.nowcast)
+        // And it is the radar series that gets cached for the widget.
+        assertEquals(radarSeries, cache.read()?.data?.nowcast)
+    }
+
+    @Test
+    fun `no radar coverage leaves the provider's forecast alone`() = runTest {
+        val model = listOf(NowcastPoint("18:00", 0, 0.7))
+        val provider = FakeProvider(
+            WeatherService.OPEN_METEO,
+            Result.success(TestWeather.sample().copy(nowcast = model)),
+        )
+
+        val weather = repository(provider, radar = FakeRadar(Result.success(null)))
+            .getWeather(coordinates, WeatherService.OPEN_METEO, "")
+
+        assertEquals(model, weather.nowcast)
+    }
+
+    @Test
+    fun `a radar outage never costs the user their forecast`() = runTest {
+        val provider = FakeProvider(WeatherService.OPEN_METEO)
+        val radar = FakeRadar(Result.failure(IOException("radar down")))
+
+        val weather = repository(provider, radar = radar)
+            .getWeather(coordinates, WeatherService.OPEN_METEO, "")
+
+        assertEquals(1, radar.calls)
+        assertNotNull(weather.location)
+        assertNotNull(cache.read())
+    }
 
     @Test
     fun `the configured provider is the one that runs`() = runTest {

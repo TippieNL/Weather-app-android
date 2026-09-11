@@ -52,14 +52,16 @@ class WidgetRenderTest {
                 condition = WeatherCondition.RAINY,
             ),
             "hourly-fallback" to hourlyOnly(),
+            "radar-5min" to radarNowcast(),
         ).forEach { (name, cached) ->
-            val outlook = PrecipitationOutlooks.from(cached)
+            val outlook = PrecipitationOutlooks.from(cached, nowMillis = NOW)
             save("widget-$name-light", card(outlook, dark = false, widthDp = 280f))
             save("widget-$name-dark", card(outlook, dark = true, widthDp = 280f))
         }
 
         val narrow = PrecipitationOutlooks.from(
             nowcast(doubleArrayOf(0.0, 0.0, 0.3, 1.2, 2.4, 3.0, 2.0, 1.0, 0.3, 0.0, 0.0)),
+            nowMillis = NOW,
         )
         save("widget-narrow-light", card(narrow, dark = false, widthDp = 180f))
         save("widget-narrow-dark", card(narrow, dark = true, widthDp = 180f))
@@ -68,6 +70,9 @@ class WidgetRenderTest {
     // --- fixtures --------------------------------------------------------
 
     /** Eleven quarter-hours: half an hour of history, then two hours ahead. */
+    /** A fixed clock: the widget ages its series against the cache time. */
+    private val NOW = 1_757_000_000_000L
+
     private fun nowcast(
         rates: DoubleArray,
         condition: WeatherCondition = WeatherCondition.CLOUDY,
@@ -84,7 +89,33 @@ class WidgetRenderTest {
                     )
                 },
             ),
-            fetchedAtEpochMillis = 1_757_000_000_000,
+            fetchedAtEpochMillis = NOW,
+            coordinates = Coordinates(52.99, 6.56),
+        )
+    }
+
+    /**
+     * What Buienradar's radar feed looks like: five-minute steps, two hours
+     * ahead, and no history — the left edge is the current minute.
+     */
+    private fun radarNowcast(): CachedWeather {
+        val shower = doubleArrayOf(
+            0.0, 0.0, 0.0, 0.0, 0.1, 0.3, 0.8, 1.6, 2.9, 4.4, 5.8, 6.6,
+            6.1, 4.9, 3.4, 2.2, 1.3, 0.7, 0.3, 0.1, 0.0, 0.0, 0.0, 0.0,
+        )
+        val start = 18 * 60 + 5
+        return CachedWeather(
+            data = TestWeather.sample(condition = WeatherCondition.CLOUDY).copy(
+                nowcast = shower.mapIndexed { i, mm ->
+                    val minutes = start + i * 5
+                    NowcastPoint(
+                        time = "%02d:%02d".format((minutes / 60) % 24, minutes % 60),
+                        minutesFromNow = i * 5,
+                        millimetresPerHour = mm,
+                    )
+                },
+            ),
+            fetchedAtEpochMillis = NOW,
             coordinates = Coordinates(52.99, 6.56),
         )
     }
@@ -100,7 +131,7 @@ class WidgetRenderTest {
                 HourlyForecast("21:00", 12.0, 30, 0.4),
             ),
         ),
-        fetchedAtEpochMillis = 1_757_000_000_000,
+        fetchedAtEpochMillis = NOW,
         coordinates = Coordinates(52.99, 6.56),
     )
 

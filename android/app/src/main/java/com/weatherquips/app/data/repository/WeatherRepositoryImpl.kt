@@ -7,6 +7,7 @@ import com.weatherquips.app.domain.model.WeatherData
 import com.weatherquips.app.domain.model.WeatherService
 import com.weatherquips.app.domain.quotes.FunnyQuotes
 import com.weatherquips.app.domain.repository.GeocodingRepository
+import com.weatherquips.app.domain.repository.RadarNowcastRepository
 import com.weatherquips.app.domain.repository.WeatherError
 import com.weatherquips.app.domain.repository.WeatherRepository
 import kotlinx.coroutines.CoroutineDispatcher
@@ -25,6 +26,11 @@ class WeatherRepositoryImpl(
     private val providers: List<WeatherProvider>,
     private val geocodingRepository: GeocodingRepository,
     private val cache: WeatherCache,
+    /**
+     * Optional radar nowcast, used in place of the provider's own minute-level
+     * figures where there is radar to use. Null everywhere it has no coverage.
+     */
+    private val radarNowcast: RadarNowcastRepository? = null,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val random: Random = Random.Default,
     /**
@@ -59,15 +65,23 @@ class WeatherRepositoryImpl(
         val quip = FunnyQuotes.random(data.condition, data.isDay, random)
         val withQuote = data.copy(funnyQuote = quip.quote, subtitle = quip.subtitle)
 
+        // Radar beats the model for the next two hours, and it is what the
+        // app's own map is showing. Best effort: no radar, or a radar that is
+        // down, must never cost the user their forecast.
+        val radar = radarNowcast
+            ?.let { runCatching { it.nowcast(coordinates) }.getOrNull() }
+        val withNowcast =
+            if (radar.isNullOrEmpty()) withQuote else withQuote.copy(nowcast = radar)
+
         cache.write(
             CachedWeather(
-                data = withQuote,
+                data = withNowcast,
                 fetchedAtEpochMillis = System.currentTimeMillis(),
                 coordinates = coordinates,
             ),
         )
         onCacheUpdated()
-        withQuote
+        withNowcast
     }
 
     override suspend fun getCachedWeather(): CachedWeather? =

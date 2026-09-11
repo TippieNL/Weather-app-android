@@ -155,23 +155,24 @@ class WidgetGraphTest {
     }
 
     @Test
-    fun `the now marker is drawn when there is history behind it`() {
+    fun `the now line is drawn across the plot when there is history behind it`() {
         val graph = PrecipitationGraph.render(chart(0.0, 0.0, 0.0), 252f, 60f, WidgetColors.graph)!!
-        assertTrue("the now marker is missing", graph.countsRedPixels() > 0)
+        assertTrue("the now line is missing", graph.redPixelsInLowerPlot() > 0)
     }
 
     @Test
-    fun `a graph that begins at now does not mark it`() {
-        // The hourly fallback starts at the current hour, so the left edge
-        // already is now; a marker there only collides with the axis.
+    fun `a graph that begins at now is labelled but not ruled`() {
+        // A radar nowcast starts at the current minute. The label still has to
+        // say so, but a dashed line on the border would only clip against it.
         val fromNow = PrecipitationGraph.render(
-            chart(0.0, 1.0, 2.0, startMinutes = 0, step = 60), 252f, 60f, WidgetColors.graph,
+            chart(0.0, 1.0, 2.0, startMinutes = 0, step = 5), 252f, 60f, WidgetColors.graph,
         )!!
         assertEquals(
-            "the left edge is already now; it does not need a label",
+            "a line on the left border is clipped, not informative",
             0,
-            fromNow.countsRedPixels(),
+            fromNow.redPixelsInLowerPlot(),
         )
+        assertTrue("the now label is missing", fromNow.countsRedPixels() > 0)
     }
 
     @Test
@@ -182,11 +183,18 @@ class WidgetGraphTest {
         assertEquals(0, later.countsRedPixels())
     }
 
+    /**
+     * Red below the label strip: only the ruled line reaches down here, so
+     * this tells the line apart from the word above it.
+     */
+    private fun android.graphics.Bitmap.redPixelsInLowerPlot(): Int =
+        countsRedPixels(fromY = (height * 0.6f).toInt())
+
     /** The "now" line and its label are the only red in the palette. */
-    private fun android.graphics.Bitmap.countsRedPixels(): Int {
+    private fun android.graphics.Bitmap.countsRedPixels(fromY: Int = 0): Int {
         var count = 0
         for (x in 0 until width) {
-            for (y in 0 until height) {
+            for (y in fromY until height) {
                 val pixel = getPixel(x, y)
                 if (Color.alpha(pixel) > 64 &&
                     Color.red(pixel) > 150 &&

@@ -243,19 +243,23 @@ object PrecipitationGraph {
             baseline: Float,
             x: (Int) -> Float,
         ) {
-            if (chart.endMinutes < 0) return
-            if (chart.startMinutes > -NOW_MARKER_MIN_HISTORY_MINUTES) return
+            if (chart.endMinutes < 0 || chart.startMinutes > 0) return
 
             val nowX = x(0)
-            canvas.drawLine(
-                nowX, top, nowX, baseline,
-                Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                    color = palette.nowLine
-                    strokeWidth = LINE_WIDTH_DP.px
-                    style = Paint.Style.STROKE
-                    pathEffect = DashPathEffect(floatArrayOf(3f.px, 2.5f.px), 0f)
-                },
-            )
+            // A radar nowcast starts at the current minute, so the left edge
+            // already is now: the label still says so, but a dashed line on
+            // top of the border would only clip against it.
+            if (chart.startMinutes <= -NOW_MARKER_MIN_HISTORY_MINUTES) {
+                canvas.drawLine(
+                    nowX, top, nowX, baseline,
+                    Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                        color = palette.nowLine
+                        strokeWidth = LINE_WIDTH_DP.px
+                        style = Paint.Style.STROKE
+                        pathEffect = DashPathEffect(floatArrayOf(3f.px, 2.5f.px), 0f)
+                    },
+                )
+            }
 
             val paint = textPaint(palette.nowLine, BAND_TEXT_DP.px, bold = true)
             val label = "now"

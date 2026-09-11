@@ -125,8 +125,12 @@ New to the Android version; the PWA had nothing equivalent.
 
 | Decision | Why |
 | --- | --- |
-| Intensity, not probability | "70% chance" does not distinguish a drizzle from a downpour. Open-Meteo's `minutely_15` feed gives millimetres per quarter-hour, converted to the mm/h figure a rain radar prints |
-| Eleven quarter-hour samples, half an hour of which is history | A "now" line needs something behind it, otherwise it sits on the left edge and means nothing. `past_minutely_15=2` supplies it |
+| Intensity, not probability | "70% chance" does not distinguish a drizzle from a downpour. The graph plots millimetres per hour, the figure a rain radar prints |
+| Radar first, model second | The app's map is observed radar; a forecast model is not. When the two disagree the user is looking at the radar, so the widget uses Buienradar's radar nowcast (five-minute steps, two hours ahead) wherever it has coverage, and Open-Meteo's `minutely_15` everywhere else |
+| Eleven quarter-hour samples, half an hour of which is history, on the Open-Meteo path | A "now" line needs something behind it, otherwise it sits on the left edge and means nothing. `past_minutely_15=2` supplies it. The radar feed has no history, so there the left edge is now and the marker is a label rather than a ruled line |
+| The series is aged against the cache | The samples are stamped relative to the moment they were fetched and the widget draws from cache, so on every redraw the series slides left by the age of the cache and anything past 45 minutes of history is dropped. Without it the "now" line marks where now *was* |
+| Refreshed every 15 minutes | WorkManager's floor, and the right end of it: an hourly refresh leaves a two-hour minute-resolution graph half stale and misses a shower that arrived since |
+| A quantised zero is not a dry forecast | Open-Meteo reports `minutely_15` to a tenth of a millimetre per quarter-hour, so anything under 0.4 mm/h lands on exactly zero while the hourly field resolves the same drizzle four times finer. When the minute series is flat and the hourly one is not, the graph uses the hourly one |
 | A non-linear vertical axis | On a linear 0–15 mm/h scale a 0.3 mm/h drizzle is two percent of the height and effectively invisible. Light, moderate, heavy and violent each get a quarter of the plot, which also gives evenly spaced gridlines to label |
 | Drawn to a bitmap | RemoteViews has no canvas and no path support, so anything beyond boxes and text has to arrive as an image. It is rendered at a fixed 2.5 px/dp and scaled to fit, which keeps it identical in tests and on a phone |
 | One palette for both themes | The bitmap is drawn before Glance resolves a theme, and a Glance composable cannot read the resolved colour without a context. Every colour in the graph is picked to work on both the near-white and the near-black card |

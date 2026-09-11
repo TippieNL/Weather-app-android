@@ -8,6 +8,7 @@ import androidx.datastore.preferences.preferencesDataStoreFile
 import com.weatherquips.app.data.api.NetworkModule
 import com.weatherquips.app.data.local.SettingsRepositoryImpl
 import com.weatherquips.app.data.local.WeatherCache
+import com.weatherquips.app.data.repository.BuienradarNowcastRepository
 import com.weatherquips.app.data.repository.GeocodingRepositoryImpl
 import com.weatherquips.app.data.repository.OpenMeteoProvider
 import com.weatherquips.app.data.repository.OpenWeatherMapProvider
@@ -72,6 +73,7 @@ class AppContainer(private val context: Context) {
             ),
             geocodingRepository = geocodingRepository,
             cache = weatherCache,
+            radarNowcast = BuienradarNowcastRepository(NetworkModule.buienradarApi),
             onCacheUpdated = {
                 // Best effort: a widget that fails to redraw must never break a
                 // weather fetch, and there may be no widget placed at all.

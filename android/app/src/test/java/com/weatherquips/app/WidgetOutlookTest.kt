@@ -18,6 +18,9 @@ import org.junit.Test
 class WidgetOutlookTest {
 
     /** A forecast with only hourly probabilities, as the paid providers give. */
+    /** A fixed clock: the widget ages its series against the cache time. */
+    private val NOW = 1_757_000_000_000L
+
     private fun hourlyOnly(
         condition: WeatherCondition = WeatherCondition.CLOUDY,
         hourly: List<Pair<String, Int>> = emptyList(),
@@ -29,7 +32,7 @@ class WidgetOutlookTest {
             },
             nowcast = emptyList(),
         ),
-        fetchedAtEpochMillis = 1_757_000_000_000,
+        fetchedAtEpochMillis = NOW,
         coordinates = Coordinates(52.99, 6.56),
     )
 
@@ -55,7 +58,7 @@ class WidgetOutlookTest {
                 )
             },
         ),
-        fetchedAtEpochMillis = 1_757_000_000_000,
+        fetchedAtEpochMillis = NOW,
         coordinates = Coordinates(52.99, 6.56),
     )
 
@@ -63,7 +66,7 @@ class WidgetOutlookTest {
 
     @Test
     fun `rain already falling is read off the nowcast, not the condition`() {
-        val outlook = PrecipitationOutlooks.from(withNowcast(0.8, 1.2, 1.8, 1.4, 0.6))
+        val outlook = PrecipitationOutlooks.from(withNowcast(0.8, 1.2, 1.8, 1.4, 0.6), nowMillis = NOW)
         assertEquals(Outlook.FallingNow(PrecipitationKind.RAIN, 1.8), outlook.outlook)
         assertEquals(1.8, outlook.nowMillimetresPerHour, 0.0001)
         assertEquals("Raining now", WidgetCopyWriter.write(outlook.outlook, 9).headline)
@@ -74,6 +77,7 @@ class WidgetOutlookTest {
         // Dry now, first wet quarter at +45 minutes.
         val outlook = PrecipitationOutlooks.from(
             withNowcast(0.0, 0.0, 0.0, 0.0, 0.0, 1.2, 2.4),
+            nowMillis = NOW,
         )
         val starts = outlook.outlook
         assertTrue("expected StartsIn but was $starts", starts is Outlook.StartsIn)
@@ -103,6 +107,7 @@ class WidgetOutlookTest {
     fun `a trace of drizzle is not announced as rain`() {
         val outlook = PrecipitationOutlooks.from(
             withNowcast(0.0, 0.0, 0.04, 0.02, 0.0, 0.0),
+            nowMillis = NOW,
         )
         assertEquals(Outlook.Dry, outlook.outlook)
     }
@@ -118,6 +123,7 @@ class WidgetOutlookTest {
                     "21:00" to 20, "22:00" to 75,
                 ),
             ),
+            nowMillis = NOW,
         )
         assertEquals(
             Outlook.StartsAt(PrecipitationKind.RAIN, "22:00", 75),
@@ -133,15 +139,88 @@ class WidgetOutlookTest {
                 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                 hourly = listOf("18:00" to 0, "19:00" to 80, "20:00" to 10),
             ),
+            nowMillis = NOW,
         )
         assertEquals(Outlook.Dry, outlook.outlook)
+    }
+
+    // --- the reasons the graph used to come out flat ---------------------
+
+    @Test
+    fun `a quantised minute forecast does not override hourly millimetres`() {
+        // Open-Meteo rounds minutely_15 to a tenth of a millimetre per
+        // quarter-hour, so light rain lands on exactly zero while the hourly
+        // field still reports it. Drawing the zeros is how the widget ends up
+        // claiming a dry afternoon in the rain.
+        val cached = CachedWeather(
+            data = TestWeather.sample().copy(
+                nowcast = (0..8).map {
+                    NowcastPoint("18:%02d".format(it * 15 % 60), it * 15 - 30, 0.0)
+                },
+                hourlyForecast = listOf(
+                    HourlyForecast("18:00", 14.0, 80, 0.3),
+                    HourlyForecast("19:00", 14.0, 80, 0.2),
+                ),
+            ),
+            fetchedAtEpochMillis = NOW,
+            coordinates = Coordinates(52.99, 6.56),
+        )
+
+        val outlook = PrecipitationOutlooks.from(cached, nowMillis = NOW)
+        assertEquals(ChartResolution.HOURLY, outlook.chart.resolution)
+        assertEquals(0.3, outlook.nowMillimetresPerHour, 0.0001)
+        assertEquals(Outlook.FallingNow(PrecipitationKind.RAIN, 0.3), outlook.outlook)
+    }
+
+    @Test
+    fun `a genuinely dry minute forecast is still trusted over a dry hourly one`() {
+        val outlook = PrecipitationOutlooks.from(
+            withNowcast(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+            nowMillis = NOW,
+        )
+        assertEquals(ChartResolution.QUARTER_HOUR, outlook.chart.resolution)
+        assertEquals(Outlook.Dry, outlook.outlook)
+    }
+
+    @Test
+    fun `the series slides back as the cache ages, so now stays now`() {
+        // Rain arriving 45 minutes after the fetch is 25 minutes away when the
+        // widget redraws 20 minutes later.
+        val cached = withNowcast(0.0, 0.0, 0.0, 0.0, 0.0, 1.4, 2.0)
+        val later = PrecipitationOutlooks.from(cached, nowMillis = NOW + 20 * 60_000L)
+
+        val starts = later.outlook
+        assertTrue("expected StartsIn but was $starts", starts is Outlook.StartsIn)
+        assertEquals(25, (starts as Outlook.StartsIn).minutesAway)
+        assertEquals("18:45", starts.time)
+    }
+
+    @Test
+    fun `rain that started since the last fetch reads as falling now`() {
+        val cached = withNowcast(0.0, 0.0, 0.0, 1.2, 1.8, 1.4)
+        // The wet quarter at +15 is underfoot twenty minutes later.
+        val later = PrecipitationOutlooks.from(cached, nowMillis = NOW + 20 * 60_000L)
+        assertTrue(later.outlook is Outlook.FallingNow)
+        assertTrue(later.nowMillimetresPerHour > 0.0)
+    }
+
+    @Test
+    fun `history that has scrolled off the graph is dropped`() {
+        val cached = withNowcast(1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0)
+        val later = PrecipitationOutlooks.from(cached, nowMillis = NOW + 40 * 60_000L)
+
+        assertTrue(
+            "kept a point older than the history limit",
+            later.chart.points.all { it.minutesFromNow >= -PrecipitationOutlooks.MAX_HISTORY_MINUTES },
+        )
+        assertTrue("dropped the whole series", later.chart.points.isNotEmpty())
     }
 
     // --- the graph -------------------------------------------------------
 
     @Test
     fun `the graph keeps every sample and knows where now is`() {
-        val outlook = PrecipitationOutlooks.from(withNowcast(0.1, 0.2, 0.3, 0.4, 0.5))
+        val outlook = PrecipitationOutlooks.from(withNowcast(0.1, 0.2, 0.3, 0.4, 0.5), nowMillis = NOW)
         assertEquals(5, outlook.chart.points.size)
         assertEquals(-30, outlook.chart.startMinutes)
         assertEquals(30, outlook.chart.endMinutes)
@@ -151,7 +230,7 @@ class WidgetOutlookTest {
 
     @Test
     fun `only the whole and half hours are labelled`() {
-        val outlook = PrecipitationOutlooks.from(withNowcast(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0))
+        val outlook = PrecipitationOutlooks.from(withNowcast(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0), nowMillis = NOW)
         // 17:30, 17:45, 18:00, 18:15, 18:30, 18:45, 19:00
         assertEquals(listOf("17:30", "18:00", "18:30", "19:00"), outlook.chart.ticks.map { it.label })
     }
@@ -167,10 +246,10 @@ class WidgetOutlookTest {
                     HourlyForecast("20:00", 12.0, 70, 2.6),
                 ),
             ),
-            fetchedAtEpochMillis = 1_757_000_000_000,
+            fetchedAtEpochMillis = NOW,
             coordinates = Coordinates(52.99, 6.56),
         )
-        val outlook = PrecipitationOutlooks.from(cached)
+        val outlook = PrecipitationOutlooks.from(cached, nowMillis = NOW)
         assertEquals(ChartResolution.HOURLY, outlook.chart.resolution)
         assertEquals(listOf(0.0, 1.1, 2.6), outlook.chart.points.map { it.millimetresPerHour })
         assertEquals(listOf("18:00", "19:00", "20:00"), outlook.chart.ticks.map { it.label })
@@ -182,6 +261,7 @@ class WidgetOutlookTest {
     fun `a dry stretch says so`() {
         val outlook = PrecipitationOutlooks.from(
             hourlyOnly(hourly = listOf("14:00" to 0, "15:00" to 10, "16:00" to 20)),
+            nowMillis = NOW,
         )
         assertEquals(Outlook.Dry, outlook.outlook)
         assertEquals("Dry for now", WidgetCopyWriter.write(outlook.outlook, hourOfDay = 9).headline)
@@ -191,6 +271,7 @@ class WidgetOutlookTest {
     fun `an approaching shower names the hour it arrives`() {
         val outlook = PrecipitationOutlooks.from(
             hourlyOnly(hourly = listOf("14:00" to 5, "15:00" to 20, "16:00" to 70, "17:00" to 80)),
+            nowMillis = NOW,
         )
 
         val starts = outlook.outlook
@@ -206,6 +287,7 @@ class WidgetOutlookTest {
         // What matters on a home screen is when to leave, not the peak.
         val outlook = PrecipitationOutlooks.from(
             hourlyOnly(hourly = listOf("14:00" to 0, "15:00" to 45, "16:00" to 95)),
+            nowMillis = NOW,
         )
         assertEquals("15:00", (outlook.outlook as Outlook.StartsAt).time)
     }
@@ -214,6 +296,7 @@ class WidgetOutlookTest {
     fun `a shower below the threshold is not worth mentioning`() {
         val outlook = PrecipitationOutlooks.from(
             hourlyOnly(hourly = listOf("14:00" to 0, "15:00" to 39, "16:00" to 30)),
+            nowMillis = NOW,
         )
         assertEquals(Outlook.Dry, outlook.outlook)
     }
@@ -227,6 +310,7 @@ class WidgetOutlookTest {
         ).forEach { (condition, kind) ->
             val outlook = PrecipitationOutlooks.from(
                 hourlyOnly(condition = condition, hourly = listOf("14:00" to 0)),
+                nowMillis = NOW,
             )
             assertEquals(Outlook.FallingNow(kind, 0.0), outlook.outlook)
         }
@@ -241,6 +325,7 @@ class WidgetOutlookTest {
     fun `a high chance this hour counts as falling now`() {
         val outlook = PrecipitationOutlooks.from(
             hourlyOnly(condition = WeatherCondition.CLOUDY, hourly = listOf("14:00" to 60)),
+            nowMillis = NOW,
         )
         assertEquals(Outlook.FallingNow(PrecipitationKind.RAIN, 0.0), outlook.outlook)
     }
@@ -249,7 +334,7 @@ class WidgetOutlookTest {
 
     @Test
     fun `the coordinates ride along so a tap can open the radar`() {
-        val outlook = PrecipitationOutlooks.from(hourlyOnly())
+        val outlook = PrecipitationOutlooks.from(hourlyOnly(), nowMillis = NOW)
         assertEquals(Coordinates(52.99, 6.56), outlook.coordinates)
         assertEquals("Assen", outlook.location)
     }

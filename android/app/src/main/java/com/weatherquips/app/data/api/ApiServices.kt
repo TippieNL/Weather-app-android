@@ -7,6 +7,7 @@ import com.weatherquips.app.data.model.OwmCurrentResponse
 import com.weatherquips.app.data.model.OwmForecastResponse
 import com.weatherquips.app.data.model.RainViewerMaps
 import com.weatherquips.app.data.model.WeatherApiResponse
+import okhttp3.ResponseBody
 import retrofit2.http.GET
 import retrofit2.http.Query
 
@@ -93,6 +94,21 @@ interface NominatimApi {
         @Query("format") format: String = "json",
         @Query("zoom") zoom: Int = 10,
     ): NominatimReverse
+}
+
+/**
+ * Buienradar's radar nowcast for the Netherlands and Belgium.
+ *
+ * Free and key-less, and the same feed the Dutch rain apps draw: two hours
+ * ahead in five-minute steps. The response is plain text, one `value|HH:MM`
+ * line per step, so it comes back as a raw body rather than JSON.
+ */
+interface BuienradarApi {
+    @GET("data/raintext")
+    suspend fun rainText(
+        @Query("lat") latitude: Double,
+        @Query("lon") longitude: Double,
+    ): ResponseBody
 }
 
 interface RainViewerApi {

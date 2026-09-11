@@ -30,6 +30,9 @@ class PrecipitationWidgetTest {
     private val wide = DpSize(280.dp, 140.dp)
     private val narrow = DpSize(180.dp, 140.dp)
 
+    /** A fixed clock: the widget ages its series against the cache time. */
+    private val NOW = 1_757_000_000_000L
+
     private fun hourly(
         condition: WeatherCondition = WeatherCondition.CLOUDY,
         hours: List<Pair<String, Int>>,
@@ -38,7 +41,7 @@ class PrecipitationWidgetTest {
             hourlyForecast = hours.map { (time, chance) -> HourlyForecast(time, 12.0, chance) },
             nowcast = emptyList(),
         ),
-        fetchedAtEpochMillis = 1_757_000_000_000,
+        fetchedAtEpochMillis = NOW,
         coordinates = Coordinates(52.99, 6.56),
     )
 
@@ -56,7 +59,7 @@ class PrecipitationWidgetTest {
                 )
             },
         ),
-        fetchedAtEpochMillis = 1_757_000_000_000,
+        fetchedAtEpochMillis = NOW,
         coordinates = Coordinates(52.99, 6.56),
     )
 
@@ -65,6 +68,7 @@ class PrecipitationWidgetTest {
         setAppWidgetSize(wide)
         val outlook = PrecipitationOutlooks.from(
             nowcast(0.0, 0.0, 0.0, 0.0, 0.0, 1.4, 2.2),
+            nowMillis = NOW,
         )
 
         provideComposable { WidgetContent(outlook = outlook, hourOfDay = 9) }
@@ -78,7 +82,7 @@ class PrecipitationWidgetTest {
     @Test
     fun `rain already falling leads with the rate`() = runGlanceAppWidgetUnitTest {
         setAppWidgetSize(wide)
-        val outlook = PrecipitationOutlooks.from(nowcast(0.8, 1.4, 1.8, 1.2, 0.4))
+        val outlook = PrecipitationOutlooks.from(nowcast(0.8, 1.4, 1.8, 1.2, 0.4), nowMillis = NOW)
 
         provideComposable { WidgetContent(outlook = outlook, hourOfDay = 9) }
 
@@ -89,7 +93,7 @@ class PrecipitationWidgetTest {
     @Test
     fun `a dry window says so without inventing a time`() = runGlanceAppWidgetUnitTest {
         setAppWidgetSize(wide)
-        val outlook = PrecipitationOutlooks.from(nowcast(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0))
+        val outlook = PrecipitationOutlooks.from(nowcast(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0), nowMillis = NOW)
 
         provideComposable { WidgetContent(outlook = outlook, hourOfDay = 9) }
 
@@ -103,6 +107,7 @@ class PrecipitationWidgetTest {
         setAppWidgetSize(wide)
         val outlook = PrecipitationOutlooks.from(
             hourly(hours = listOf("14:00" to 5, "15:00" to 20, "16:00" to 70)),
+            nowMillis = NOW,
         )
 
         provideComposable { WidgetContent(outlook = outlook, hourOfDay = 9) }
@@ -123,7 +128,7 @@ class PrecipitationWidgetTest {
     @Test
     fun `the narrow size still leads with the headline`() = runGlanceAppWidgetUnitTest {
         setAppWidgetSize(narrow)
-        val outlook = PrecipitationOutlooks.from(nowcast(0.0, 0.0, 0.0, 0.9, 1.6))
+        val outlook = PrecipitationOutlooks.from(nowcast(0.0, 0.0, 0.0, 0.9, 1.6), nowMillis = NOW)
 
         provideComposable { WidgetContent(outlook = outlook, hourOfDay = 9) }
 

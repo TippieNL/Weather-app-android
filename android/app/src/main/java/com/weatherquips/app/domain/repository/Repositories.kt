@@ -4,6 +4,7 @@ import com.weatherquips.app.domain.model.AppSettings
 import com.weatherquips.app.domain.model.CachedWeather
 import com.weatherquips.app.domain.model.Coordinates
 import com.weatherquips.app.domain.model.GeocodeResult
+import com.weatherquips.app.domain.model.NowcastPoint
 import com.weatherquips.app.domain.model.WeatherData
 import com.weatherquips.app.domain.model.WeatherService
 import kotlinx.coroutines.flow.Flow
@@ -35,6 +36,21 @@ interface WeatherRepository {
     suspend fun getCachedWeather(): CachedWeather?
 
     fun cachedWeather(): Flow<CachedWeather?>
+}
+
+/**
+ * A precipitation nowcast derived from weather radar rather than a forecast
+ * model.
+ *
+ * Worth a separate source because the two disagree in exactly the case the
+ * widget exists for. A model publishes what it expects to fall over a whole
+ * grid cell; radar reports the shower that is overhead right now. When the
+ * app's map shows rain and a model-driven graph shows a flat line, the radar
+ * is the one the user is looking at.
+ */
+interface RadarNowcastRepository {
+    /** Null when there is no radar coverage for [coordinates], or on failure. */
+    suspend fun nowcast(coordinates: Coordinates): List<NowcastPoint>?
 }
 
 interface GeocodingRepository {

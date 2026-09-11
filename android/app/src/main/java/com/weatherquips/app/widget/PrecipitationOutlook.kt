@@ -5,6 +5,7 @@ import com.weatherquips.app.domain.model.Coordinates
 import com.weatherquips.app.domain.model.HourlyForecast
 import com.weatherquips.app.domain.model.NowcastPoint
 import com.weatherquips.app.domain.model.WeatherCondition
+import com.weatherquips.app.domain.model.WeatherData
 import com.weatherquips.app.notifications.PrecipitationAlerts
 import com.weatherquips.app.notifications.PrecipitationKind
 import kotlin.math.abs
@@ -105,11 +106,32 @@ object PrecipitationOutlooks {
     /** Gaps at or under this read as sub-hourly sampling. */
     private const val QUARTER_HOUR_GAP_MINUTES = 20
 
+    /**
+     * How far into the past the graph will still draw.
+     *
+     * The samples are stamped relative to the moment they were fetched, and
+     * the widget renders from cache, so between refreshes the whole series
+     * slides left. Beyond this the oldest points are history nobody needs.
+     */
+    const val MAX_HISTORY_MINUTES = 45
+
+    private const val MILLIS_PER_MINUTE = 60_000L
+
     private const val MINUTES_PER_HOUR = 60.0
 
-    fun from(cached: CachedWeather): PrecipitationOutlook {
+    /**
+     * @param nowMillis the clock, passed in so the widget can correct for how
+     *                  long ago the forecast it is drawing was fetched.
+     */
+    fun from(
+        cached: CachedWeather,
+        nowMillis: Long = System.currentTimeMillis(),
+    ): PrecipitationOutlook {
         val data = cached.data
-        val nowcast = data.nowcast.ifEmpty { data.hourlyForecast.asNowcast() }
+        val series = seriesFor(data)
+        val age = ((nowMillis - cached.fetchedAtEpochMillis) / MILLIS_PER_MINUTE)
+            .coerceAtLeast(0L).toInt()
+        val nowcast = series.points.agedBy(age)
         val chart = chartFrom(nowcast)
         val nowRate = nowRate(nowcast)
 
@@ -117,7 +139,7 @@ object PrecipitationOutlooks {
             outlook = outlookFor(
                 condition = data.condition,
                 nowcast = nowcast,
-                hasRealNowcast = data.nowcast.isNotEmpty(),
+                hasRealNowcast = series.isSubHourly,
                 nowRate = nowRate,
                 hourly = data.hourlyForecast,
             ),
@@ -129,6 +151,48 @@ object PrecipitationOutlooks {
             updatedAtMillis = cached.fetchedAtEpochMillis,
             coordinates = cached.coordinates,
         )
+    }
+
+    /** The series the graph draws, and whether it is a real minute-level one. */
+    private data class Series(val points: List<NowcastPoint>, val isSubHourly: Boolean)
+
+    /**
+     * Picks between the minute-level nowcast and the hourly totals.
+     *
+     * A minute-level feed that reports nothing while the hourly figures report
+     * millimetres is not a dry forecast, it is a rounding artefact: Open-Meteo
+     * publishes `minutely_15` to a tenth of a millimetre per quarter-hour, so
+     * anything under 0.4 mm/h lands on exactly zero, while the hourly field
+     * resolves the same drizzle four times finer. Drawing the flat line in
+     * that case is how the widget ends up claiming a dry afternoon during
+     * light rain.
+     */
+    private fun seriesFor(data: WeatherData): Series {
+        val hourly = data.hourlyForecast.asNowcast()
+        if (data.nowcast.isEmpty()) return Series(hourly, isSubHourly = false)
+
+        val minuteLevelIsDry = data.nowcast.none { it.isWet() }
+        return if (minuteLevelIsDry && hourly.any { it.isWet() }) {
+            Series(hourly, isSubHourly = false)
+        } else {
+            Series(data.nowcast, isSubHourly = true)
+        }
+    }
+
+    private fun NowcastPoint.isWet() =
+        millimetresPerHour >= IntensityScale.TRACE_MM_PER_HOUR
+
+    /**
+     * Slides the series back by the age of the cache and drops what has
+     * scrolled off, so the "now" line sits where now actually is rather than
+     * where it was when the forecast was fetched.
+     */
+    private fun List<NowcastPoint>.agedBy(minutes: Int): List<NowcastPoint> {
+        if (minutes <= 0) return this
+        return mapNotNull { point ->
+            val offset = point.minutesFromNow - minutes
+            if (offset < -MAX_HISTORY_MINUTES) null else point.copy(minutesFromNow = offset)
+        }
     }
 
     /** Hourly totals stood in for a nowcast: a step per hour, no invented curve. */

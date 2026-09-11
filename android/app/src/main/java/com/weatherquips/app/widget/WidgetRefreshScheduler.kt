@@ -36,7 +36,12 @@ class WidgetRefreshScheduler(private val context: Context) {
     }.getOrDefault(false)
 
     private companion object {
-        /** WorkManager's floor is 15 minutes; an hour is plenty for a forecast. */
-        const val REFRESH_INTERVAL_MINUTES = 60L
+        /**
+         * WorkManager's floor, and the right end of it for this widget: the
+         * graph covers two hours at five-minute resolution, so refreshing
+         * hourly would leave the "now" line up to an hour behind and miss a
+         * shower that arrived since.
+         */
+        const val REFRESH_INTERVAL_MINUTES = 15L
     }
 }
