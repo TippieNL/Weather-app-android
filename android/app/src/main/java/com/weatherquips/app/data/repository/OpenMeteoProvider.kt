@@ -99,6 +99,7 @@ class OpenMeteoProvider(private val api: OpenMeteoApi) : WeatherProvider {
             dailyForecast = dailyForecast,
             hourlyForecast = hourlyForecast,
             nowcast = nowcast,
+            utcOffsetSeconds = response.utcOffsetSeconds,
         )
     }
 

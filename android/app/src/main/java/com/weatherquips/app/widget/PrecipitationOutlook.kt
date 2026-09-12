@@ -26,7 +26,7 @@ data class ChartTick(
 )
 
 /** How finely the forecast behind the graph is sampled. */
-enum class ChartResolution { QUARTER_HOUR, HOURLY }
+enum class ChartResolution { SUB_HOURLY, HOURLY }
 
 /**
  * Everything needed to draw the graph, with the time axis already resolved to
@@ -103,8 +103,8 @@ object PrecipitationOutlooks {
     /** Probability high enough to call it already happening. */
     private const val FALLING_NOW_THRESHOLD = 60
 
-    /** Gaps at or under this read as sub-hourly sampling. */
-    private const val QUARTER_HOUR_GAP_MINUTES = 20
+    /** Gaps at or under this read as sub-hourly sampling: radar is five-minute. */
+    private const val SUB_HOURLY_GAP_MINUTES = 20
 
     /**
      * How far into the past the graph will still draw.
@@ -210,7 +210,7 @@ object PrecipitationOutlooks {
         val gap = nowcast.zipWithNext { a, b -> b.minutesFromNow - a.minutesFromNow }
             .minOrNull() ?: 60
         val resolution =
-            if (gap <= QUARTER_HOUR_GAP_MINUTES) ChartResolution.QUARTER_HOUR else ChartResolution.HOURLY
+            if (gap <= SUB_HOURLY_GAP_MINUTES) ChartResolution.SUB_HOURLY else ChartResolution.HOURLY
 
         return PrecipitationChart(
             points = points,
@@ -228,7 +228,8 @@ object PrecipitationOutlooks {
         resolution: ChartResolution,
     ): List<ChartTick> = when (resolution) {
         ChartResolution.HOURLY -> nowcast.map { ChartTick(it.minutesFromNow, it.time) }
-        ChartResolution.QUARTER_HOUR -> nowcast
+        ChartResolution.SUB_HOURLY -> nowcast
+            // Whole and half hours only; a label every five minutes is a smear.
             .filter { it.time.endsWith(":00") || it.time.endsWith(":30") }
             .map { ChartTick(it.minutesFromNow, it.time, isMajor = it.time.endsWith(":00")) }
     }

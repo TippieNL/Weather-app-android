@@ -49,8 +49,13 @@ interface WeatherRepository {
  * is the one the user is looking at.
  */
 interface RadarNowcastRepository {
-    /** Null when there is no radar coverage for [coordinates], or on failure. */
-    suspend fun nowcast(coordinates: Coordinates): List<NowcastPoint>?
+    /**
+     * @param utcOffsetSeconds the clock at [coordinates], since radar is
+     *                         stamped in UTC but the graph is labelled in the
+     *                         local time of the place being forecast.
+     * @return null when there is no radar coverage there, or on failure.
+     */
+    suspend fun nowcast(coordinates: Coordinates, utcOffsetSeconds: Int): List<NowcastPoint>?
 }
 
 interface GeocodingRepository {

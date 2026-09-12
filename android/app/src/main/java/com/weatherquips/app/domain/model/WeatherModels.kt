@@ -96,6 +96,12 @@ data class WeatherData(
     val dailyForecast: List<DailyForecast>,
     val hourlyForecast: List<HourlyForecast>,
     /**
+     * The location's offset from UTC. Sources that stamp their data in UTC —
+     * the radar nowcast — need it to label a point with the clock time at the
+     * place being forecast, which is not necessarily the phone's.
+     */
+    val utcOffsetSeconds: Int? = null,
+    /**
      * Fine-grained precipitation for the next couple of hours. Empty when the
      * chosen provider has nothing better than hourly totals to offer.
      */

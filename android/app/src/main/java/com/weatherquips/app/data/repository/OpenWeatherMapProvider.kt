@@ -100,6 +100,7 @@ class OpenWeatherMapProvider(private val api: OpenWeatherMapApi) : WeatherProvid
             // No sub-hourly feed on the free plan, so the widget's graph gets
             // a step per slot rather than a curve.
             nowcast = ProviderSupport.nowcastFromHourly(hourlyForecast),
+            utcOffsetSeconds = current.timezone,
         )
     }
 

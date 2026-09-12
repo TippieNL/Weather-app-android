@@ -91,8 +91,15 @@ class WeatherRepositoryTest {
         var calls = 0
             private set
 
-        override suspend fun nowcast(coordinates: Coordinates): List<NowcastPoint>? {
+        var lastOffsetSeconds: Int? = null
+            private set
+
+        override suspend fun nowcast(
+            coordinates: Coordinates,
+            utcOffsetSeconds: Int,
+        ): List<NowcastPoint>? {
             calls++
+            lastOffsetSeconds = utcOffsetSeconds
             return result.getOrThrow()
         }
     }
@@ -131,6 +138,20 @@ class WeatherRepositoryTest {
         assertEquals(radarSeries, weather.nowcast)
         // And it is the radar series that gets cached for the widget.
         assertEquals(radarSeries, cache.read()?.data?.nowcast)
+    }
+
+    @Test
+    fun `the location's own clock is handed to the radar, not the phone's`() = runTest {
+        val provider = FakeProvider(
+            WeatherService.OPEN_METEO,
+            Result.success(TestWeather.sample().copy(utcOffsetSeconds = 5 * 3600 + 1800)),
+        )
+        val radar = FakeRadar(Result.success(radarSeries))
+
+        repository(provider, radar = radar)
+            .getWeather(coordinates, WeatherService.OPEN_METEO, "")
+
+        assertEquals(5 * 3600 + 1800, radar.lastOffsetSeconds)
     }
 
     @Test

@@ -65,8 +65,8 @@ object NetworkModule {
         retrofit("https://nominatim.openstreetmap.org/").create(NominatimApi::class.java)
     }
 
-    val buienradarApi: BuienradarApi by lazy {
-        retrofit("https://gpsgadget.buienradar.nl/").create(BuienradarApi::class.java)
+    val brightskyApi: BrightskyApi by lazy {
+        retrofit("https://api.brightsky.dev/").create(BrightskyApi::class.java)
     }
 
     val rainViewerApi: RainViewerApi by lazy {

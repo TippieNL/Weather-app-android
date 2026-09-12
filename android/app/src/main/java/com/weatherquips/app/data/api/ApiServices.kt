@@ -1,5 +1,6 @@
 package com.weatherquips.app.data.api
 
+import com.weatherquips.app.data.model.BrightskyRadarResponse
 import com.weatherquips.app.data.model.NominatimPlace
 import com.weatherquips.app.data.model.NominatimReverse
 import com.weatherquips.app.data.model.OpenMeteoResponse
@@ -7,7 +8,6 @@ import com.weatherquips.app.data.model.OwmCurrentResponse
 import com.weatherquips.app.data.model.OwmForecastResponse
 import com.weatherquips.app.data.model.RainViewerMaps
 import com.weatherquips.app.data.model.WeatherApiResponse
-import okhttp3.ResponseBody
 import retrofit2.http.GET
 import retrofit2.http.Query
 
@@ -97,18 +97,31 @@ interface NominatimApi {
 }
 
 /**
- * Buienradar's radar nowcast for the Netherlands and Belgium.
+ * Bright Sky, a free JSON front end to the German weather service's open data.
  *
- * Free and key-less, and the same feed the Dutch rain apps draw: two hours
- * ahead in five-minute steps. The response is plain text, one `value|HH:MM`
- * line per step, so it comes back as a raw body rather than JSON.
+ * Its radar endpoint serves DWD's RADOLAN composite and the RV nowcast on top
+ * of it: observed radar behind, two hours of extrapolated radar ahead, both in
+ * five-minute steps. Coverage is Germany and its neighbours rather than the
+ * whole world, and the endpoint says so plainly when asked about a point
+ * outside it.
+ *
+ * The endpoint refuses `format=plain` unless the request accepts a compressed
+ * reply. OkHttp adds `Accept-Encoding: gzip` and decompresses transparently on
+ * its own — but only while nobody sets that header here, because setting it
+ * explicitly hands the decompression back to the caller. Leave it alone.
  */
-interface BuienradarApi {
-    @GET("data/raintext")
-    suspend fun rainText(
+interface BrightskyApi {
+    @GET("radar")
+    suspend fun radar(
         @Query("lat") latitude: Double,
         @Query("lon") longitude: Double,
-    ): ResponseBody
+        /** Metres either side of the point; 1000 gives the 3x3 cells we sample. */
+        @Query("distance") distanceMetres: Int = 1000,
+        /** How far ahead to ask for; without it the reply stops an hour out. */
+        @Query("last_date") lastDate: String,
+        /** Plain integers rather than the default base64-packed grid. */
+        @Query("format") format: String = "plain",
+    ): BrightskyRadarResponse
 }
 
 interface RainViewerApi {

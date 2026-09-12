@@ -14,6 +14,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
+import java.util.TimeZone
 import kotlin.random.Random
 
 /**
@@ -68,8 +69,15 @@ class WeatherRepositoryImpl(
         // Radar beats the model for the next two hours, and it is what the
         // app's own map is showing. Best effort: no radar, or a radar that is
         // down, must never cost the user their forecast.
-        val radar = radarNowcast
-            ?.let { runCatching { it.nowcast(coordinates) }.getOrNull() }
+        val radar = radarNowcast?.let { repository ->
+            runCatching {
+                repository.nowcast(
+                    coordinates = coordinates,
+                    utcOffsetSeconds = withQuote.utcOffsetSeconds
+                        ?: TimeZone.getDefault().getOffset(System.currentTimeMillis()) / 1000,
+                )
+            }.getOrNull()
+        }
         val withNowcast =
             if (radar.isNullOrEmpty()) withQuote else withQuote.copy(nowcast = radar)
 

@@ -33,6 +33,29 @@ object IntensityScale {
     /** Wet enough to be worth a headline. */
     const val WET_MM_PER_HOUR = 0.1
 
+    /**
+     * Height given to the lightest measurable rain.
+     *
+     * Without it the bottom band is linear and 0.1 mm/h draws two pixels tall
+     * on a widget — indistinguishable from dry, which is the complaint this
+     * graph exists to answer. Anything the radar can measure gets a shape.
+     */
+    private const val TRACE_FRACTION = 0.10f
+
+    /**
+     * The axis, as (rate, height) anchors with straight lines between them.
+     * Each named band still gets its own quarter; the extra anchor only
+     * steepens the climb out of zero.
+     */
+    private val anchors: List<Pair<Double, Float>> = listOf(
+        0.0 to 0f,
+        WET_MM_PER_HOUR to TRACE_FRACTION,
+        IntensityBand.LIGHT.millimetresPerHour to 0.25f,
+        IntensityBand.MODERATE.millimetresPerHour to 0.5f,
+        IntensityBand.HEAVY.millimetresPerHour to 0.75f,
+        IntensityBand.VIOLENT.millimetresPerHour to 1f,
+    )
+
     private val bandFractions = mapOf(
         IntensityBand.LIGHT to 0.25f,
         IntensityBand.MODERATE to 0.5f,
@@ -47,22 +70,17 @@ object IntensityScale {
     val gridBands: List<IntensityBand> =
         listOf(IntensityBand.LIGHT, IntensityBand.MODERATE, IntensityBand.HEAVY)
 
-    /** Height for a rate, interpolated inside its band and clamped at the top. */
+    /** Height for a rate, interpolated between anchors and clamped at the top. */
     fun fraction(millimetresPerHour: Double): Float {
         if (millimetresPerHour <= 0.0) return 0f
 
-        var lowerRate = 0.0
-        var lowerFraction = 0f
-        for (band in IntensityBand.entries) {
-            val upperRate = band.millimetresPerHour
-            val upperFraction = fractionOf(band)
+        anchors.zipWithNext { (lowerRate, lowerFraction), (upperRate, upperFraction) ->
             if (millimetresPerHour <= upperRate) {
                 val span = upperRate - lowerRate
-                val progress = if (span <= 0.0) 1f else ((millimetresPerHour - lowerRate) / span).toFloat()
+                val progress =
+                    if (span <= 0.0) 1f else ((millimetresPerHour - lowerRate) / span).toFloat()
                 return lowerFraction + progress * (upperFraction - lowerFraction)
             }
-            lowerRate = upperRate
-            lowerFraction = upperFraction
         }
         return 1f
     }

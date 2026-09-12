@@ -53,10 +53,16 @@ class WidgetGraphTest {
     }
 
     @Test
-    fun `drizzle is still tall enough to see`() {
-        // The whole point of the non-linear axis: on a linear 0..15 scale this
-        // would be 2% of the height and invisible on a home screen.
-        assertTrue(IntensityScale.fraction(0.2) > 0.08f)
+    fun `anything the radar can measure is tall enough to see`() {
+        // The whole point of the non-linear axis: on a linear 0..15 scale the
+        // drizzle that actually passed over Lubeck would be under one percent
+        // of the height, which is what "the widget shows nothing" looks like.
+        assertTrue(
+            "0.12 mm/h drew ${IntensityScale.fraction(0.12)} of the plot",
+            IntensityScale.fraction(0.12) >= 0.1f,
+        )
+        assertTrue(IntensityScale.fraction(IntensityScale.WET_MM_PER_HOUR) >= 0.1f)
+        assertTrue(IntensityScale.fraction(0.3) > IntensityScale.fraction(0.12))
     }
 
     @Test
@@ -81,7 +87,7 @@ class WidgetGraphTest {
         PrecipitationChart(
             points = rates.mapIndexed { i, mm -> ChartPoint(startMinutes + i * step, mm) },
             ticks = listOf(ChartTick(0, "18:00"), ChartTick(60, "19:00")),
-            resolution = ChartResolution.QUARTER_HOUR,
+            resolution = ChartResolution.SUB_HOURLY,
         )
 
     @Test

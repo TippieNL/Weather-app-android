@@ -178,7 +178,7 @@ class WidgetOutlookTest {
             withNowcast(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
             nowMillis = NOW,
         )
-        assertEquals(ChartResolution.QUARTER_HOUR, outlook.chart.resolution)
+        assertEquals(ChartResolution.SUB_HOURLY, outlook.chart.resolution)
         assertEquals(Outlook.Dry, outlook.outlook)
     }
 
@@ -224,7 +224,7 @@ class WidgetOutlookTest {
         assertEquals(5, outlook.chart.points.size)
         assertEquals(-30, outlook.chart.startMinutes)
         assertEquals(30, outlook.chart.endMinutes)
-        assertEquals(ChartResolution.QUARTER_HOUR, outlook.chart.resolution)
+        assertEquals(ChartResolution.SUB_HOURLY, outlook.chart.resolution)
         assertEquals(0.5, outlook.chart.peakMillimetresPerHour, 0.0001)
     }
 

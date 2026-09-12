@@ -9,6 +9,7 @@ data class OpenMeteoResponse(
     val hourly: OpenMeteoHourly,
     val daily: OpenMeteoDaily,
     @SerialName("minutely_15") val minutely15: OpenMeteoMinutely15? = null,
+    @SerialName("utc_offset_seconds") val utcOffsetSeconds: Int? = null,
 )
 
 @Serializable

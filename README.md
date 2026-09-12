@@ -78,7 +78,7 @@ Compose UI → ViewModel (StateFlow) → Repository → Retrofit/OkHttp → prov
 | [WeatherAPI](https://www.weatherapi.com) | Optional provider | user-supplied |
 | [Nominatim](https://nominatim.openstreetmap.org) | Forward + reverse geocoding | none |
 | [RainViewer](https://www.rainviewer.com/api.html) | Radar tiles and timeline | none |
-| [Buienradar](https://www.buienradar.nl) | Radar precipitation nowcast for the widget (Netherlands and Belgium only) | none |
+| [Bright Sky](https://brightsky.dev) | DWD radar composite and nowcast for the widget (Germany and neighbours) | none |
 | [OpenStreetMap](https://www.openstreetmap.org) | Base map tiles (via osmdroid) | none |
 
 ## Permissions
