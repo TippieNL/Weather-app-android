@@ -1,5 +1,9 @@
 package com.weatherquips.app.ui.navigation
 
+import androidx.compose.animation.AnimatedContentTransitionScope.SlideDirection
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -93,7 +97,25 @@ fun WeatherQuipsNavHost(
             )
         }
 
-        composable(Routes.HOME) {
+        composable(
+            route = Routes.HOME,
+            // Home steps aside to the left as the radar comes in from the
+            // right, so the swipe that opened it and the motion agree.
+            exitTransition = {
+                if (targetState.destination.route == Routes.PRECIPITATION) {
+                    slideOutOfContainer(SlideDirection.Start, tween(MAP_SLIDE_MILLIS))
+                } else {
+                    fadeOut(tween(FADE_MILLIS))
+                }
+            },
+            popEnterTransition = {
+                if (initialState.destination.route == Routes.PRECIPITATION) {
+                    slideIntoContainer(SlideDirection.End, tween(MAP_SLIDE_MILLIS))
+                } else {
+                    fadeIn(tween(FADE_MILLIS))
+                }
+            },
+        ) {
             val viewModel: HomeViewModel = viewModel(factory = HomeViewModel.factory())
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -135,6 +157,8 @@ fun WeatherQuipsNavHost(
                 navArgument("lat") { type = NavType.FloatType },
                 navArgument("lon") { type = NavType.FloatType },
             ),
+            enterTransition = { slideIntoContainer(SlideDirection.Start, tween(MAP_SLIDE_MILLIS)) },
+            popExitTransition = { slideOutOfContainer(SlideDirection.End, tween(MAP_SLIDE_MILLIS)) },
         ) { entry ->
             val latitude = entry.arguments?.getFloat("lat")?.toDouble() ?: 0.0
             val longitude = entry.arguments?.getFloat("lon")?.toDouble() ?: 0.0
@@ -155,6 +179,9 @@ fun WeatherQuipsNavHost(
         }
     }
 }
+
+private const val MAP_SLIDE_MILLIS = 320
+private const val FADE_MILLIS = 220
 
 /** Guards against a double tap queueing the same destination twice. */
 private fun NavHostController.navigateSingleTop(route: String) {

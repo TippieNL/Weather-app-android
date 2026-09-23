@@ -136,7 +136,6 @@ class ScreenshotRenderTest {
                         weather = TestWeather.assenEvening(),
                         staleSinceMillis = null,
                         onRefresh = {},
-                        onOpenPrecipitationMap = {},
                     )
                 }
             }
@@ -158,7 +157,6 @@ class ScreenshotRenderTest {
                         weather = TestWeather.assenEvening(),
                         staleSinceMillis = null,
                         onRefresh = {},
-                        onOpenPrecipitationMap = {},
                     )
                 }
             }

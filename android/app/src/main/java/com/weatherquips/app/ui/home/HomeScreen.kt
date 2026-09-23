@@ -17,7 +17,7 @@ import androidx.compose.animation.fadeOut
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -89,6 +89,7 @@ import com.weatherquips.app.ui.theme.LocalAccents
 import com.weatherquips.app.ui.theme.QuipHeadlineStyle
 import com.weatherquips.app.utils.Formatters
 import kotlinx.coroutines.delay
+import kotlin.math.abs
 import kotlinx.coroutines.launch
 
 /**
@@ -255,7 +256,6 @@ private fun WeatherDisplay(
                 weather = weather,
                 staleSinceMillis = staleSinceMillis,
                 onRefresh = onRefresh,
-                onOpenPrecipitationMap = { onOpenPrecipitationMap(coordinates) },
             )
         },
         // Transparent so the mode's wash runs behind the whole screen rather
@@ -279,6 +279,7 @@ private fun WeatherDisplay(
                 onRefresh = onRefresh,
                 onOpenSettings = onOpenSettings,
                 onExpand = { scope.launch { sheetState.expand() } },
+                onOpenMap = { onOpenPrecipitationMap(coordinates) },
             )
         }
     }
@@ -299,6 +300,7 @@ private fun HeroContent(
     onRefresh: () -> Unit,
     onOpenSettings: () -> Unit,
     onExpand: () -> Unit,
+    onOpenMap: () -> Unit,
 ) {
     val settings = uiState.settings
     var explodeTaps by remember { mutableStateOf(TapStreak()) }
@@ -311,26 +313,38 @@ private fun HeroContent(
         }
     }
 
-    // The whole screen responds to a swipe, not just the handle at the bottom —
-    // the web app expanded on any upward drag past a threshold, and grabbing a
-    // 56dp strip to open the panel feels broken on a phone.
-    var dragTotal by remember { mutableFloatStateOf(0f) }
-    // The threshold is a physical distance, so it must be expressed in dp and
+    // The whole screen responds to a swipe, not just the handle at the bottom:
+    // up opens the detail panel, right-to-left pulls in the radar. One detector
+    // for both, classified when the finger lifts, so a swipe that wanders a
+    // little off its axis still means what it looked like.
+    var dragX by remember { mutableFloatStateOf(0f) }
+    var dragY by remember { mutableFloatStateOf(0f) }
+    // Thresholds are physical distances, so they are expressed in dp and
     // converted — a raw pixel count means a different swipe on every density.
-    val swipeThresholdPx = with(LocalDensity.current) { SWIPE_THRESHOLD.toPx() }
+    val density = LocalDensity.current
+    val expandThresholdPx = with(density) { SWIPE_THRESHOLD.toPx() }
+    val mapThresholdPx = with(density) { MAP_SWIPE_THRESHOLD.toPx() }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .pointerInput(swipeThresholdPx) {
-                detectVerticalDragGestures(
-                    onDragStart = { dragTotal = 0f },
-                    onDragCancel = { dragTotal = 0f },
+            .pointerInput(expandThresholdPx, mapThresholdPx) {
+                detectDragGestures(
+                    onDragStart = { dragX = 0f; dragY = 0f },
+                    onDragCancel = { dragX = 0f; dragY = 0f },
                     onDragEnd = {
-                        if (dragTotal <= -swipeThresholdPx) onExpand()
-                        dragTotal = 0f
+                        when (HeroSwipe.classify(dragX, dragY, expandThresholdPx, mapThresholdPx)) {
+                            HeroSwipe.OPEN_MAP -> onOpenMap()
+                            HeroSwipe.EXPAND -> onExpand()
+                            null -> Unit
+                        }
+                        dragX = 0f
+                        dragY = 0f
                     },
-                ) { _, delta -> dragTotal += delta }
+                ) { _, delta ->
+                    dragX += delta.x
+                    dragY += delta.y
+                }
             },
     ) {
         Column(
@@ -469,6 +483,13 @@ private fun HeroContent(
             RefreshButton(onRefresh = onRefresh, isRefreshing = uiState.isRefreshing)
         }
 
+        RadarEdgeTab(
+            onClick = onOpenMap,
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .graphicsLayer { alpha = progress },
+        )
+
         if (uiState.isPokemonMode) {
             PokemonBanner(
                 modifier = Modifier
@@ -479,6 +500,70 @@ private fun HeroContent(
             )
         }
 
+    }
+}
+
+/**
+ * A small tab on the right edge pointing at where the radar lives.
+ *
+ * The swipe is the fast way in, but nothing about a blank edge says a swipe
+ * exists, and TalkBack users cannot perform it at all. The tab is the hint and
+ * the accessible route in one, and it fades with the hero when the panel is up.
+ */
+@Composable
+private fun RadarEdgeTab(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val label = stringResource(R.string.open_precipitation_map)
+    Row(
+        modifier = modifier
+            .testTag(TAG_RADAR_TAB)
+            .clip(RoundedCornerShape(topStart = 12.dp, bottomStart = 12.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f))
+            .clickable(onClick = onClick)
+            .semantics(mergeDescendants = true) { contentDescription = label }
+            .padding(start = 6.dp, end = 8.dp, top = 14.dp, bottom = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.ic_chevron_left),
+            contentDescription = null,
+            modifier = Modifier.size(16.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Icon(
+            painter = painterResource(R.drawable.ic_map),
+            contentDescription = null,
+            modifier = Modifier.size(18.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+/**
+ * What a finished drag on the hero meant.
+ *
+ * Pure so the geometry can be tested without synthesising touch events. The
+ * horizontal case must clearly dominate: a thumb swiping up often drifts
+ * sideways, and opening a map by accident costs a screen transition and a
+ * radar download, where opening the panel by accident costs nothing.
+ */
+internal enum class HeroSwipe {
+    EXPAND,
+    OPEN_MAP;
+
+    companion object {
+        /** How much further sideways than vertical a map swipe must travel. */
+        const val HORIZONTAL_DOMINANCE = 1.5f
+
+        fun classify(
+            dx: Float,
+            dy: Float,
+            expandThresholdPx: Float,
+            mapThresholdPx: Float,
+        ): HeroSwipe? = when {
+            dx <= -mapThresholdPx && abs(dx) >= abs(dy) * HORIZONTAL_DOMINANCE -> OPEN_MAP
+            dy <= -expandThresholdPx && abs(dy) > abs(dx) -> EXPAND
+            else -> null
+        }
     }
 }
 
@@ -614,6 +699,12 @@ internal data class TapStreak(val count: Int = 0, val lastTapMillis: Long = 0L) 
 /** Matches the web app's 50px swipe threshold. */
 internal val SWIPE_THRESHOLD = 56.dp
 
+/**
+ * A little further than the upward swipe: the map is a heavier destination,
+ * and a sideways brush while scrolling past should not land on it.
+ */
+internal val MAP_SWIPE_THRESHOLD = 72.dp
+
 internal const val EXPLODE_TAP_COUNT = 5
 internal val SHEET_PEEK_HEIGHT = 56.dp
 
@@ -622,5 +713,6 @@ const val TAG_SUBTITLE = "home-subtitle"
 const val TAG_TEMPERATURE = "home-temperature"
 const val TAG_LOCATION = "home-location"
 const val TAG_EXPAND = "home-expand"
+const val TAG_RADAR_TAB = "home-radar-tab"
 const val TAG_COLLAPSE = "home-collapse"
 const val TAG_STALE = "home-stale"

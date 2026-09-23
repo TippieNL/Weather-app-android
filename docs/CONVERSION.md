@@ -108,6 +108,20 @@ obvious against real data:
 | Forecast colour was relative to whatever was on screen, so a 1 °C spread rendered as a full blue→red swing and the same temperature took a different colour in each card | Colour is anchored to actual degrees, so a temperature always looks the same; mild weather sits near-neutral and colour appears when it means something |
 | The hourly chart normalised to the visible min and max, turning a flat evening into dramatic peaks | The strip holds a minimum span, so a flat night looks flat |
 
+## Reaching the radar
+
+The web app put the radar behind a button at the bottom of the detail panel:
+swipe up, scroll down, tap. On a phone the radar is the second thing people
+want after the headline, so it moved to a gesture on the home screen itself.
+
+| Decision | Why |
+| --- | --- |
+| Swipe right to left on the home screen | The map "lives" to the right of home and slides in from there; back slides it out the same way, so gesture and motion agree |
+| One drag detector for both swipes, classified on release | Up still opens the panel. A thumb swiping up drifts sideways, so a map swipe must be 1.5× more horizontal than vertical and travel 72dp (the panel needs 56dp): opening the map by accident costs a transition and a radar download, opening the panel costs nothing |
+| Start away from the edge | With gesture navigation the outer strip of the screen belongs to the system's back gesture; a swipe that starts there is taken by Android before the app sees it |
+| A small tab on the right edge | A blank edge does not advertise a swipe, and TalkBack users cannot perform one. The tab is the hint and the accessible route in one, labelled "Open precipitation map. You can also swipe left." |
+| The panel's map card is gone | One way in, found from the screen people already look at |
+
 ## Home-screen widget
 
 New to the Android version; the PWA had nothing equivalent.

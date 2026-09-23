@@ -11,7 +11,12 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipe
 import androidx.compose.ui.test.swipeUp
+import org.junit.Assert.assertFalse
+import com.weatherquips.app.ui.home.TAG_RADAR_TAB
+import androidx.compose.ui.test.swipeRight
+import androidx.compose.ui.test.swipeLeft
 import com.weatherquips.app.domain.model.AppSettings
 import com.weatherquips.app.domain.model.Coordinates
 import com.weatherquips.app.domain.model.TemperatureUnit
@@ -128,6 +133,88 @@ class HomeScreenUiTest {
         }
 
         composeRule.onNodeWithTag(TAG_COLLAPSE).assertIsDisplayed()
+    }
+
+    @Test
+    fun `swiping right to left on the home screen opens the radar for this place`() {
+        var opened: Coordinates? = null
+        render(successState, onOpenMap = { opened = it })
+
+        // Mid-screen, away from the edges: on a phone with gesture navigation
+        // an edge swipe belongs to the system's back gesture.
+        composeRule.onRoot().performTouchInput {
+            swipeLeft(startX = width * 0.8f, endX = width * 0.2f)
+        }
+        composeRule.waitForIdle()
+
+        assertEquals(Coordinates(52.99, 6.56), opened)
+    }
+
+    @Test
+    fun `swiping up opens the panel and does not open the radar`() {
+        var opened = false
+        render(successState, onOpenMap = { opened = true })
+
+        composeRule.onRoot().performTouchInput {
+            val startY = height * 0.6f
+            // A real thumb drifts sideways while swiping up.
+            swipe(
+                start = Offset(width * 0.6f, startY),
+                end = Offset(width * 0.45f, startY - height * 0.35f),
+            )
+        }
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodes(hasTestTag(TAG_COLLAPSE)).fetchSemanticsNodes().isNotEmpty()
+        }
+
+        assertFalse("an upward swipe opened the map", opened)
+    }
+
+    @Test
+    fun `swiping left to right does nothing`() {
+        var opened = false
+        render(successState, onOpenMap = { opened = true })
+
+        composeRule.onRoot().performTouchInput {
+            swipeRight(startX = width * 0.2f, endX = width * 0.8f)
+        }
+        composeRule.waitForIdle()
+
+        assertFalse(opened)
+        composeRule.onNodeWithTag(TAG_EXPAND).assertIsDisplayed()
+    }
+
+    @Test
+    fun `a short sideways brush does not open the radar`() {
+        var opened = false
+        render(successState, onOpenMap = { opened = true })
+
+        composeRule.onRoot().performTouchInput {
+            down(center)
+            moveBy(Offset(-40f, 0f))
+            up()
+        }
+        composeRule.waitForIdle()
+
+        assertFalse(opened)
+    }
+
+    @Test
+    fun `the edge tab opens the radar for anyone who cannot swipe`() {
+        var opened: Coordinates? = null
+        render(successState, onOpenMap = { opened = it })
+
+        composeRule.onNodeWithTag(TAG_RADAR_TAB).assertIsDisplayed().performClick()
+
+        assertEquals(Coordinates(52.99, 6.56), opened)
+    }
+
+    @Test
+    fun `the edge tab tells TalkBack what it does`() {
+        render(successState)
+        composeRule.onNodeWithContentDescription(
+            "Open precipitation map. You can also swipe left.",
+        ).assertExists()
     }
 
     @Test

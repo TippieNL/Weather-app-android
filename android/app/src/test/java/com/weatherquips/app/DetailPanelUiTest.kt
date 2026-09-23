@@ -21,7 +21,6 @@ import com.weatherquips.app.ui.home.TAG_DETAIL_RANGE
 import com.weatherquips.app.ui.home.TAG_DETAIL_STATS
 import com.weatherquips.app.ui.home.TAG_DETAIL_TEMP
 import com.weatherquips.app.ui.home.TAG_HOURLY
-import com.weatherquips.app.ui.home.TAG_MAP_CARD
 import com.weatherquips.app.ui.home.WeatherDetailPanel
 import com.weatherquips.app.ui.theme.WeatherQuipsTheme
 import org.junit.Assert.assertTrue
@@ -41,7 +40,7 @@ class DetailPanelUiTest {
 
     private val weather = TestWeather.assenEvening()
 
-    private fun render(onOpenMap: () -> Unit = {}) {
+    private fun render() {
         composeRule.setContent {
             WeatherQuipsTheme(darkTheme = false) {
                 Surface(
@@ -56,7 +55,6 @@ class DetailPanelUiTest {
                         weather = weather,
                         staleSinceMillis = null,
                         onRefresh = {},
-                        onOpenPrecipitationMap = onOpenMap,
                     )
                 }
             }
@@ -119,16 +117,18 @@ class DetailPanelUiTest {
     }
 
     @Test
-    fun `the panel still shows the headline temperature and the map link`() {
-        var mapOpened = false
-        render(onOpenMap = { mapOpened = true })
+    fun `the panel still shows the headline temperature`() {
+        render()
 
         composeRule.onNodeWithTag(TAG_DETAIL_PANEL).assertExists()
         composeRule.onNodeWithTag(TAG_DETAIL_TEMP).assertIsDisplayed()
         composeRule.onNodeWithText("17°C").assertIsDisplayed()
+    }
 
-        composeRule.onNodeWithTag(TAG_MAP_CARD).performClick()
-        assertTrue(mapOpened)
+    @Test
+    fun `the map is reached from the home screen, not from the bottom of the panel`() {
+        render()
+        composeRule.onNodeWithText("precipitation map").assertDoesNotExist()
     }
 
     private fun androidx.compose.ui.test.junit4.AndroidComposeTestRule<*, *>.onAllNodesWithTextValue(

@@ -61,7 +61,6 @@ fun WeatherDetailPanel(
     weather: WeatherData,
     staleSinceMillis: Long?,
     onRefresh: () -> Unit,
-    onOpenPrecipitationMap: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -72,7 +71,6 @@ fun WeatherDetailPanel(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item("main") { MainWeatherCard(uiState, weather, staleSinceMillis, onRefresh) }
-        item("map") { PrecipitationMapCard(onOpenPrecipitationMap) }
         item("today") { HourlyCard(uiState, weather) }
         item("week") { WeeklyCard(uiState, weather) }
     }
@@ -322,53 +320,6 @@ private fun StatTileCell(tile: StatTile, modifier: Modifier = Modifier) {
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = 1,
         )
-    }
-}
-
-@Composable
-private fun PrecipitationMapCard(onClick: () -> Unit) {
-    QuipCard(modifier = Modifier.fillMaxWidth().testTag(TAG_MAP_CARD), onClick = onClick) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_map),
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                    )
-                }
-                Spacer(Modifier.width(12.dp))
-                Column {
-                    Text(
-                        text = stringResource(R.string.precipitation_map),
-                        style = MaterialTheme.typography.titleMedium,
-                    )
-                    Text(
-                        text = stringResource(R.string.live_radar_overlay),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-            Icon(
-                painter = painterResource(R.drawable.ic_chevron_right),
-                contentDescription = null,
-                modifier = Modifier.size(18.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
     }
 }
 
@@ -624,6 +575,5 @@ const val TAG_DETAIL_TEMP = "detail-temp"
 const val TAG_DETAIL_CONDITION = "detail-condition"
 const val TAG_DETAIL_RANGE = "detail-range"
 const val TAG_DETAIL_STATS = "detail-stats"
-const val TAG_MAP_CARD = "detail-map-card"
 const val TAG_HOURLY = "detail-hourly"
 const val TAG_DAILY = "detail-daily"
