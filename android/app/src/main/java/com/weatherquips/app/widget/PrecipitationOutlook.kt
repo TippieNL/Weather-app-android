@@ -8,6 +8,7 @@ import com.weatherquips.app.domain.model.WeatherCondition
 import com.weatherquips.app.domain.model.WeatherData
 import com.weatherquips.app.notifications.PrecipitationAlerts
 import com.weatherquips.app.notifications.PrecipitationKind
+import java.util.TimeZone
 import kotlin.math.abs
 import kotlin.math.ceil
 
@@ -79,6 +80,8 @@ data class PrecipitationOutlook(
     val isDay: Boolean,
     val location: String,
     val updatedAtMillis: Long,
+    /** How long ago the forecast was fetched, in minutes. */
+    val ageMinutes: Int,
     /** Where the forecast is for, so a tap can open the radar on it. */
     val coordinates: Coordinates,
 )
@@ -115,6 +118,9 @@ object PrecipitationOutlooks {
      */
     const val MAX_HISTORY_MINUTES = 45
 
+    /** Below this there is no curve, only a dot. */
+    const val MIN_CHART_POINTS = 2
+
     private const val MILLIS_PER_MINUTE = 60_000L
 
     private const val MINUTES_PER_HOUR = 60.0
@@ -128,10 +134,11 @@ object PrecipitationOutlooks {
         nowMillis: Long = System.currentTimeMillis(),
     ): PrecipitationOutlook {
         val data = cached.data
-        val series = seriesFor(data)
         val age = ((nowMillis - cached.fetchedAtEpochMillis) / MILLIS_PER_MINUTE)
             .coerceAtLeast(0L).toInt()
-        val nowcast = series.points.agedBy(age)
+        val minutesIntoFetchHour = data.minutesIntoHourAt(cached.fetchedAtEpochMillis)
+        val series = seriesFor(data, age, minutesIntoFetchHour)
+        val nowcast = series.points
         val chart = chartFrom(nowcast)
         val nowRate = nowRate(nowcast)
 
@@ -141,7 +148,9 @@ object PrecipitationOutlooks {
                 nowcast = nowcast,
                 hasRealNowcast = series.isSubHourly,
                 nowRate = nowRate,
-                hourly = data.hourlyForecast,
+                // Skip the hours that have already happened since the fetch,
+                // or a stale widget announces rain for a time this morning.
+                hourly = data.hourlyForecast.drop((minutesIntoFetchHour + age) / 60),
             ),
             chart = chart,
             nowMillimetresPerHour = nowRate,
@@ -149,6 +158,7 @@ object PrecipitationOutlooks {
             isDay = data.isDay,
             location = data.location,
             updatedAtMillis = cached.fetchedAtEpochMillis,
+            ageMinutes = age,
             coordinates = cached.coordinates,
         )
     }
@@ -159,24 +169,45 @@ object PrecipitationOutlooks {
     /**
      * Picks between the minute-level nowcast and the hourly totals.
      *
-     * A minute-level feed that reports nothing while the hourly figures report
-     * millimetres is not a dry forecast, it is a rounding artefact: Open-Meteo
-     * publishes `minutely_15` to a tenth of a millimetre per quarter-hour, so
-     * anything under 0.4 mm/h lands on exactly zero, while the hourly field
-     * resolves the same drizzle four times finer. Drawing the flat line in
-     * that case is how the widget ends up claiming a dry afternoon during
-     * light rain.
+     * Two ways the minute-level feed loses.
+     *
+     * It can be quantised into silence: Open-Meteo publishes `minutely_15` to
+     * a tenth of a millimetre per quarter-hour, so anything under 0.4 mm/h
+     * lands on exactly zero while the hourly field resolves the same drizzle
+     * four times finer.
+     *
+     * Or it can simply expire. Its samples are stamped relative to the moment
+     * they were fetched and the widget draws from cache, so a couple of hours
+     * without a successful refresh slides the whole series off the left of the
+     * graph. The hourly forecast is stamped with wall-clock hours instead, so
+     * it stays meaningful for as long as it covers — which is the difference
+     * between a widget that degrades and one that goes blank.
      */
-    private fun seriesFor(data: WeatherData): Series {
-        val hourly = data.hourlyForecast.asNowcast()
-        if (data.nowcast.isEmpty()) return Series(hourly, isSubHourly = false)
+    private fun seriesFor(data: WeatherData, ageMinutes: Int, minutesIntoFetchHour: Int): Series {
+        val hourly = data.hourlyForecast.asNowcast(ageMinutes, minutesIntoFetchHour)
+        val minuteLevel = data.nowcast.agedBy(ageMinutes)
 
-        val minuteLevelIsDry = data.nowcast.none { it.isWet() }
-        return if (minuteLevelIsDry && hourly.any { it.isWet() }) {
+        if (minuteLevel.size < MIN_CHART_POINTS) return Series(hourly, isSubHourly = false)
+
+        // Only the hours the minute-level feed actually claims to cover can
+        // contradict it. Rain four hours out says nothing about whether the
+        // next two hours were rounded into silence.
+        val covered = minuteLevel.maxOf { it.minutesFromNow }
+        val quantisedIntoSilence = minuteLevel.none { it.isWet() } &&
+            hourly.any { it.minutesFromNow <= covered && it.isWet() }
+
+        return if (quantisedIntoSilence) {
             Series(hourly, isSubHourly = false)
         } else {
-            Series(data.nowcast, isSubHourly = true)
+            Series(minuteLevel, isSubHourly = true)
         }
+    }
+
+    /** How far into its clock hour a moment sits, where the weather is. */
+    private fun WeatherData.minutesIntoHourAt(millis: Long): Int {
+        val offsetSeconds = utcOffsetSeconds
+            ?: TimeZone.getDefault().getOffset(millis) / 1000
+        return Math.floorMod(millis / MILLIS_PER_MINUTE + offsetSeconds / 60, 60L).toInt()
     }
 
     private fun NowcastPoint.isWet() =
@@ -195,15 +226,31 @@ object PrecipitationOutlooks {
         }
     }
 
-    /** Hourly totals stood in for a nowcast: a step per hour, no invented curve. */
-    private fun List<HourlyForecast>.asNowcast(): List<NowcastPoint> =
-        take(FALLBACK_CHART_HOURS).mapIndexed { index, hour ->
-            NowcastPoint(
-                time = hour.time,
-                minutesFromNow = index * 60,
-                millimetresPerHour = hour.precipitationMm.coerceAtLeast(0.0),
-            )
-        }
+    /**
+     * Hourly totals stood in for a nowcast: a step per hour, no invented curve.
+     *
+     * Placed by counting from the moment the forecast was fetched rather than
+     * by reading the clock label on each entry. The entries are consecutive
+     * hours from the fetch, so index plus age is exact, and — unlike parsing
+     * "12:00" and picking the nearest occurrence — it cannot quietly decide
+     * that a half-day-old forecast is about to happen tomorrow.
+     *
+     * When the cache outlives its own coverage every entry falls behind the
+     * history limit, the series empties, and the widget says it has nothing to
+     * draw instead of drawing yesterday.
+     */
+    private fun List<HourlyForecast>.asNowcast(
+        ageMinutes: Int,
+        minutesIntoFetchHour: Int,
+    ): List<NowcastPoint> = mapIndexed { index, hour ->
+        NowcastPoint(
+            time = hour.time,
+            minutesFromNow = index * 60 - minutesIntoFetchHour - ageMinutes,
+            millimetresPerHour = hour.precipitationMm.coerceAtLeast(0.0),
+        )
+    }.filter {
+        it.minutesFromNow >= -MAX_HISTORY_MINUTES && it.minutesFromNow <= WINDOW_HOURS * 60
+    }
 
     private fun chartFrom(nowcast: List<NowcastPoint>): PrecipitationChart {
         val points = nowcast.map { ChartPoint(it.minutesFromNow, it.millimetresPerHour) }

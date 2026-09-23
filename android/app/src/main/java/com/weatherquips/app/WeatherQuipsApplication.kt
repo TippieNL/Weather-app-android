@@ -2,6 +2,7 @@ package com.weatherquips.app
 
 import android.app.Application
 import com.weatherquips.app.domain.model.LocationMode
+import com.weatherquips.app.widget.WidgetRefreshScheduler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -35,6 +36,12 @@ class WeatherQuipsApplication : Application() {
             if (settings.notificationsEnabled) {
                 container.precipitationScheduler.setEnabled(true)
             }
+
+            // Same for the widget. Its schedule was only ever armed when a
+            // widget was placed, so anything that clears WorkManager's queue —
+            // a force stop, an OEM battery manager — left it off for good.
+            val widgets = WidgetRefreshScheduler(this@WeatherQuipsApplication)
+            if (widgets.hasWidgets()) widgets.setEnabled(true)
         }
     }
 }

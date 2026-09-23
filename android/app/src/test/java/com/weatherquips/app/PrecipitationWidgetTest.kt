@@ -126,6 +126,69 @@ class PrecipitationWidgetTest {
         }
 
     @Test
+    fun `an empty graph says so instead of leaving a white rectangle`() =
+        runGlanceAppWidgetUnitTest {
+            setAppWidgetSize(wide)
+            // Hours old, with nothing left in range to plot.
+            val outlook = PrecipitationOutlooks.from(
+                nowcast(0.0, 0.0, 0.0, 0.0),
+                nowMillis = NOW + 20 * 60 * 60_000L,
+            )
+
+            provideComposable { WidgetContent(outlook = outlook, hourOfDay = 9) }
+
+            onNode(hasText("No forecast to draw. Tap to refresh.")).assertExists()
+        }
+
+    @Test
+    fun `a widget with nothing cached points at the app rather than sitting blank`() =
+        runGlanceAppWidgetUnitTest {
+            setAppWidgetSize(wide)
+
+            provideComposable { WidgetContent(outlook = null, hourOfDay = 9) }
+
+            onNode(hasText("Open the app once to get started")).assertExists()
+        }
+
+    @Test
+    fun `stale data admits its age instead of passing as current`() =
+        runGlanceAppWidgetUnitTest {
+            setAppWidgetSize(wide)
+            val outlook = PrecipitationOutlooks.from(
+                nowcast(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+                nowMillis = NOW + 3 * 60 * 60_000L,
+            )
+
+            provideComposable { WidgetContent(outlook = outlook, hourOfDay = 9) }
+
+            onNode(hasText("assen · 3h ago")).assertExists()
+        }
+
+    @Test
+    fun `a narrow widget drops the place before it drops the age`() =
+        runGlanceAppWidgetUnitTest {
+            setAppWidgetSize(narrow)
+            val outlook = PrecipitationOutlooks.from(
+                nowcast(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+                nowMillis = NOW + 95 * 60_000L,
+            )
+
+            provideComposable { WidgetContent(outlook = outlook, hourOfDay = 9) }
+
+            onNode(hasText("1h ago")).assertExists()
+        }
+
+    @Test
+    fun `fresh data does not nag about its age`() = runGlanceAppWidgetUnitTest {
+        setAppWidgetSize(wide)
+        val outlook = PrecipitationOutlooks.from(nowcast(0.0, 0.0, 0.0, 0.0), nowMillis = NOW)
+
+        provideComposable { WidgetContent(outlook = outlook, hourOfDay = 9) }
+
+        onNode(hasText("assen")).assertExists()
+    }
+
+    @Test
     fun `the narrow size still leads with the headline`() = runGlanceAppWidgetUnitTest {
         setAppWidgetSize(narrow)
         val outlook = PrecipitationOutlooks.from(nowcast(0.0, 0.0, 0.0, 0.9, 1.6), nowMillis = NOW)

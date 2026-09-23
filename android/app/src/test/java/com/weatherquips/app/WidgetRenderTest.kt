@@ -53,8 +53,12 @@ class WidgetRenderTest {
             ),
             "hourly-fallback" to hourlyOnly(),
             "radar-5min" to radarNowcast(),
+            "stale-hourly" to staleCache(),
         ).forEach { (name, cached) ->
-            val outlook = PrecipitationOutlooks.from(cached, nowMillis = NOW)
+            // The stale card is the point of the stale card: read it three
+            // hours after it was cached.
+            val readAt = if (name == "stale-hourly") NOW + 3 * 60 * 60_000L else NOW
+            val outlook = PrecipitationOutlooks.from(cached, nowMillis = readAt)
             save("widget-$name-light", card(outlook, dark = false, widthDp = 280f))
             save("widget-$name-dark", card(outlook, dark = true, widthDp = 280f))
         }
@@ -120,6 +124,29 @@ class WidgetRenderTest {
         )
     }
 
+    /**
+     * A cache three hours old: the five-minute series has expired, so the
+     * graph falls back to the hourly forecast and the face says how old it is.
+     */
+    private fun staleCache() = CachedWeather(
+        data = TestWeather.sample(condition = WeatherCondition.CLOUDY).copy(
+            utcOffsetSeconds = 0,
+            nowcast = (-12..23).map { step ->
+                val minutes = 12 * 60 + step * 5
+                NowcastPoint(
+                    time = "%02d:%02d".format((minutes / 60 + 24) % 24, Math.floorMod(minutes, 60)),
+                    minutesFromNow = step * 5,
+                    millimetresPerHour = 0.0,
+                )
+            },
+            hourlyForecast = (12..23).map {
+                HourlyForecast("%02d:00".format(it), 14.0, 40, if (it in 16..17) 1.4 else 0.0)
+            },
+        ),
+        fetchedAtEpochMillis = NOW,
+        coordinates = Coordinates(52.99, 6.56),
+    )
+
     /** A provider with no sub-hourly feed, which is the coarse path. */
     private fun hourlyOnly() = CachedWeather(
         data = TestWeather.sample(condition = WeatherCondition.CLOUDY).copy(
@@ -169,9 +196,19 @@ class WidgetRenderTest {
 
         if (wide) {
             val wet = outlook.nowMillimetresPerHour >= IntensityScale.WET_MM_PER_HOUR
-            val metaText = outlook.location.lowercase() +
-                if (wet) " · ${IntensityScale.format(outlook.nowMillimetresPerHour)}" else ""
-            val meta = text(if (wet) 0xFF3B82F6.toInt() else muted, 11f * scale, bold = wet)
+            val stale = outlook.ageMinutes >= 30
+            val detail = when {
+                stale -> " · ${outlook.ageMinutes / 60}h ago"
+                wet -> " · ${IntensityScale.format(outlook.nowMillimetresPerHour)}"
+                else -> ""
+            }
+            val metaText = outlook.location.lowercase() + detail
+            val metaColour = when {
+                stale -> 0xFFD97706.toInt()
+                wet -> 0xFF3B82F6.toInt()
+                else -> muted
+            }
+            val meta = text(metaColour, 11f * scale, bold = wet || stale)
             canvas.drawText(
                 metaText,
                 bitmap.width - side - meta.measureText(metaText),

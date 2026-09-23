@@ -22,6 +22,7 @@ import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
 import androidx.glance.layout.Alignment
+import androidx.glance.layout.Box
 import androidx.glance.layout.Column
 import androidx.glance.layout.ContentScale
 import androidx.glance.layout.Row
@@ -64,6 +65,14 @@ class PrecipitationWidget : GlanceAppWidget() {
         val outlook = cached?.let(PrecipitationOutlooks::from)
         val hourOfDay = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
 
+        // Being looked at is the one moment the widget knows it matters. If
+        // what it is about to draw is old, ask for a fetch on the way out:
+        // background work gets throttled, but a glance at the home screen
+        // repairs it.
+        if (outlook == null || outlook.ageMinutes >= STALE_MINUTES) {
+            WidgetRefreshScheduler(context).refreshNow()
+        }
+
         provideContent {
             GlanceTheme(colors = WidgetColors.providers) {
                 WidgetContent(
@@ -80,6 +89,9 @@ class PrecipitationWidget : GlanceAppWidget() {
     companion object {
         val SMALL_SIZE = DpSize(180.dp, 140.dp)
         val WIDE_SIZE = DpSize(280.dp, 140.dp)
+
+        /** Old enough to be worth a catch-up fetch, and to say so on the face. */
+        const val STALE_MINUTES = 30
     }
 }
 
@@ -134,14 +146,16 @@ fun WidgetContent(
                 maxLines = 1,
                 modifier = GlanceModifier.defaultWeight(),
             )
-            if (outlook != null && wide) {
+            if (outlook != null && (wide || outlook.ageMinutes >= PrecipitationWidget.STALE_MINUTES)) {
                 Text(
-                    text = meta(outlook),
+                    text = meta(outlook, wide),
                     style = TextStyle(
-                        color = if (outlook.nowMillimetresPerHour >= IntensityScale.WET_MM_PER_HOUR) {
-                            ColorProvider(WidgetColors.Wet)
-                        } else {
-                            GlanceTheme.colors.onSurfaceVariant
+                        color = when {
+                            outlook.ageMinutes >= PrecipitationWidget.STALE_MINUTES ->
+                                ColorProvider(WidgetColors.Stale)
+                            outlook.nowMillimetresPerHour >= IntensityScale.WET_MM_PER_HOUR ->
+                                ColorProvider(WidgetColors.Wet)
+                            else -> GlanceTheme.colors.onSurfaceVariant
                         },
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Medium,
@@ -151,27 +165,67 @@ fun WidgetContent(
             }
         }
 
+        Spacer(modifier = GlanceModifier.height(GRAPH_GAP.dp))
         if (outlook != null && !outlook.chart.isEmpty) {
-            Spacer(modifier = GlanceModifier.height(GRAPH_GAP.dp))
             Graph(
                 chart = outlook.chart,
                 widthDp = size.width.value,
                 widgetHeightDp = size.height.value,
                 modifier = GlanceModifier.fillMaxWidth().defaultWeight(),
             )
+        } else {
+            // A widget with an empty rectangle where a graph should be reads as
+            // broken. Say what is actually wrong instead.
+            Box(
+                modifier = GlanceModifier.fillMaxWidth().defaultWeight(),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = if (outlook == null) {
+                        "Open the app once to get started"
+                    } else {
+                        "No forecast to draw. Tap to refresh."
+                    },
+                    style = TextStyle(
+                        color = GlanceTheme.colors.onSurfaceVariant,
+                        fontSize = 12.sp,
+                    ),
+                    maxLines = 2,
+                )
+            }
         }
     }
 }
 
-/** The location, plus the current rate once there is one worth printing. */
-private fun meta(outlook: PrecipitationOutlook): String {
+/**
+ * The line under the remark: where, and either how hard it is raining or how
+ * old the answer is.
+ *
+ * Age wins over rate, because a rate from three hours ago is not a rate. It
+ * is also the only way a user can tell a quiet afternoon from a widget that
+ * has quietly stopped refreshing.
+ */
+private fun meta(outlook: PrecipitationOutlook, wide: Boolean): String {
     val place = outlook.location.lowercase()
-    return if (outlook.nowMillimetresPerHour >= IntensityScale.WET_MM_PER_HOUR) {
-        "$place · ${IntensityScale.format(outlook.nowMillimetresPerHour)}"
-    } else {
-        place
+    val stale = outlook.ageMinutes >= PrecipitationWidget.STALE_MINUTES
+    val detail = when {
+        stale -> "${ageLabel(outlook.ageMinutes)} ago"
+        outlook.nowMillimetresPerHour >= IntensityScale.WET_MM_PER_HOUR ->
+            IntensityScale.format(outlook.nowMillimetresPerHour)
+        else -> null
+    }
+
+    return when {
+        detail == null -> place
+        wide -> "$place · $detail"
+        // Narrow: the age is the part that cannot be guessed from the graph.
+        stale -> detail
+        else -> place
     }
 }
+
+private fun ageLabel(minutes: Int): String =
+    if (minutes < 60) "${minutes}m" else "${minutes / 60}h"
 
 @Composable
 private fun Graph(
@@ -213,6 +267,9 @@ internal object WidgetColors {
 
     /** "Now", borrowed from the app's hot end. */
     val Now = Color(0xFFEF4444)
+
+    /** Data old enough that the user should know before trusting it. */
+    val Stale = Color(0xFFD97706)
 
     /**
      * Graph colours, chosen to work on both themes: the bitmap is drawn before

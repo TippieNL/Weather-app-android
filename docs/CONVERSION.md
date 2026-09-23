@@ -134,6 +134,27 @@ New to the Android version; the PWA had nothing equivalent.
 | A visibility floor at the bottom of the axis | The drizzle that actually passed over Lübeck was 0.12 mm/h. On a linear bottom band that is two pixels and indistinguishable from dry, so the axis climbs out of zero steeply enough to give anything the radar can measure a shape |
 | The series is aged against the cache | The samples are stamped relative to the moment they were fetched and the widget draws from cache, so on every redraw the series slides left by the age of the cache and anything past 45 minutes of history is dropped. Without it the "now" line marks where now *was* |
 | Refreshed every 15 minutes | WorkManager's floor, and the right end of it: an hourly refresh leaves a two-hour minute-resolution graph half stale and misses a shower that arrived since |
+
+### Keeping it refreshed
+
+A widget that draws from cache is only as good as the thing that refills the
+cache. Four ways that stopped, all found from one screenshot of a blank card:
+
+| Fault | Fix |
+| --- | --- |
+| The refresh could not find a location. Since Android 10 an app without `ACCESS_BACKGROUND_LOCATION` gets nothing from the location APIs while it has no visible process — not an error, just null — and the worker gave up rather than fetching. With the default device-location mode that meant the widget only ever refreshed while the app was open | Try the device, then fall back to the coordinates of the place the app last showed, which are already in the cache. A weather widget has no business asking for background location |
+| The schedule could be lost for good. It was armed only when a widget was placed, and the "re-arm on update" path never ran because `updatePeriodMillis` was 0, so a force stop or an OEM battery manager switched it off permanently | Re-arm on app start when a widget exists, and give the system its own half-hourly update as an independent backstop |
+| Background work gets throttled whatever the schedule says | Being drawn is the one moment the widget knows it matters, so a draw with data older than half an hour queues a catch-up fetch. A glance at the home screen repairs it |
+| Failure was invisible: every path ended in a silent redraw of older and older data | The face carries the age once the data passes half an hour, in amber. "3h ago" is the difference between a quiet afternoon and a widget that has quietly stopped |
+
+And the drawing itself turned all of the above into a blank rectangle:
+
+| Fault | Fix |
+| --- | --- |
+| The nowcast is stamped relative to its fetch, so about 160 minutes without a refresh slid every sample off the left of the graph, leaving the headline above an empty box | When the minute-level series expires, fall back to the hourly forecast, which is stamped in wall-clock hours and stays meaningful for as long as it covers |
+| The hourly fallback was itself placed by list position, so it was wrong by exactly the age of the cache | Placed by counting hours from the fetch instead. Reading the clock label and picking the nearest occurrence was the other candidate and is worse: it decides a half-day-old forecast is about to happen tomorrow |
+| The headline read the raw hourly list, so a three-hour-old widget announced rain for a time that had already passed | Drop the hours that have elapsed since the fetch before choosing what to announce |
+| With nothing to plot, the graph's space was simply left empty | Say what is wrong in it instead — "No forecast to draw. Tap to refresh." |
 | A quantised zero is not a dry forecast | Open-Meteo reports `minutely_15` to a tenth of a millimetre per quarter-hour, so anything under 0.4 mm/h lands on exactly zero while the hourly field resolves the same drizzle four times finer. When the minute series is flat and the hourly one is not, the graph uses the hourly one |
 | A non-linear vertical axis | On a linear 0–15 mm/h scale a 0.3 mm/h drizzle is two percent of the height and effectively invisible. Light, moderate, heavy and violent each get a quarter of the plot, which also gives evenly spaced gridlines to label |
 | Drawn to a bitmap | RemoteViews has no canvas and no path support, so anything beyond boxes and text has to arrive as an image. It is rendered at a fixed 2.5 px/dp and scaled to fit, which keeps it identical in tests and on a phone |

@@ -4,7 +4,10 @@ import android.content.Context
 import androidx.glance.appwidget.updateAll
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import com.weatherquips.app.AppContainer
 import com.weatherquips.app.WeatherQuipsApplication
+import com.weatherquips.app.domain.model.AppSettings
+import com.weatherquips.app.domain.model.Coordinates
 import com.weatherquips.app.domain.model.LocationMode
 import com.weatherquips.app.location.LocationResult
 
@@ -24,13 +27,7 @@ class WidgetRefreshWorker(
             ?: return Result.success()
 
         val settings = container.settingsRepository.current()
-        val coordinates = when (settings.locationMode) {
-            LocationMode.MANUAL -> settings.manualCoords
-            LocationMode.DEVICE -> when (val result = container.locationProvider.currentLocation()) {
-                is LocationResult.Success -> result.coordinates
-                else -> null
-            }
-        }
+        val coordinates = resolveCoordinates(container, settings)
 
         if (coordinates != null) {
             runCatching {
@@ -47,7 +44,21 @@ class WidgetRefreshWorker(
         return Result.success()
     }
 
+    private suspend fun resolveCoordinates(
+        container: AppContainer,
+        settings: AppSettings,
+    ): Coordinates? = WidgetLocation.resolve(
+        settings = settings,
+        deviceFix = {
+            (container.locationProvider.currentLocation() as? LocationResult.Success)?.coordinates
+        },
+        lastKnownPlace = { container.weatherRepository.getCachedWeather()?.coordinates },
+    )
+
     companion object {
         const val WORK_NAME = "widget_refresh"
+
+        /** Name for the one-off catch-up, so redraws cannot pile them up. */
+        const val CATCH_UP_WORK_NAME = "widget_refresh_now"
     }
 }

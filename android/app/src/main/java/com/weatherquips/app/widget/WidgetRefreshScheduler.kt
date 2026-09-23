@@ -1,8 +1,12 @@
 package com.weatherquips.app.widget
 
+import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.content.Context
+import androidx.work.BackoffPolicy
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
@@ -27,12 +31,42 @@ class WidgetRefreshScheduler(private val context: Context) {
                 .setConstraints(
                     Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build(),
                 )
+                .setBackoffCriteria(BackoffPolicy.LINEAR, BACKOFF_MINUTES, TimeUnit.MINUTES)
                 .build(),
         )
         // The periodic schedule does not fire immediately, and a widget that
         // sits blank until the first interval elapses looks broken.
-        workManager.enqueue(OneTimeWorkRequestBuilder<WidgetRefreshWorker>().build())
+        refreshNow()
         true
+    }.getOrDefault(false)
+
+    /**
+     * One catch-up fetch, now.
+     *
+     * Periodic work is a floor, not a promise: in Doze, or under an OEM
+     * battery manager, fifteen minutes becomes hours. So the widget also asks
+     * for a refresh whenever it is drawn with stale data, which turns any
+     * glance at the home screen into a repair. KEEP means a run of redraws
+     * queues one fetch, not twenty.
+     */
+    fun refreshNow(): Boolean = runCatching {
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            WidgetRefreshWorker.CATCH_UP_WORK_NAME,
+            ExistingWorkPolicy.KEEP,
+            OneTimeWorkRequestBuilder<WidgetRefreshWorker>()
+                .setConstraints(
+                    Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build(),
+                )
+                .build(),
+        )
+        true
+    }.getOrDefault(false)
+
+    /** Whether any widget is actually on a home screen. */
+    fun hasWidgets(): Boolean = runCatching {
+        AppWidgetManager.getInstance(context)
+            .getAppWidgetIds(ComponentName(context, PrecipitationWidgetReceiver::class.java))
+            .isNotEmpty()
     }.getOrDefault(false)
 
     private companion object {
@@ -43,5 +77,7 @@ class WidgetRefreshScheduler(private val context: Context) {
          * shower that arrived since.
          */
         const val REFRESH_INTERVAL_MINUTES = 15L
+
+        const val BACKOFF_MINUTES = 5L
     }
 }
