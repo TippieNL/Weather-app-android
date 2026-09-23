@@ -47,7 +47,7 @@
     <string name="next_7_days">next 7 days</string>
     <string name="now">now</string>
     <string name="precipitation_map">precipitation map</string>
-    <string name="open_precipitation_map">Open precipitation map. You can also swipe left.</string>
+    <string name="open_precipitation_map">Open precipitation map</string>
     <string name="live_radar_overlay">live radar overlay</string>
     <string name="wind_value">%1$d km/h</string>
     <string name="percent_value">%1$d%%</string>

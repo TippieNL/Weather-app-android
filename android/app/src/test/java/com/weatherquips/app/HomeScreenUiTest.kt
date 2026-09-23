@@ -14,7 +14,8 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipe
 import androidx.compose.ui.test.swipeUp
 import org.junit.Assert.assertFalse
-import com.weatherquips.app.ui.home.TAG_RADAR_TAB
+import com.weatherquips.app.ui.home.TAG_HERO
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.swipeRight
 import androidx.compose.ui.test.swipeLeft
 import com.weatherquips.app.domain.model.AppSettings
@@ -200,21 +201,25 @@ class HomeScreenUiTest {
     }
 
     @Test
-    fun `the edge tab opens the radar for anyone who cannot swipe`() {
-        var opened: Coordinates? = null
-        render(successState, onOpenMap = { opened = it })
-
-        composeRule.onNodeWithTag(TAG_RADAR_TAB).assertIsDisplayed().performClick()
-
-        assertEquals(Coordinates(52.99, 6.56), opened)
+    fun `there is no visible control for the radar, only the swipe`() {
+        render(successState)
+        composeRule.onNodeWithContentDescription("Open precipitation map").assertDoesNotExist()
     }
 
     @Test
-    fun `the edge tab tells TalkBack what it does`() {
-        render(successState)
-        composeRule.onNodeWithContentDescription(
-            "Open precipitation map. You can also swipe left.",
-        ).assertExists()
+    fun `TalkBack can still open the radar from the actions menu`() {
+        // A screen-reader user cannot perform the custom swipe, so the same
+        // action has to be reachable without it.
+        var opened: Coordinates? = null
+        render(successState, onOpenMap = { opened = it })
+
+        val actions = composeRule.onNodeWithTag(TAG_HERO)
+            .fetchSemanticsNode()
+            .config[SemanticsActions.CustomActions]
+        val openMap = actions.single { it.label == "Open precipitation map" }
+        composeRule.runOnIdle { openMap.action() }
+
+        assertEquals(Coordinates(52.99, 6.56), opened)
     }
 
     @Test

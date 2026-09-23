@@ -67,7 +67,9 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.style.TextAlign
@@ -324,10 +326,22 @@ private fun HeroContent(
     val density = LocalDensity.current
     val expandThresholdPx = with(density) { SWIPE_THRESHOLD.toPx() }
     val mapThresholdPx = with(density) { MAP_SWIPE_THRESHOLD.toPx() }
+    // The swipe has no visible control, and TalkBack users cannot perform a
+    // custom swipe, so the same action is offered in TalkBack's actions menu.
+    val openMapLabel = stringResource(R.string.open_precipitation_map)
 
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .testTag(TAG_HERO)
+            .semantics {
+                customActions = listOf(
+                    CustomAccessibilityAction(openMapLabel) {
+                        onOpenMap()
+                        true
+                    },
+                )
+            }
             .pointerInput(expandThresholdPx, mapThresholdPx) {
                 detectDragGestures(
                     onDragStart = { dragX = 0f; dragY = 0f },
@@ -483,13 +497,6 @@ private fun HeroContent(
             RefreshButton(onRefresh = onRefresh, isRefreshing = uiState.isRefreshing)
         }
 
-        RadarEdgeTab(
-            onClick = onOpenMap,
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .graphicsLayer { alpha = progress },
-        )
-
         if (uiState.isPokemonMode) {
             PokemonBanner(
                 modifier = Modifier
@@ -500,41 +507,6 @@ private fun HeroContent(
             )
         }
 
-    }
-}
-
-/**
- * A small tab on the right edge pointing at where the radar lives.
- *
- * The swipe is the fast way in, but nothing about a blank edge says a swipe
- * exists, and TalkBack users cannot perform it at all. The tab is the hint and
- * the accessible route in one, and it fades with the hero when the panel is up.
- */
-@Composable
-private fun RadarEdgeTab(onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val label = stringResource(R.string.open_precipitation_map)
-    Row(
-        modifier = modifier
-            .testTag(TAG_RADAR_TAB)
-            .clip(RoundedCornerShape(topStart = 12.dp, bottomStart = 12.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f))
-            .clickable(onClick = onClick)
-            .semantics(mergeDescendants = true) { contentDescription = label }
-            .padding(start = 6.dp, end = 8.dp, top = 14.dp, bottom = 14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(
-            painter = painterResource(R.drawable.ic_chevron_left),
-            contentDescription = null,
-            modifier = Modifier.size(16.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Icon(
-            painter = painterResource(R.drawable.ic_map),
-            contentDescription = null,
-            modifier = Modifier.size(18.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }
 
@@ -713,6 +685,6 @@ const val TAG_SUBTITLE = "home-subtitle"
 const val TAG_TEMPERATURE = "home-temperature"
 const val TAG_LOCATION = "home-location"
 const val TAG_EXPAND = "home-expand"
-const val TAG_RADAR_TAB = "home-radar-tab"
+const val TAG_HERO = "home-hero"
 const val TAG_COLLAPSE = "home-collapse"
 const val TAG_STALE = "home-stale"

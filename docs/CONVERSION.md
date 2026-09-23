@@ -119,7 +119,7 @@ want after the headline, so it moved to a gesture on the home screen itself.
 | Swipe right to left on the home screen | The map "lives" to the right of home and slides in from there; back slides it out the same way, so gesture and motion agree |
 | One drag detector for both swipes, classified on release | Up still opens the panel. A thumb swiping up drifts sideways, so a map swipe must be 1.5× more horizontal than vertical and travel 72dp (the panel needs 56dp): opening the map by accident costs a transition and a radar download, opening the panel costs nothing |
 | Start away from the edge | With gesture navigation the outer strip of the screen belongs to the system's back gesture; a swipe that starts there is taken by Android before the app sees it |
-| A small tab on the right edge | A blank edge does not advertise a swipe, and TalkBack users cannot perform one. The tab is the hint and the accessible route in one, labelled "Open precipitation map. You can also swipe left." |
+| No visible control | An edge tab was tried and removed at the user's request: the swipe is the only visible route. TalkBack users cannot perform a custom swipe, so the same action is offered as an accessibility action on the home screen ("Open precipitation map" in TalkBack's actions menu) |
 | The panel's map card is gone | One way in, found from the screen people already look at |
 
 ## Home-screen widget
