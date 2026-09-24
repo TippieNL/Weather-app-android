@@ -2,6 +2,12 @@ package com.weatherquips.app.ui.components
 
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloat
+import com.weatherquips.app.ui.theme.Motion
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
@@ -71,19 +77,32 @@ fun RefreshButton(
     modifier: Modifier = Modifier,
     iconSize: androidx.compose.ui.unit.Dp = 20.dp,
 ) {
-    // The transition is only created while refreshing, so an idle screen runs no
+    // The spin only exists while refreshing, so an idle screen runs no
     // animation at all.
-    val rotation = if (isRefreshing) {
-        val transition = rememberInfiniteTransition(label = "refresh")
-        val animated by transition.animateFloat(
+    val spin: State<Float>? = if (isRefreshing) {
+        rememberInfiniteTransition(label = "refresh").animateFloat(
             initialValue = 0f,
             targetValue = 360f,
             animationSpec = infiniteRepeatable(tween(900, easing = LinearEasing)),
             label = "refresh-rotation",
         )
-        animated
     } else {
-        0f
+        null
+    }
+
+    // When the refresh lands, finish the turn the arrow is on and ease to a
+    // stop — it used to snap back to upright from wherever it happened to be.
+    val lastSpin = remember { SpinRef() }
+    if (spin != null) lastSpin.state = spin
+    val finish = remember { Animatable(0f) }
+    LaunchedEffect(isRefreshing) {
+        if (isRefreshing) return@LaunchedEffect
+        val from = lastSpin.state?.value ?: return@LaunchedEffect
+        lastSpin.state = null
+        if (from <= 1f) return@LaunchedEffect
+        finish.snapTo(from)
+        finish.animateTo(360f, tween(Motion.MEDIUM, easing = Motion.EmphasizedDecelerate))
+        finish.snapTo(0f)
     }
 
     IconButton(onClick = onRefresh, enabled = !isRefreshing, modifier = modifier) {
@@ -92,9 +111,14 @@ fun RefreshButton(
             contentDescription = stringResource(R.string.refresh),
             modifier = Modifier
                 .size(iconSize)
-                .rotate(rotation),
+                .graphicsLayer { rotationZ = spin?.value ?: finish.value },
         )
     }
+}
+
+/** Remembers the last spin across the recomposition that ends it. Not state. */
+private class SpinRef {
+    var state: State<Float>? = null
 }
 
 /**

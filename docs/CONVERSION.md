@@ -122,6 +122,61 @@ want after the headline, so it moved to a gesture on the home screen itself.
 | No visible control | An edge tab was tried and removed at the user's request: the swipe is the only visible route. TalkBack users cannot perform a custom swipe, so the same action is offered as an accessibility action on the home screen ("Open precipitation map" in TalkBack's actions menu) |
 | The panel's map card is gone | One way in, found from the screen people already look at |
 
+## Motion
+
+Every animation takes its timing from `ui/theme/Motion.kt`: Material 3's
+emphasized curves, three durations, and two springs. Things arriving
+decelerate, things leaving accelerate, and anything a finger was holding is
+finished by a spring so it keeps the finger's momentum. Every custom animation
+honours the system's "remove animations" setting.
+
+### The home screen
+
+| Before | After |
+| --- | --- |
+| The icon's idle motion travelled 2.5% of its size — four pixels on a 160dp icon | Seven percent, with a second slower period on drifting conditions so the path never quite repeats, a squash on the rain bob, and a spring pop when the condition changes |
+| Nothing around the icon | A per-condition atmosphere: rain falling past it, snow drifting, stars twinkling over a clear night, the sun's glow breathing with a ring of light rolling outward, ghost clouds crossing, fog bands, wind streaks, lightning glow timed to the icon's flicker. One looping clock drives the scene, read in the draw phase so it never recomposes |
+| Everything appeared at once | A staggered entrance — icon, quote, subtitle, details — once per session, not on every return from another screen |
+| A refresh swapped the quote in place | The old quip lifts away and the new one rises into its place |
+| The swipe-up chevron bounced six *pixels*, about two dp on a modern phone | A 9dp double nudge and a rest, like a hand beckoning |
+| The refresh arrow snapped upright when a refresh finished | It finishes its turn and eases to a stop |
+
+### Home to radar
+
+The swipe used to be judged when the finger lifted and then play a canned
+320ms slide. It is now a physical pull:
+
+- The radar panel slides in from the right edge exactly as far as the finger
+  has pulled, and home drifts left at 30% of that pace: the parallax that
+  makes the radar read as arriving on top.
+- The drag locks to one axis after 10dp, so a swipe that starts sideways stays
+  sideways.
+- Crossing the point of no return ticks a haptic and lights the panel's icon;
+  dragging back ticks again.
+- A short fast flick counts: release velocity is projected 120ms ahead,
+  provided the finger moved at least 24dp.
+- On release, the real map starts from the exact position the panel reached
+  and a spring carries it the rest of the way. Short of the threshold,
+  everything springs back.
+- Back from the map uses predictive back on Android 14+, so the return can be
+  scrubbed under the thumb.
+
+A fade on the sliding home content was tried and removed: fading a
+translated layer clipped it at its resting edge, cutting the quote in half.
+
+### Elsewhere
+
+- Loading, errors and weather crossfade into each other instead of cutting.
+- Settings come forward over home and fall back into it (a depth axis), where
+  the radar moves sideways. Navigation's own 700ms default fade is replaced.
+- Each time the detail panel opens, its cards rise in one after another, the
+  hourly dots climb to their temperatures in a wave, and the week's bars draw
+  outward from their middles.
+- On the radar screen the play button turns over rather than swapping, the
+  timeline's colour eases as playback sweeps along it with the active frame
+  standing taller, and the clock rolls over like an odometer (keyed on the
+  timestamp, so it rolls the right way across midnight).
+
 ## Home-screen widget
 
 New to the Android version; the PWA had nothing equivalent.

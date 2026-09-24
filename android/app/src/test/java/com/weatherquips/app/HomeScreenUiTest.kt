@@ -15,6 +15,8 @@ import androidx.compose.ui.test.swipe
 import androidx.compose.ui.test.swipeUp
 import org.junit.Assert.assertFalse
 import com.weatherquips.app.ui.home.TAG_HERO
+import com.weatherquips.app.ui.home.TAG_RADAR_PEEK
+import com.weatherquips.app.ui.home.MapHandoff
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.swipeRight
 import androidx.compose.ui.test.swipeLeft
@@ -62,6 +64,7 @@ class HomeScreenUiTest {
         onRetry: () -> Unit = {},
         onOpenSettings: () -> Unit = {},
         onOpenMap: (Coordinates) -> Unit = {},
+        mapHandoff: MapHandoff = MapHandoff(),
     ) {
         composeRule.setContent {
             WeatherQuipsTheme(darkTheme = false) {
@@ -72,6 +75,7 @@ class HomeScreenUiTest {
                     onOpenSettings = onOpenSettings,
                     onOpenPrecipitationMap = onOpenMap,
                     onPermissionResult = {},
+                    mapHandoff = mapHandoff,
                 )
             }
         }
@@ -149,6 +153,100 @@ class HomeScreenUiTest {
         composeRule.waitForIdle()
 
         assertEquals(Coordinates(52.99, 6.56), opened)
+    }
+
+    private fun peekWidth(): Int =
+        composeRule.onNodeWithTag(TAG_RADAR_PEEK).fetchSemanticsNode().size.width
+
+    @Test
+    fun `the radar panel follows the finger while it drags`() {
+        render(successState)
+        assertEquals("the peek showed before any drag", 0, peekWidth())
+
+        composeRule.onRoot().performTouchInput {
+            down(Offset(width * 0.8f, height * 0.5f))
+            moveBy(Offset(-100f, 0f))
+            moveBy(Offset(-100f, 0f))
+        }
+        composeRule.waitForIdle()
+        val midDrag = peekWidth()
+        assertTrue("the peek did not follow the finger: $midDrag px", midDrag in 150..210)
+
+        // Drag back and let go short of the threshold: it springs away.
+        composeRule.onRoot().performTouchInput {
+            moveBy(Offset(170f, 0f))
+            up()
+        }
+        composeRule.waitForIdle()
+        assertEquals("the peek stayed after a cancelled swipe", 0, peekWidth())
+    }
+
+    @Test
+    fun `the map picks up from where the finger left the panel`() {
+        val handoff = MapHandoff()
+        var opened = false
+        render(successState, onOpenMap = { opened = true }, mapHandoff = handoff)
+
+        composeRule.onRoot().performTouchInput {
+            swipeLeft(startX = width * 0.8f, endX = width * 0.3f, durationMillis = 400)
+        }
+        composeRule.waitForIdle()
+
+        assertTrue(opened)
+        // Half the screen was pulled; the map's entrance must start from there,
+        // not from the far edge.
+        assertTrue(
+            "handed off ${handoff.revealedPx}px",
+            handoff.revealedPx > composeRule.onRoot().fetchSemanticsNode().size.width * 0.35f,
+        )
+    }
+
+    @Test
+    fun `a quick short flick still opens the radar`() {
+        var opened = false
+        render(successState, onOpenMap = { opened = true })
+
+        // Short of the distance threshold, but moving fast enough to be going
+        // somewhere: a flick should land where it was aimed.
+        composeRule.onRoot().performTouchInput {
+            swipeLeft(startX = width * 0.6f, endX = width * 0.6f - 110f, durationMillis = 40)
+        }
+        composeRule.waitForIdle()
+
+        assertTrue("a flick was ignored", opened)
+    }
+
+    @Test
+    fun `a slow short drag does not open the radar`() {
+        var opened = false
+        render(successState, onOpenMap = { opened = true })
+
+        composeRule.onRoot().performTouchInput {
+            swipeLeft(startX = width * 0.6f, endX = width * 0.6f - 110f, durationMillis = 1_500)
+        }
+        composeRule.waitForIdle()
+
+        assertFalse(opened)
+    }
+
+    @Test
+    fun `a drag that starts sideways stays sideways`() {
+        // Once the drag has committed to an axis, turning upward halfway must
+        // not suddenly open the panel instead.
+        var opened = false
+        render(successState, onOpenMap = { opened = true })
+
+        composeRule.onRoot().performTouchInput {
+            down(Offset(width * 0.6f, height * 0.6f))
+            moveBy(Offset(-60f, 0f))
+            moveBy(Offset(0f, -200f))
+            moveBy(Offset(0f, -200f))
+            up()
+        }
+        composeRule.waitForIdle()
+
+        assertFalse(opened)
+        composeRule.onNodeWithTag(TAG_EXPAND).assertIsDisplayed()
     }
 
     @Test

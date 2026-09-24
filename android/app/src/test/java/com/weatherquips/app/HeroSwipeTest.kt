@@ -1,6 +1,8 @@
 package com.weatherquips.app
 
 import com.weatherquips.app.ui.home.HeroSwipe
+import com.weatherquips.app.ui.home.rubberBand
+import org.junit.Assert.assertTrue
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -54,5 +56,23 @@ class HeroSwipeTest {
     @Test
     fun `swiping down does nothing`() {
         assertNull(classify(dx = 0f, dy = 400f))
+    }
+
+    @Test
+    fun `the rubber band follows closely at first and never passes its limit`() {
+        val limit = 100f
+        assertEquals(0f, rubberBand(0f, limit), 0.0001f)
+        // Near 1:1 for a small drag...
+        assertTrue(rubberBand(10f, limit) > 4f)
+        // ...and asymptotic, however far the finger goes.
+        listOf(50f, 200f, 1_000f, 100_000f).forEach {
+            assertTrue("passed the limit at $it", rubberBand(it, limit) < limit)
+        }
+        var previous = 0f
+        for (d in 1..2_000 step 7) {
+            val r = rubberBand(d.toFloat(), limit)
+            assertTrue("went backwards at $d", r >= previous)
+            previous = r
+        }
     }
 }

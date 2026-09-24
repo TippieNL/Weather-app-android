@@ -43,6 +43,9 @@ import com.weatherquips.app.ui.components.PokeballGlyph
 import com.weatherquips.app.ui.components.QuipCard
 import com.weatherquips.app.ui.components.RefreshButton
 import com.weatherquips.app.ui.components.TemperatureRangeBar
+import androidx.compose.ui.graphics.graphicsLayer
+import com.weatherquips.app.ui.components.panelStage
+import com.weatherquips.app.ui.components.LocalPanelReveal
 import com.weatherquips.app.ui.components.WeatherGlyph
 import com.weatherquips.app.ui.theme.temperatureColorFor
 import com.weatherquips.app.utils.Formatters
@@ -70,9 +73,19 @@ fun WeatherDetailPanel(
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 32.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        item("main") { MainWeatherCard(uiState, weather, staleSinceMillis, onRefresh) }
-        item("today") { HourlyCard(uiState, weather) }
-        item("week") { WeeklyCard(uiState, weather) }
+        // Each card rises into place a beat after the one above it as the
+        // panel opens, so the eye is led down the page rather than handed it.
+        item("main") {
+            Box(Modifier.panelEntrance(delayMillis = 0)) {
+                MainWeatherCard(uiState, weather, staleSinceMillis, onRefresh)
+            }
+        }
+        item("today") {
+            Box(Modifier.panelEntrance(delayMillis = CARD_STAGGER_MILLIS)) { HourlyCard(uiState, weather) }
+        }
+        item("week") {
+            Box(Modifier.panelEntrance(delayMillis = 2 * CARD_STAGGER_MILLIS)) { WeeklyCard(uiState, weather) }
+        }
     }
 }
 
@@ -197,6 +210,10 @@ private fun TodayRange(weather: WeatherData, uiState: HomeUiState) {
                 scaleMaxCelsius = high,
                 markerCelsius = weather.temperature,
                 modifier = Modifier.weight(1f),
+                growth = run {
+                    val reveal = LocalPanelReveal.current
+                    { panelStage(reveal(), delayMillis = CARD_STAGGER_MILLIS / 2) }
+                },
             )
             Spacer(Modifier.width(12.dp))
             Text(
@@ -360,6 +377,7 @@ private fun HourlyCard(uiState: HomeUiState, weather: WeatherData) {
                 hours.forEachIndexed { index, hour ->
                     HourColumn(
                         hour = hour,
+                        index = index,
                         isNow = index == 0,
                         scaleLow = scale.first,
                         scaleHigh = scale.second,
@@ -375,6 +393,7 @@ private fun HourlyCard(uiState: HomeUiState, weather: WeatherData) {
 @Composable
 private fun HourColumn(
     hour: HourlyForecast,
+    index: Int,
     isNow: Boolean,
     scaleLow: Double,
     scaleHigh: Double,
@@ -422,7 +441,12 @@ private fun HourColumn(
             maxLines = 1,
         )
         Spacer(Modifier.height(6.dp))
-        HourlyStem(fraction = fraction, color = color)
+        val reveal = LocalPanelReveal.current
+        HourlyStem(
+            fraction = fraction,
+            rise = { panelStage(reveal(), delayMillis = CARD_STAGGER_MILLIS + index * HOUR_STAGGER_MILLIS) },
+            color = color,
+        )
         if (showPrecipitation) {
             Spacer(Modifier.height(8.dp))
             Text(
@@ -441,7 +465,7 @@ private fun HourColumn(
  * reference so the dots can actually be compared.
  */
 @Composable
-private fun HourlyStem(fraction: Float, color: Color) {
+private fun HourlyStem(fraction: Float, rise: () -> Float, color: Color) {
     Box(
         modifier = Modifier
             .height(56.dp)
@@ -457,13 +481,29 @@ private fun HourlyStem(fraction: Float, color: Color) {
         )
         Box(
             modifier = Modifier
-                .offsetFromBottomFraction(fraction)
+                .offsetFromBottomFraction { fraction * rise() }
+                .graphicsLayer { alpha = rise() }
                 .size(11.dp)
                 .clip(CircleShape)
                 .background(color),
         )
     }
 }
+
+@Composable
+private fun Modifier.panelEntrance(delayMillis: Int): Modifier {
+    val reveal = LocalPanelReveal.current
+    return graphicsLayer {
+        val stage = panelStage(reveal(), delayMillis)
+        alpha = stage
+        translationY = (1f - stage) * PANEL_RISE_DP * density
+    }
+}
+
+private const val CARD_STAGGER_MILLIS = 90
+private const val HOUR_STAGGER_MILLIS = 35
+private const val ROW_STAGGER_MILLIS = 45
+private const val PANEL_RISE_DP = 24f
 
 /** Height as a fraction of the parent's max height. */
 private fun Modifier.fillMaxHeightFraction(fraction: Float): Modifier = layout { measurable, constraints ->
@@ -474,11 +514,11 @@ private fun Modifier.fillMaxHeightFraction(fraction: Float): Modifier = layout {
     }
 }
 
-/** Positions the dot at [fraction] of the way up its track. */
-private fun Modifier.offsetFromBottomFraction(fraction: Float): Modifier = layout { measurable, constraints ->
+/** Positions the dot [fraction] of the way up its track, read at layout time. */
+private fun Modifier.offsetFromBottomFraction(fraction: () -> Float): Modifier = layout { measurable, constraints ->
     val placeable = measurable.measure(constraints.copy(minWidth = 0, minHeight = 0))
     val travel = constraints.maxHeight - placeable.height
-    val offset = (travel * fraction).toInt().coerceIn(0, travel)
+    val offset = (travel * fraction()).toInt().coerceIn(0, travel)
     layout(placeable.width, constraints.maxHeight) {
         placeable.placeRelative(0, travel - offset)
     }
@@ -508,7 +548,8 @@ private fun WeeklyCard(uiState: HomeUiState, weather: WeatherData) {
                 verticalArrangement = Arrangement.spacedBy(14.dp),
                 modifier = Modifier.testTag(TAG_DAILY),
             ) {
-                days.forEach { day ->
+                val reveal = LocalPanelReveal.current
+                days.forEachIndexed { index, day ->
                     val low = Formatters.formatTempDegrees(day.temperatureMin, settings.temperatureUnit)
                     val high = Formatters.formatTempDegrees(day.temperatureMax, settings.temperatureUnit)
                     Row(
@@ -547,6 +588,12 @@ private fun WeeklyCard(uiState: HomeUiState, weather: WeatherData) {
                             scaleMinCelsius = scale.first,
                             scaleMaxCelsius = scale.second,
                             modifier = Modifier.weight(1f),
+                            growth = {
+                                panelStage(
+                                    reveal(),
+                                    delayMillis = 2 * CARD_STAGGER_MILLIS + index * ROW_STAGGER_MILLIS,
+                                )
+                            },
                         )
                         Spacer(Modifier.width(10.dp))
                         Text(

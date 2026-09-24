@@ -1,9 +1,19 @@
 package com.weatherquips.app.ui.navigation
 
-import androidx.compose.animation.AnimatedContentTransitionScope.SlideDirection
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.runtime.remember
+import androidx.compose.ui.unit.IntOffset
+import com.weatherquips.app.ui.home.HOME_PARALLAX
+import com.weatherquips.app.ui.home.MapHandoff
+import com.weatherquips.app.ui.theme.Motion
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -59,12 +69,16 @@ fun WeatherQuipsNavHost(
     onPendingDestinationHandled: () -> Unit = {},
     navController: NavHostController = rememberNavController(),
 ) {
+    val mapHandoff = remember { MapHandoff() }
+
     // A notification tap lands here. It is consumed once, so returning to the
     // app later does not bounce the user back onto the radar.
     LaunchedEffect(pendingDestination) {
         val target = pendingDestination ?: return@LaunchedEffect
         val coordinates = target.coordinates
         if (target.route == Routes.PRECIPITATION && coordinates != null) {
+            // Nothing was pulled: the map makes its full entrance.
+            mapHandoff.revealedPx = 0f
             navController.navigate(Routes.precipitation(coordinates)) { launchSingleTop = true }
         }
         onPendingDestinationHandled()
@@ -74,6 +88,11 @@ fun WeatherQuipsNavHost(
         navController = navController,
         startDestination = startDestination,
         modifier = modifier.fillMaxSize(),
+        // Navigation's own default is a 700ms crossfade, which reads as lag.
+        enterTransition = { fadeIn(tween(Motion.MEDIUM, easing = Motion.EmphasizedDecelerate)) },
+        exitTransition = { fadeOut(tween(Motion.SHORT, easing = Motion.EmphasizedAccelerate)) },
+        popEnterTransition = { fadeIn(tween(Motion.MEDIUM, easing = Motion.EmphasizedDecelerate)) },
+        popExitTransition = { fadeOut(tween(Motion.SHORT, easing = Motion.EmphasizedAccelerate)) },
     ) {
         composable(Routes.ONBOARDING) {
             val viewModel: OnboardingViewModel = viewModel(factory = OnboardingViewModel.factory())
@@ -101,18 +120,21 @@ fun WeatherQuipsNavHost(
             route = Routes.HOME,
             // Home steps aside to the left as the radar comes in from the
             // right, so the swipe that opened it and the motion agree.
+            // To the radar: home steps aside at a third of the radar's pace, the
+            // parallax that puts the map on top. To settings: home recedes a
+            // little as settings come forward.
             exitTransition = {
                 if (targetState.destination.route == Routes.PRECIPITATION) {
-                    slideOutOfContainer(SlideDirection.Start, tween(MAP_SLIDE_MILLIS))
+                    slideOutHorizontally(Motion.gestureSpring) { -(it * HOME_PARALLAX).toInt() }
                 } else {
-                    fadeOut(tween(FADE_MILLIS))
+                    recede()
                 }
             },
             popEnterTransition = {
                 if (initialState.destination.route == Routes.PRECIPITATION) {
-                    slideIntoContainer(SlideDirection.End, tween(MAP_SLIDE_MILLIS))
+                    slideInHorizontally(popSpec()) { -(it * HOME_PARALLAX).toInt() }
                 } else {
-                    fadeIn(tween(FADE_MILLIS))
+                    returnForward()
                 }
             },
         ) {
@@ -138,10 +160,15 @@ fun WeatherQuipsNavHost(
                     navController.navigateSingleTop(Routes.precipitation(coordinates))
                 },
                 onPermissionResult = viewModel::onPermissionResult,
+                mapHandoff = mapHandoff,
             )
         }
 
-        composable(Routes.SETTINGS) {
+        composable(
+            route = Routes.SETTINGS,
+            enterTransition = { comeForward() },
+            popExitTransition = { fallBack() },
+        ) {
             val viewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.factory())
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()
             SettingsScreen(
@@ -157,8 +184,17 @@ fun WeatherQuipsNavHost(
                 navArgument("lat") { type = NavType.FloatType },
                 navArgument("lon") { type = NavType.FloatType },
             ),
-            enterTransition = { slideIntoContainer(SlideDirection.Start, tween(MAP_SLIDE_MILLIS)) },
-            popExitTransition = { slideOutOfContainer(SlideDirection.End, tween(MAP_SLIDE_MILLIS)) },
+            // The map starts where the finger left the peek's edge and a spring
+            // carries it the rest of the way, so a swipe finishes the motion it
+            // began instead of restarting it from the far edge.
+            enterTransition = {
+                slideInHorizontally(Motion.gestureSpring) { width ->
+                    (width - mapHandoff.revealedPx.toInt()).coerceIn(0, width)
+                }
+            },
+            // Back is a tween, not a spring: with predictive back the system
+            // scrubs this animation under the user's thumb.
+            popExitTransition = { slideOutHorizontally(popSpec()) { it } },
         ) { entry ->
             val latitude = entry.arguments?.getFloat("lat")?.toDouble() ?: 0.0
             val longitude = entry.arguments?.getFloat("lon")?.toDouble() ?: 0.0
@@ -180,8 +216,25 @@ fun WeatherQuipsNavHost(
     }
 }
 
-private const val MAP_SLIDE_MILLIS = 320
-private const val FADE_MILLIS = 220
+// Settings move on the depth axis: they come forward over home and fall back
+// into it, where the radar moves sideways. Different places, different axes.
+private fun comeForward(): EnterTransition =
+    fadeIn(tween(Motion.MEDIUM, easing = Motion.EmphasizedDecelerate)) +
+        scaleIn(tween(Motion.MEDIUM, easing = Motion.EmphasizedDecelerate), initialScale = 0.92f)
+
+private fun fallBack(): ExitTransition =
+    fadeOut(tween(Motion.SHORT, easing = Motion.EmphasizedAccelerate)) +
+        scaleOut(tween(Motion.SHORT, easing = Motion.EmphasizedAccelerate), targetScale = 0.92f)
+
+private fun recede(): ExitTransition =
+    fadeOut(tween(Motion.SHORT, easing = Motion.EmphasizedAccelerate)) +
+        scaleOut(tween(Motion.MEDIUM, easing = Motion.EmphasizedDecelerate), targetScale = 1.04f)
+
+private fun returnForward(): EnterTransition =
+    fadeIn(tween(Motion.MEDIUM, delayMillis = Motion.STAGGER / 2)) +
+        scaleIn(tween(Motion.MEDIUM, easing = Motion.EmphasizedDecelerate), initialScale = 1.04f)
+
+private fun popSpec() = tween<IntOffset>(Motion.MEDIUM, easing = Motion.Standard)
 
 /** Guards against a double tap queueing the same destination twice. */
 private fun NavHostController.navigateSingleTop(route: String) {

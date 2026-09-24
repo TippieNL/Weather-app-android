@@ -5,6 +5,32 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import com.weatherquips.app.ui.components.PANEL_REVEAL_MILLIS
+import com.weatherquips.app.ui.components.LocalPanelReveal
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animate
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.runtime.Stable
+import androidx.compose.ui.input.pointer.util.VelocityTracker
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalView
+import com.weatherquips.app.ui.theme.LocalAccents
+import kotlinx.coroutines.Job
+import kotlin.math.roundToInt
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.keyframes
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.runtime.saveable.rememberSaveable
+import com.weatherquips.app.ui.components.WeatherAtmosphere
+import com.weatherquips.app.ui.components.rememberAnimationsEnabled
+import com.weatherquips.app.ui.theme.Motion
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -58,6 +84,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.graphicsLayer
@@ -113,6 +140,7 @@ fun HomeScreen(
     onOpenPrecipitationMap: (Coordinates) -> Unit,
     onPermissionResult: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
+    mapHandoff: MapHandoff = remember { MapHandoff() },
 ) {
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions(),
@@ -127,51 +155,71 @@ fun HomeScreen(
         )
     }
 
-    when (val phase = uiState.phase) {
-        is HomePhase.Loading -> LoadingScreen(modifier)
+    // Loading, errors and the weather crossfade into one another instead of
+    // cutting. Success and Offline share a key: both are the weather screen,
+    // and swapping between them must not rebuild it (or replay its entrance).
+    AnimatedContent(
+        targetState = uiState.phase,
+        contentKey = { phase ->
+            when (phase) {
+                is HomePhase.Success, is HomePhase.Offline -> "weather"
+                else -> phase::class
+            }
+        },
+        transitionSpec = {
+            fadeIn(tween(Motion.MEDIUM, easing = Motion.EmphasizedDecelerate)) togetherWith
+                fadeOut(tween(Motion.SHORT, easing = Motion.EmphasizedAccelerate))
+        },
+        label = "home-phase",
+    ) { phase ->
+        when (phase) {
+            is HomePhase.Loading -> LoadingScreen(modifier)
 
-        is HomePhase.PermissionRequired -> LocationPermissionScreen(
-            deniedOnce = phase.deniedOnce,
-            onAllow = requestLocationPermission,
-            onOpenSettings = onOpenSettings,
-            modifier = modifier,
-        )
+            is HomePhase.PermissionRequired -> LocationPermissionScreen(
+                deniedOnce = phase.deniedOnce,
+                onAllow = requestLocationPermission,
+                onOpenSettings = onOpenSettings,
+                modifier = modifier,
+            )
 
-        is HomePhase.LocationUnavailable -> MessageScreen(
-            message = stringResource(phase.issue.messageRes),
-            onRetry = onRetry,
-            onOpenSettings = onOpenSettings,
-            modifier = modifier,
-        )
+            is HomePhase.LocationUnavailable -> MessageScreen(
+                message = stringResource(phase.issue.messageRes),
+                onRetry = onRetry,
+                onOpenSettings = onOpenSettings,
+                modifier = modifier,
+            )
 
-        is HomePhase.Error -> MessageScreen(
-            message = stringResource(phase.error.messageRes),
-            onRetry = onRetry,
-            onOpenSettings = onOpenSettings,
-            modifier = modifier,
-        )
+            is HomePhase.Error -> MessageScreen(
+                message = stringResource(phase.error.messageRes),
+                onRetry = onRetry,
+                onOpenSettings = onOpenSettings,
+                modifier = modifier,
+            )
 
-        is HomePhase.Success -> WeatherDisplay(
-            uiState = uiState,
-            weather = phase.weather,
-            coordinates = phase.coordinates,
-            staleSinceMillis = null,
-            onRefresh = onRefresh,
-            onOpenSettings = onOpenSettings,
-            onOpenPrecipitationMap = onOpenPrecipitationMap,
-            modifier = modifier,
-        )
+            is HomePhase.Success -> WeatherDisplay(
+                uiState = uiState,
+                weather = phase.weather,
+                coordinates = phase.coordinates,
+                staleSinceMillis = null,
+                onRefresh = onRefresh,
+                onOpenSettings = onOpenSettings,
+                onOpenPrecipitationMap = onOpenPrecipitationMap,
+                mapHandoff = mapHandoff,
+                modifier = modifier,
+            )
 
-        is HomePhase.Offline -> WeatherDisplay(
-            uiState = uiState,
-            weather = phase.weather,
-            coordinates = phase.coordinates,
-            staleSinceMillis = phase.fetchedAtMillis,
-            onRefresh = onRefresh,
-            onOpenSettings = onOpenSettings,
-            onOpenPrecipitationMap = onOpenPrecipitationMap,
-            modifier = modifier,
-        )
+            is HomePhase.Offline -> WeatherDisplay(
+                uiState = uiState,
+                weather = phase.weather,
+                coordinates = phase.coordinates,
+                staleSinceMillis = phase.fetchedAtMillis,
+                onRefresh = onRefresh,
+                onOpenSettings = onOpenSettings,
+                onOpenPrecipitationMap = onOpenPrecipitationMap,
+                mapHandoff = mapHandoff,
+                modifier = modifier,
+            )
+        }
     }
 }
 
@@ -185,6 +233,7 @@ private fun WeatherDisplay(
     onRefresh: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenPrecipitationMap: (Coordinates) -> Unit,
+    mapHandoff: MapHandoff,
     modifier: Modifier = Modifier,
 ) {
     val sheetState = rememberStandardBottomSheetState(
@@ -221,6 +270,18 @@ private fun WeatherDisplay(
         }
     }
 
+    // The panel's contents play their entrance every time it opens: it is
+    // brief, and it is what makes the panel feel like it arrives with data
+    // rather than sliding a static page up.
+    val panelAnimations = rememberAnimationsEnabled()
+    val panelReveal = remember { Animatable(1f) }
+    LaunchedEffect(expanded) {
+        if (expanded && panelAnimations) {
+            panelReveal.snapTo(0f)
+            panelReveal.animateTo(1f, tween(PANEL_REVEAL_MILLIS, easing = LinearEasing))
+        }
+    }
+
     val accents = LocalAccents.current
 
     val tint = if (uiState.isPokemonMode) {
@@ -253,12 +314,14 @@ private fun WeatherDisplay(
             )
         },
         sheetContent = {
-            WeatherDetailPanel(
-                uiState = uiState,
-                weather = weather,
-                staleSinceMillis = staleSinceMillis,
-                onRefresh = onRefresh,
-            )
+            CompositionLocalProvider(LocalPanelReveal provides { panelReveal.value }) {
+                WeatherDetailPanel(
+                    uiState = uiState,
+                    weather = weather,
+                    staleSinceMillis = staleSinceMillis,
+                    onRefresh = onRefresh,
+                )
+            }
         },
         // Transparent so the mode's wash runs behind the whole screen rather
         // than stopping at the sheet's peek height.
@@ -282,6 +345,7 @@ private fun WeatherDisplay(
                 onOpenSettings = onOpenSettings,
                 onExpand = { scope.launch { sheetState.expand() } },
                 onOpenMap = { onOpenPrecipitationMap(coordinates) },
+                mapHandoff = mapHandoff,
             )
         }
     }
@@ -303,6 +367,7 @@ private fun HeroContent(
     onOpenSettings: () -> Unit,
     onExpand: () -> Unit,
     onOpenMap: () -> Unit,
+    mapHandoff: MapHandoff,
 ) {
     val settings = uiState.settings
     var explodeTaps by remember { mutableStateOf(TapStreak()) }
@@ -316,19 +381,66 @@ private fun HeroContent(
     }
 
     // The whole screen responds to a swipe, not just the handle at the bottom:
-    // up opens the detail panel, right-to-left pulls in the radar. One detector
-    // for both, classified when the finger lifts, so a swipe that wanders a
-    // little off its axis still means what it looked like.
-    var dragX by remember { mutableFloatStateOf(0f) }
-    var dragY by remember { mutableFloatStateOf(0f) }
-    // Thresholds are physical distances, so they are expressed in dp and
-    // converted — a raw pixel count means a different swipe on every density.
+    // up opens the detail panel, right-to-left pulls in the radar. The screen
+    // follows the finger the whole way, so the gesture is a physical pull
+    // rather than a guess that is judged when the finger lifts.
     val density = LocalDensity.current
     val expandThresholdPx = with(density) { SWIPE_THRESHOLD.toPx() }
     val mapThresholdPx = with(density) { MAP_SWIPE_THRESHOLD.toPx() }
+    val axisLockPx = with(density) { AXIS_LOCK.toPx() }
+    val flingMinPx = with(density) { FLING_MIN_TRAVEL.toPx() }
+    val maxLiftPx = with(density) { MAX_LIFT.toPx() }
+
+    // Raw finger travel, and what is drawn from it.
+    var dragX by remember { mutableFloatStateOf(0f) }
+    var dragY by remember { mutableFloatStateOf(0f) }
+    var axis by remember { mutableStateOf<DragAxis?>(null) }
+    /** How far the radar has been pulled in from the right edge, in px. */
+    var pull by remember { mutableFloatStateOf(0f) }
+    /** How far the hero has been lifted towards the panel, in px. */
+    var lift by remember { mutableFloatStateOf(0f) }
+    var armed by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    var settleJob by remember { mutableStateOf<Job?>(null) }
+    val velocity = remember { VelocityTracker() }
+    val view = LocalView.current
+
+    fun springBack() {
+        settleJob?.cancel()
+        settleJob = scope.launch {
+            launch { animate(pull, 0f, animationSpec = Motion.settle()) { v, _ -> pull = v } }
+            launch { animate(lift, 0f, animationSpec = Motion.settle()) { v, _ -> lift = v } }
+        }
+    }
+
+    fun openMap() {
+        mapHandoff.revealedPx = pull
+        onOpenMap()
+        // If navigation is refused (a double tap, a destination already on
+        // top), the screen must not stay half pulled. When navigation does
+        // happen the hero leaves composition first and this never runs.
+        settleJob?.cancel()
+        settleJob = scope.launch {
+            delay(MAP_HANDOFF_TIMEOUT_MILLIS)
+            springBack()
+        }
+    }
+
     // The swipe has no visible control, and TalkBack users cannot perform a
     // custom swipe, so the same action is offered in TalkBack's actions menu.
     val openMapLabel = stringResource(R.string.open_precipitation_map)
+
+    // The entrance plays once per session. Saveable, so coming back from the
+    // map or settings does not replay a two-second performance every time.
+    val animationsEnabled = rememberAnimationsEnabled()
+    var introPlayed by rememberSaveable { mutableStateOf(!animationsEnabled) }
+    val intro = remember { Animatable(if (introPlayed) 1f else 0f) }
+    LaunchedEffect(Unit) {
+        if (!introPlayed) {
+            intro.animateTo(1f, tween(INTRO_MILLIS, easing = LinearEasing))
+            introPlayed = true
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -337,27 +449,88 @@ private fun HeroContent(
             .semantics {
                 customActions = listOf(
                     CustomAccessibilityAction(openMapLabel) {
-                        onOpenMap()
+                        openMap()
                         true
                     },
                 )
             }
             .pointerInput(expandThresholdPx, mapThresholdPx) {
                 detectDragGestures(
-                    onDragStart = { dragX = 0f; dragY = 0f },
-                    onDragCancel = { dragX = 0f; dragY = 0f },
-                    onDragEnd = {
-                        when (HeroSwipe.classify(dragX, dragY, expandThresholdPx, mapThresholdPx)) {
-                            HeroSwipe.OPEN_MAP -> onOpenMap()
-                            HeroSwipe.EXPAND -> onExpand()
-                            null -> Unit
-                        }
+                    onDragStart = {
+                        settleJob?.cancel()
                         dragX = 0f
                         dragY = 0f
+                        axis = null
+                        armed = false
+                        velocity.resetTracking()
                     },
-                ) { _, delta ->
+                    onDragCancel = {
+                        axis = null
+                        springBack()
+                    },
+                    onDragEnd = {
+                        val fling = velocity.calculateVelocity()
+                        // A flick carries on after the finger lifts: judge where
+                        // it was heading, not only where it stopped. Short
+                        // twitches do not get the benefit.
+                        val projectedX = if (abs(dragX) >= flingMinPx) {
+                            dragX + fling.x * FLING_PROJECTION_SECONDS
+                        } else {
+                            dragX
+                        }
+                        val projectedY = if (abs(dragY) >= flingMinPx) {
+                            dragY + fling.y * FLING_PROJECTION_SECONDS
+                        } else {
+                            dragY
+                        }
+                        val swipe = HeroSwipe.classify(
+                            projectedX,
+                            projectedY,
+                            expandThresholdPx,
+                            mapThresholdPx,
+                        )
+                        // Once the drag has chosen an axis, only that axis's
+                        // outcome can happen: what moved is what happens.
+                        when {
+                            swipe == HeroSwipe.OPEN_MAP && axis != DragAxis.VERTICAL -> openMap()
+                            swipe == HeroSwipe.EXPAND && axis != DragAxis.HORIZONTAL -> {
+                                onExpand()
+                                springBack()
+                            }
+                            else -> springBack()
+                        }
+                        axis = null
+                    },
+                ) { change, delta ->
+                    velocity.addPosition(change.uptimeMillis, change.position)
                     dragX += delta.x
                     dragY += delta.y
+
+                    if (axis == null && (abs(dragX) > axisLockPx || abs(dragY) > axisLockPx)) {
+                        axis = if (abs(dragX) > abs(dragY)) DragAxis.HORIZONTAL else DragAxis.VERTICAL
+                    }
+                    when (axis) {
+                        DragAxis.HORIZONTAL -> {
+                            pull = (-dragX).coerceAtLeast(0f)
+                            lift = 0f
+                        }
+                        DragAxis.VERTICAL -> {
+                            // Rubber-banded: the hero gives, but not all the way.
+                            lift = rubberBand((-dragY).coerceAtLeast(0f), maxLiftPx)
+                            pull = 0f
+                        }
+                        null -> Unit
+                    }
+
+                    val nowArmed = when (axis) {
+                        DragAxis.HORIZONTAL -> pull >= mapThresholdPx
+                        DragAxis.VERTICAL -> -dragY >= expandThresholdPx
+                        null -> false
+                    }
+                    if (nowArmed != armed) {
+                        armed = nowArmed
+                        view.thresholdHaptic(activated = nowArmed)
+                    }
                 }
             },
     ) {
@@ -368,8 +541,18 @@ private fun HeroContent(
                 .padding(horizontal = 24.dp)
                 .padding(top = 72.dp, bottom = 24.dp)
                 .graphicsLayer {
+                    // Alpha per draw call rather than through an offscreen
+                    // buffer, which costs an allocation every frame of the
+                    // panel's fade.
+                    compositingStrategy = CompositingStrategy.ModulateAlpha
+                    // Home drifts left at a fraction of the radar's pace: the
+                    // parallax that makes the radar read as arriving on top.
+                    // Deliberately not dimmed as well: fading a translated
+                    // layer clipped it at its resting edge, cutting the quote
+                    // in half as it slid.
+                    translationX = -pull * HOME_PARALLAX
                     alpha = progress
-                    translationY = -(1f - progress) * size.height * 0.4f
+                    translationY = -(1f - progress) * size.height * 0.4f - lift
                 },
             verticalArrangement = Arrangement.Bottom,
         ) {
@@ -377,6 +560,15 @@ private fun HeroContent(
                 Box(
                     modifier = Modifier.weight(1f, fill = false),
                 ) {
+                    if (!uiState.isPokemonMode) {
+                        WeatherAtmosphere(
+                            condition = weather.condition,
+                            isDay = weather.isDay,
+                            modifier = Modifier
+                                .matchParentSize()
+                                .graphicsLayer { alpha = introStage(intro.value, 0) },
+                        )
+                    }
                     if (uiState.isPokemonMode) {
                         PokeballIcon(size = 160.dp)
                     } else {
@@ -414,30 +606,54 @@ private fun HeroContent(
 
             Spacer(Modifier.height(24.dp))
 
-            QuoteText(
-                quote = uiState.displayQuote,
-                temperatureCelsius = weather.temperature,
-                style = QuipHeadlineStyle.copy(
-                    color = MaterialTheme.colorScheme.onBackground,
-                    fontSize = 42.sp,
-                    lineHeight = 46.sp,
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag(TAG_QUOTE)
-                    .clearAndSetSemantics {
-                        contentDescription = plainQuote(uiState.displayQuote)
-                    },
-            )
+            // A refresh brings a new quip: the old one lifts away and the new
+            // one rises into its place, so the change is seen, not just noticed.
+            AnimatedContent(
+                targetState = uiState.displayQuote,
+                transitionSpec = {
+                    (
+                        slideInVertically(tween(Motion.LONG, easing = Motion.EmphasizedDecelerate)) { it / 3 } +
+                            fadeIn(tween(Motion.MEDIUM, delayMillis = Motion.STAGGER))
+                        ) togetherWith (
+                        slideOutVertically(tween(Motion.SHORT, easing = Motion.EmphasizedAccelerate)) { -it / 4 } +
+                            fadeOut(tween(Motion.SHORT))
+                        ) using SizeTransform(clip = false)
+                },
+                modifier = Modifier.staged(intro, 1),
+                label = "quote",
+            ) { quote ->
+                QuoteText(
+                    quote = quote,
+                    temperatureCelsius = weather.temperature,
+                    style = QuipHeadlineStyle.copy(
+                        color = MaterialTheme.colorScheme.onBackground,
+                        fontSize = 42.sp,
+                        lineHeight = 46.sp,
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag(TAG_QUOTE)
+                        .clearAndSetSemantics {
+                            contentDescription = plainQuote(quote)
+                        },
+                )
+            }
 
             Spacer(Modifier.height(12.dp))
 
-            Text(
-                text = uiState.displaySubtitle,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.testTag(TAG_SUBTITLE),
-            )
+            Crossfade(
+                targetState = uiState.displaySubtitle,
+                animationSpec = tween(Motion.MEDIUM),
+                modifier = Modifier.staged(intro, 2),
+                label = "subtitle",
+            ) { subtitle ->
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.testTag(TAG_SUBTITLE),
+                )
+            }
 
             if (staleSinceMillis != null) {
                 Spacer(Modifier.height(12.dp))
@@ -446,7 +662,10 @@ private fun HeroContent(
 
             Spacer(Modifier.height(24.dp))
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.staged(intro, 3),
+            ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_thermometer),
                     contentDescription = stringResource(R.string.temperature),
@@ -477,13 +696,24 @@ private fun HeroContent(
             }
         }
 
-        // Top controls fade out while the panel is up.
+        // Above the hero: the radar arrives on top of home, exactly as the map
+        // screen will a moment later.
+        RadarPeek(
+            pullPx = { pull },
+            armed = armed && axis == DragAxis.HORIZONTAL,
+            modifier = Modifier.align(Alignment.CenterEnd),
+        )
+
+        // Top controls fade out while the panel is up, and as the radar is
+        // pulled in over them.
         Row(
             modifier = Modifier
                 .align(Alignment.TopEnd)
                 .windowInsetsPadding(WindowInsets.statusBars)
                 .padding(horizontal = 8.dp, vertical = 4.dp)
-                .graphicsLayer { alpha = progress },
+                .graphicsLayer {
+                    alpha = progress * (1f - (pull / mapThresholdPx).coerceIn(0f, 1f))
+                },
             horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -508,6 +738,116 @@ private fun HeroContent(
         }
 
     }
+}
+
+/**
+ * How far the radar had been pulled in when the finger let go.
+ *
+ * The map screen's entrance reads it so the real map starts exactly where the
+ * peek's edge was and carries on from there. Without it the map would restart
+ * from the far right edge, and a swipe that was already two-thirds done would
+ * jump backwards before completing.
+ */
+@Stable
+class MapHandoff {
+    var revealedPx by mutableFloatStateOf(0f)
+}
+
+internal enum class DragAxis { HORIZONTAL, VERTICAL }
+
+/**
+ * The radar arriving under the finger: a panel attached to the right edge,
+ * exactly as wide as the finger has pulled. It shows where the swipe leads,
+ * and past the point of no return the icon lights up to say so.
+ *
+ * Takes the pull as a lambda so a drag redraws only this panel, not the hero.
+ */
+@Composable
+private fun RadarPeek(
+    pullPx: () -> Float,
+    armed: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val accent = LocalAccents.current.cold
+    val iconScale by animateFloatAsState(
+        targetValue = if (armed) 1.2f else 1f,
+        animationSpec = Motion.pop(),
+        label = "peek-icon-scale",
+    )
+    val tint by animateColorAsState(
+        targetValue = if (armed) accent else MaterialTheme.colorScheme.onSurfaceVariant,
+        animationSpec = tween(Motion.SHORT),
+        label = "peek-icon-tint",
+    )
+    Box(
+        modifier = modifier
+            .testTag(TAG_RADAR_PEEK)
+            .fillMaxHeight()
+            .layout { measurable, constraints ->
+                val width = pullPx().roundToInt().coerceIn(0, constraints.maxWidth)
+                val placeable = measurable.measure(
+                    constraints.copy(minWidth = width, maxWidth = width),
+                )
+                layout(width, placeable.height) { placeable.place(0, 0) }
+            }
+            .clip(RoundedCornerShape(topStart = 28.dp, bottomStart = 28.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.graphicsLayer {
+                // The icon arrives as the panel opens up, not before there is
+                // room for it.
+                val opened = (pullPx() / (PEEK_ICON_ROOM_DP * density)).coerceIn(0f, 1f)
+                alpha = opened
+                scaleX = iconScale * (0.6f + 0.4f * opened)
+                scaleY = iconScale * (0.6f + 0.4f * opened)
+            },
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.ic_map),
+                contentDescription = null,
+                modifier = Modifier.size(28.dp),
+                tint = tint,
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = stringResource(R.string.radar_label),
+                style = MaterialTheme.typography.labelLarge,
+                color = tint,
+                maxLines = 1,
+            )
+        }
+    }
+}
+
+/**
+ * Resistance for a drag that should give a little but not follow all the way:
+ * close to 1:1 at first, flattening towards [limit].
+ */
+internal fun rubberBand(distance: Float, limit: Float): Float {
+    if (distance <= 0f || limit <= 0f) return 0f
+    return limit * (1f - 1f / (distance / limit * RUBBER_STIFFNESS + 1f))
+}
+
+/**
+ * A tick as the swipe crosses the point of no return, and another if it is
+ * dragged back. The dedicated gesture-threshold effects exist from Android
+ * 14; older phones get the closest equivalent.
+ */
+private fun android.view.View.thresholdHaptic(activated: Boolean) {
+    val effect = when {
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE ->
+            if (activated) {
+                android.view.HapticFeedbackConstants.GESTURE_THRESHOLD_ACTIVATE
+            } else {
+                android.view.HapticFeedbackConstants.GESTURE_THRESHOLD_DEACTIVATE
+            }
+        activated -> android.view.HapticFeedbackConstants.CONTEXT_CLICK
+        else -> android.view.HapticFeedbackConstants.CLOCK_TICK
+    }
+    performHapticFeedback(effect)
 }
 
 /**
@@ -575,22 +915,36 @@ private fun SheetHandle(expanded: Boolean, onToggle: () -> Unit) {
 @Composable
 private fun BouncingChevron() {
     val animationsEnabled = rememberAnimationsEnabled()
+    // This was a six *pixel* bounce — two dp on a modern phone, which nobody
+    // saw. Now a double nudge upward and a rest, like a hand beckoning: easier
+    // to notice than constant motion, and less tiring to live with.
     val transition = rememberInfiniteTransition(label = "chevron")
-    val offset by transition.animateFloat(
+    val lift by transition.animateFloat(
         initialValue = 0f,
-        targetValue = if (animationsEnabled) -6f else 0f,
+        targetValue = 0f,
         animationSpec = infiniteRepeatable(
-            tween(600, easing = FastOutSlowInEasing),
-            RepeatMode.Reverse,
+            keyframes {
+                durationMillis = 2_600
+                0f at 0 using Motion.Standard
+                1f at 260 using Motion.Standard
+                0f at 560 using Motion.Standard
+                0.6f at 780 using Motion.Standard
+                0f at 1_060
+                0f at 2_600
+            },
         ),
-        label = "chevron-offset",
+        label = "chevron-lift",
     )
     Icon(
         painter = painterResource(R.drawable.ic_chevron_up),
         contentDescription = stringResource(R.string.show_details),
         modifier = Modifier
             .size(24.dp)
-            .graphicsLayer { translationY = offset },
+            .graphicsLayer {
+                val amount = if (animationsEnabled) lift else 0f
+                translationY = -CHEVRON_LIFT_DP * density * amount
+                alpha = 0.7f + 0.3f * amount
+            },
         tint = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 }
@@ -668,6 +1022,28 @@ internal data class TapStreak(val count: Int = 0, val lastTapMillis: Long = 0L) 
     }
 }
 
+/**
+ * One element's share of the entrance: each starts [Motion.STAGGER] after the
+ * one before, rises into place and fades up over [Motion.LONG].
+ */
+internal fun introStage(intro: Float, index: Int): Float {
+    val elapsed = intro * INTRO_MILLIS - index * Motion.STAGGER
+    val linear = (elapsed / Motion.LONG).coerceIn(0f, 1f)
+    return Motion.EmphasizedDecelerate.transform(linear)
+}
+
+private fun Modifier.staged(intro: Animatable<Float, *>, index: Int): Modifier =
+    graphicsLayer {
+        val stage = introStage(intro.value, index)
+        alpha = stage
+        translationY = (1f - stage) * INTRO_RISE_DP * density
+    }
+
+/** Long enough for the last staged element to land. */
+internal const val INTRO_MILLIS = Motion.LONG + 3 * Motion.STAGGER
+private const val INTRO_RISE_DP = 28f
+private const val CHEVRON_LIFT_DP = 9f
+
 /** Matches the web app's 50px swipe threshold. */
 internal val SWIPE_THRESHOLD = 56.dp
 
@@ -676,6 +1052,28 @@ internal val SWIPE_THRESHOLD = 56.dp
  * and a sideways brush while scrolling past should not land on it.
  */
 internal val MAP_SWIPE_THRESHOLD = 72.dp
+
+/** Travel before a drag commits to being horizontal or vertical. */
+private val AXIS_LOCK = 10.dp
+
+/** A flick must travel at least this far before its speed counts for anything. */
+private val FLING_MIN_TRAVEL = 24.dp
+
+/** How far ahead a flick is projected when judging where it was going. */
+private const val FLING_PROJECTION_SECONDS = 0.12f
+
+/** The most the hero lifts with the finger before the panel takes over. */
+private val MAX_LIFT = 72.dp
+private const val RUBBER_STIFFNESS = 0.55f
+
+/** Home's pace relative to the radar: a parallax, so the radar reads as on top. */
+internal const val HOME_PARALLAX = 0.3f
+
+/** Room the peek needs before its icon is fully in. */
+private const val PEEK_ICON_ROOM_DP = 96f
+
+/** How long a committed swipe waits for navigation before giving up. */
+private const val MAP_HANDOFF_TIMEOUT_MILLIS = 900L
 
 internal const val EXPLODE_TAP_COUNT = 5
 internal val SHEET_PEEK_HEIGHT = 56.dp
@@ -686,5 +1084,6 @@ const val TAG_TEMPERATURE = "home-temperature"
 const val TAG_LOCATION = "home-location"
 const val TAG_EXPAND = "home-expand"
 const val TAG_HERO = "home-hero"
+const val TAG_RADAR_PEEK = "home-radar-peek"
 const val TAG_COLLAPSE = "home-collapse"
 const val TAG_STALE = "home-stale"

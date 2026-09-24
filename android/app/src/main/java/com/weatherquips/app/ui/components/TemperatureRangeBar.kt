@@ -32,6 +32,8 @@ fun TemperatureRangeBar(
     markerCelsius: Double? = null,
     trackColor: Color = MaterialTheme.colorScheme.surfaceVariant,
     markerOutline: Color = MaterialTheme.colorScheme.surfaceContainer,
+    /** 0..1: the span draws outward from its middle as this rises. */
+    growth: () -> Float = { 1f },
 ) {
     val span = (scaleMaxCelsius - scaleMinCelsius).takeIf { it > 0.0 } ?: 1.0
     fun fraction(value: Double) = ((value - scaleMinCelsius) / span).coerceIn(0.0, 1.0).toFloat()
@@ -52,8 +54,15 @@ fun TemperatureRangeBar(
         // spread still reads as a dot rather than vanishing.
         val rawLeft = startFraction * size.width
         val rawRight = endFraction * size.width
-        val left = rawLeft.coerceAtMost(size.width - height)
-        val right = rawRight.coerceAtLeast(left + height)
+        val fullLeft = rawLeft.coerceAtMost(size.width - height)
+        val fullRight = rawRight.coerceAtLeast(fullLeft + height)
+
+        val grown = growth().coerceIn(0f, 1f)
+        if (grown <= 0f) return@Canvas
+        val middle = (fullLeft + fullRight) / 2f
+        val halfWidth = ((fullRight - fullLeft) / 2f * grown).coerceAtLeast(height / 2f)
+        val left = middle - halfWidth
+        val right = middle + halfWidth
 
         drawRoundRect(
             brush = Brush.horizontalGradient(
@@ -66,7 +75,7 @@ fun TemperatureRangeBar(
             cornerRadius = radius,
         )
 
-        if (markerFraction != null) {
+        if (markerFraction != null && grown >= 1f) {
             val markerRadius = height / 2f
             val centerX = (markerFraction * size.width).coerceIn(markerRadius, size.width - markerRadius)
             val center = Offset(centerX, height / 2f)

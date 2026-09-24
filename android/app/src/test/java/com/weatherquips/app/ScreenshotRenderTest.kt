@@ -9,8 +9,11 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.onRoot
 import com.weatherquips.app.domain.model.AppSettings
 import com.weatherquips.app.domain.model.Coordinates
+import com.weatherquips.app.domain.model.WeatherCondition
 import com.weatherquips.app.ui.home.HomePhase
 import com.weatherquips.app.ui.home.HomeScreen
 import com.weatherquips.app.ui.home.HomeUiState
@@ -25,6 +28,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.ui.unit.dp
 import java.io.File
 
@@ -49,7 +53,8 @@ class ScreenshotRenderTest {
      */
     private fun settleAndCapture(name: String) {
         composeRule.mainClock.autoAdvance = false
-        composeRule.mainClock.advanceTimeBy(500)
+        // Past the staged entrance, so the capture shows the resting screen.
+        composeRule.mainClock.advanceTimeBy(1_600)
         save(name)
     }
 
@@ -105,6 +110,49 @@ class ScreenshotRenderTest {
     fun homeDark() {
         renderHome(weatherState, dark = true)
         settleAndCapture("home-dark")
+    }
+
+    /** The swipe to the radar, held part-way and past the point of no return. */
+    @Test
+    fun homeSwipeInProgress() = captureSwipe(distanceFraction = 0.28f, name = "home-swipe-early")
+
+    @Test
+    fun homeSwipeArmed() = captureSwipe(distanceFraction = 0.55f, name = "home-swipe-armed")
+
+    /** A rainy home screen, with its atmosphere, in the dark. */
+    @Test
+    fun homeRainyDark() {
+        renderHome(
+            HomeUiState(
+                phase = HomePhase.Success(
+                    TestWeather.sample(condition = com.weatherquips.app.domain.model.WeatherCondition.RAINY),
+                    Coordinates(52.99, 6.56),
+                ),
+                settings = AppSettings(),
+            ),
+            dark = true,
+        )
+        settleAndCapture("home-rainy-dark")
+    }
+
+    private fun captureSwipe(distanceFraction: Float, name: String) {
+        renderHome(weatherState, dark = false)
+        composeRule.mainClock.autoAdvance = false
+        composeRule.mainClock.advanceTimeBy(1_600)
+        composeRule.onRoot().performTouchInput {
+            down(androidx.compose.ui.geometry.Offset(width * 0.9f, height * 0.5f))
+            repeat(12) {
+                moveBy(androidx.compose.ui.geometry.Offset(-width * distanceFraction / 12f, 0f))
+            }
+        }
+        // A frozen clock never lets the recomposer see state written by the
+        // gesture; let one real round run, then freeze again for the capture.
+        composeRule.mainClock.autoAdvance = true
+        composeRule.waitForIdle()
+        composeRule.mainClock.autoAdvance = false
+        composeRule.mainClock.advanceTimeBy(400)
+        save(name)
+        composeRule.onRoot().performTouchInput { up() }
     }
 
     @Test
@@ -299,6 +347,90 @@ class ScreenshotRenderTest {
         }
         settleAndCapture("settings-light")
     }
+
+    /** The panel caught part-way through its opening flourish. */
+    @Config(sdk = [34], qualifiers = "w411dp-h1500dp-xhdpi")
+    @Test
+    fun detailPanelRevealing() {
+        composeRule.setContent {
+            WeatherQuipsTheme(darkTheme = false) {
+                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                    androidx.compose.runtime.CompositionLocalProvider(
+                        com.weatherquips.app.ui.components.LocalPanelReveal provides { 0.42f },
+                    ) {
+                        com.weatherquips.app.ui.home.WeatherDetailPanel(
+                            uiState = weatherState,
+                            weather = TestWeather.assenEvening(),
+                            staleSinceMillis = null,
+                            onRefresh = {},
+                        )
+                    }
+                }
+            }
+        }
+        settleAndCapture("detail-panel-revealing")
+    }
+
+    /** Every atmosphere side by side, for reviewing them against each other. */
+    @Config(sdk = [34], qualifiers = "w900dp-h1300dp-xhdpi")
+    @Test
+    fun atmosphereGalleryLight() = atmosphereGallery(dark = false)
+
+    @Config(sdk = [34], qualifiers = "w900dp-h1300dp-xhdpi")
+    @Test
+    fun atmosphereGalleryDark() = atmosphereGallery(dark = true)
+
+    @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+    private fun atmosphereGallery(dark: Boolean) {
+        val cells = listOf(
+            WeatherCondition.RAINY to true, WeatherCondition.STORMY to true,
+            WeatherCondition.SNOWY to true, WeatherCondition.CLEAR to true,
+            WeatherCondition.CLEAR to false, WeatherCondition.HOT to true,
+            WeatherCondition.CLOUDY to true, WeatherCondition.CLOUDY to false,
+            WeatherCondition.FOGGY to true, WeatherCondition.WINDY to true,
+            WeatherCondition.COLD to true,
+        )
+        run {
+            composeRule.setContent {
+                WeatherQuipsTheme(darkTheme = dark) {
+                    Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
+                        androidx.compose.foundation.layout.FlowRow(
+                            modifier = Modifier.padding(16.dp),
+                        ) {
+                            cells.forEach { (condition, isDay) ->
+                                androidx.compose.foundation.layout.Box(
+                                    modifier = Modifier.padding(4.dp)
+                                        .size(width = 280.dp, height = 230.dp),
+                                    contentAlignment = androidx.compose.ui.Alignment.BottomStart,
+                                ) {
+                                    androidx.compose.foundation.layout.Box(
+                                        modifier = Modifier.padding(start = 16.dp, bottom = 12.dp),
+                                    ) {
+                                        com.weatherquips.app.ui.components.WeatherAtmosphere(
+                                            condition = condition,
+                                            isDay = isDay,
+                                            modifier = Modifier.matchParentSize(),
+                                        )
+                                        com.weatherquips.app.ui.components.AnimatedWeatherIcon(
+                                            condition = condition,
+                                            isDay = isDay,
+                                            size = 110.dp,
+                                        )
+                                    }
+                                    androidx.compose.material3.Text(
+                                        text = "${condition.id} ${if (isDay) "day" else "night"}",
+                                        modifier = Modifier.align(androidx.compose.ui.Alignment.TopEnd).padding(8.dp),
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            settleAndCapture(if (dark) "atmosphere-gallery-dark" else "atmosphere-gallery-light")
+        }
+    }
+
 }
 
 private object NoOpSettingsActions : com.weatherquips.app.ui.settings.SettingsActions {

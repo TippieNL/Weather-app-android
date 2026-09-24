@@ -34,6 +34,7 @@ import com.weatherquips.app.R
 import com.weatherquips.app.domain.model.WeatherCondition
 import com.weatherquips.app.domain.model.WeatherIconKey
 import com.weatherquips.app.domain.model.weatherIconKey
+import com.weatherquips.app.ui.theme.Motion
 
 /**
  * Icon rendering. The web app used one consistent SVG pack (lucide); the same
@@ -134,7 +135,7 @@ private fun rememberIconTransform(motion: IconMotion, driftPx: Float): IconTrans
             val rotation by transition.animateFloat(
                 initialValue = 0f,
                 targetValue = 360f,
-                animationSpec = infiniteRepeatable(tween(12_000, easing = LinearEasing)),
+                animationSpec = infiniteRepeatable(tween(9_000, easing = LinearEasing)),
                 label = "spin",
             )
             IconTransform(rotation = rotation)
@@ -142,9 +143,9 @@ private fun rememberIconTransform(motion: IconMotion, driftPx: Float): IconTrans
 
         IconMotion.SWAY -> {
             val rotation by transition.animateFloat(
-                initialValue = -8f,
-                targetValue = 8f,
-                animationSpec = reversing(1_250),
+                initialValue = -12f,
+                targetValue = 12f,
+                animationSpec = reversing(1_100),
                 label = "sway",
             )
             IconTransform(rotation = rotation)
@@ -157,34 +158,46 @@ private fun rememberIconTransform(motion: IconMotion, driftPx: Float): IconTrans
                 animationSpec = reversing(1_000),
                 label = "pulse",
             )
-            IconTransform(scale = 1f + 0.08f * progress, alpha = 0.85f + 0.15f * progress)
+            IconTransform(scale = 1f + 0.12f * progress, alpha = 0.85f + 0.15f * progress)
         }
 
         IconMotion.DRIFT -> {
             val offset by transition.animateFloat(
-                initialValue = 0f,
+                initialValue = -driftPx,
                 targetValue = driftPx,
-                animationSpec = reversing(2_000),
+                animationSpec = reversing(3_200),
                 label = "drift",
             )
-            IconTransform(translationX = offset)
+            // A second, slower period so the path never quite repeats and
+            // reads as floating rather than as a metronome.
+            val bob by transition.animateFloat(
+                initialValue = 0f,
+                targetValue = -driftPx * 0.45f,
+                animationSpec = reversing(2_300),
+                label = "drift-bob",
+            )
+            IconTransform(translationX = offset, translationY = bob)
         }
 
         IconMotion.BOUNCE -> {
-            val offset by transition.animateFloat(
+            val lift by transition.animateFloat(
                 initialValue = 0f,
-                targetValue = -driftPx * 0.75f,
-                animationSpec = reversing(1_000),
+                targetValue = 1f,
+                animationSpec = reversing(900),
                 label = "bounce",
             )
-            IconTransform(translationY = offset)
+            IconTransform(
+                translationY = -driftPx * 0.8f * lift,
+                // A touch of squash at the bottom of each bob, heavier with rain.
+                scale = 1f - 0.03f * (1f - lift),
+            )
         }
 
         IconMotion.FADE_PULSE -> {
             val alpha by transition.animateFloat(
-                initialValue = 0.5f,
+                initialValue = 0.35f,
                 targetValue = 1f,
-                animationSpec = reversing(2_000),
+                animationSpec = reversing(2_200),
                 label = "fade-pulse",
             )
             IconTransform(alpha = alpha)
@@ -246,7 +259,9 @@ fun AnimatedWeatherIcon(
 
     val enter = remember(iconKey) { Animatable(if (animationsEnabled) 0f else 1f) }
     LaunchedEffect(iconKey, animationsEnabled) {
-        if (animationsEnabled) enter.animateTo(1f, tween(400, easing = FastOutSlowInEasing))
+        // A spring, so a new condition arrives with a small pop past full
+        // size and settles, instead of fading up politely.
+        if (animationsEnabled) enter.animateTo(1f, Motion.pop())
     }
 
     Box(modifier = modifier.size(size), contentAlignment = Alignment.Center) {
@@ -256,11 +271,11 @@ fun AnimatedWeatherIcon(
             modifier = Modifier
                 .size(size)
                 .graphicsLayer {
-                    val entered = 0.8f + 0.2f * enter.value
-                    rotationZ = transform.rotation
+                    val entered = 0.55f + 0.45f * enter.value
+                    rotationZ = transform.rotation + (1f - enter.value) * -18f
                     scaleX = transform.scale * entered
                     scaleY = transform.scale * entered
-                    alpha = transform.alpha * enter.value
+                    alpha = transform.alpha * enter.value.coerceIn(0f, 1f)
                     translationX = transform.translationX
                     translationY = transform.translationY
                 },
@@ -324,5 +339,9 @@ private val FRAGMENTS = listOf(
     Fragment(R.drawable.ic_weather_windy, 15f, 85f, 240f),
 )
 
-private const val DRIFT_FRACTION = 0.025f
+/**
+ * How far the idle motion travels, as a share of the icon. It was 2.5% — four
+ * pixels on a 160dp icon, which nobody ever saw move.
+ */
+private const val DRIFT_FRACTION = 0.07f
 private const val FRAGMENT_SIZE_FRACTION = 0.3f

@@ -1,5 +1,21 @@
 package com.weatherquips.app.ui.precipitation
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
+import com.weatherquips.app.ui.theme.Motion
 import android.graphics.ColorMatrix
 import android.graphics.ColorMatrixColorFilter
 import androidx.compose.foundation.background
@@ -449,24 +465,51 @@ private fun RadarTimeline(
                 enabled = uiState.frames.isNotEmpty(),
                 modifier = Modifier.testTag(TAG_PLAY_PAUSE),
             ) {
-                Icon(
-                    painter = painterResource(
-                        if (uiState.isPlaying) R.drawable.ic_pause else R.drawable.ic_play,
-                    ),
-                    contentDescription = stringResource(
-                        if (uiState.isPlaying) R.string.pause_radar else R.string.play_radar,
-                    ),
-                    modifier = Modifier.size(18.dp),
-                )
+                // The glyph turns over rather than swapping, so a tap visibly
+                // did something even before the radar starts to move.
+                AnimatedContent(
+                    targetState = uiState.isPlaying,
+                    transitionSpec = {
+                        (fadeIn(tween(Motion.SHORT)) + scaleIn(Motion.pop(), initialScale = 0.4f)) togetherWith
+                            (fadeOut(tween(Motion.SHORT / 2)) + scaleOut(tween(Motion.SHORT), targetScale = 0.4f))
+                    },
+                    label = "play-pause",
+                ) { playing ->
+                    Icon(
+                        painter = painterResource(if (playing) R.drawable.ic_pause else R.drawable.ic_play),
+                        contentDescription = stringResource(
+                            if (playing) R.string.pause_radar else R.string.play_radar,
+                        ),
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
             }
             Spacer(Modifier.width(12.dp))
-            Text(
-                text = uiState.currentFrame
-                    ?.let { timeFormatter.format(Date(it.timeEpochSeconds * 1000)) }
-                    ?: "--:--",
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.testTag(TAG_CURRENT_TIME),
-            )
+            // The clock rolls over like an odometer as playback moves on:
+            // forward frames roll up, stepping back rolls down.
+            // Keyed on the timestamp, not the text, so the direction is right
+            // across midnight too.
+            AnimatedContent(
+                targetState = uiState.currentFrame?.timeEpochSeconds,
+                transitionSpec = {
+                    val forward = (targetState ?: 0L) >= (initialState ?: 0L)
+                    val direction = if (forward) 1 else -1
+                    (
+                        slideInVertically(tween(Motion.SHORT, easing = Motion.EmphasizedDecelerate)) { it * direction / 2 } +
+                            fadeIn(tween(Motion.SHORT))
+                        ) togetherWith (
+                        slideOutVertically(tween(Motion.SHORT, easing = Motion.EmphasizedAccelerate)) { -it * direction / 2 } +
+                            fadeOut(tween(Motion.SHORT / 2))
+                        ) using SizeTransform(clip = false)
+                },
+                label = "radar-time",
+            ) { epochSeconds ->
+                Text(
+                    text = epochSeconds?.let { timeFormatter.format(Date(it * 1000)) } ?: "--:--",
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.testTag(TAG_CURRENT_TIME),
+                )
+            }
             Spacer(Modifier.width(8.dp))
             Text(
                 text = when {
@@ -496,17 +539,33 @@ private fun RadarTimeline(
                 val isPast = index < uiState.currentIndex
                 val isForecast = uiState.isForecast(index)
                 val onSurface = MaterialTheme.colorScheme.onSurface
-                val color = when {
-                    isActive -> onSurface
-                    isPast -> onSurface.copy(alpha = if (isForecast) 0.25f else 0.35f)
-                    else -> onSurface.copy(alpha = if (isForecast) 0.12f else 0.2f)
-                }
+                // Eased rather than switched, so playback reads as a sweep
+                // along the bar instead of a blinking cursor, and the active
+                // frame stands a little taller than the rest.
+                val color by animateColorAsState(
+                    targetValue = when {
+                        isActive -> onSurface
+                        isPast -> onSurface.copy(alpha = if (isForecast) 0.25f else 0.35f)
+                        else -> onSurface.copy(alpha = if (isForecast) 0.12f else 0.2f)
+                    },
+                    animationSpec = tween(Motion.SHORT),
+                    label = "frame-colour",
+                )
+                val height by animateFloatAsState(
+                    targetValue = if (isActive) 1f else INACTIVE_FRAME_HEIGHT,
+                    animationSpec = Motion.pop(),
+                    label = "frame-height",
+                )
                 val label = timeFormatter.format(Date(frame.timeEpochSeconds * 1000))
                 val frameDescription = stringResource(R.string.radar_frame, label)
                 Box(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxSize()
+                        .graphicsLayer {
+                            scaleY = height
+                            transformOrigin = TransformOrigin(0.5f, 1f)
+                        }
                         .clip(RoundedCornerShape(2.dp))
                         .background(color)
                         .clickable { onSelectFrame(index) }
@@ -554,6 +613,8 @@ private val LEGEND_COLORS = listOf(
     Color(0xFFCC00CC),
     Color(0xFF0000FF),
 )
+
+private const val INACTIVE_FRAME_HEIGHT = 0.6f
 
 const val TAG_MAP = "precipitation-map"
 const val TAG_BACK = "precipitation-back"
