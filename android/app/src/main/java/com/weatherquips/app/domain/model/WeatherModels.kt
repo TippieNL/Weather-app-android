@@ -40,7 +40,10 @@ data class HourlyForecast(
     val time: String,
     val temperature: Double,
     val precipitationChance: Int = 0,
-    /** How much is expected to fall during the hour, in millimetres. */
+    /**
+     * How much is expected to fall, in millimetres per hour. For a slot
+     * longer than an hour this is the slot's total spread evenly over it.
+     */
     val precipitationMm: Double = 0.0,
 )
 
@@ -64,12 +67,35 @@ data class NowcastPoint(
 
 @Serializable
 data class DailyForecast(
-    /** "tomorrow" for the first entry, otherwise the lowercase weekday name. */
+    /**
+     * "tomorrow" for the first entry, otherwise the lowercase English weekday.
+     * Kept for the cache format; the UI names the day from [date] instead, in
+     * the app's language.
+     */
     val day: String,
     /** ISO date, "yyyy-MM-dd". */
     val date: String,
     val temperatureMax: Double,
     val temperatureMin: Double,
+    /**
+     * Expected precipitation over the day in millimetres, snow counted as
+     * water. Null when the provider does not say — which is different from
+     * saying zero.
+     */
+    val precipitationMm: Double? = null,
+    /** The day's highest chance of precipitation, 0–100. */
+    val precipitationChance: Int? = null,
+    /** How many hours of the day it is expected to rain or snow. */
+    val precipitationHours: Double? = null,
+    /** Fresh snow over the day, in centimetres. */
+    val snowfallCm: Double? = null,
+    /**
+     * The day hour by hour, so the app can say *when* it rains. Empty when
+     * the provider's hourly data does not reach this far ahead.
+     */
+    val hours: List<HourlyForecast> = emptyList(),
+    /** Hours each entry in [hours] spans: 1, or 3 for OpenWeatherMap's slots. */
+    val hourStep: Int = 1,
 )
 
 /**

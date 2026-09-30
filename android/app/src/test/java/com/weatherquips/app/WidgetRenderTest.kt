@@ -5,6 +5,9 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.Typeface
+import android.text.StaticLayout
+import android.text.TextPaint
+import android.text.TextUtils
 import com.weatherquips.app.domain.model.CachedWeather
 import com.weatherquips.app.domain.model.Coordinates
 import com.weatherquips.app.domain.model.HourlyForecast
@@ -16,12 +19,14 @@ import com.weatherquips.app.widget.PrecipitationOutlook
 import com.weatherquips.app.widget.PrecipitationOutlooks
 import com.weatherquips.app.widget.WidgetColors
 import com.weatherquips.app.widget.WidgetCopyWriter
+import com.weatherquips.app.widget.WidgetTextLayout
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import java.io.File
+import java.util.Locale
 
 /**
  * Draws the widget to PNGs in build/screenshots/ so the graph can be reviewed.
@@ -69,6 +74,18 @@ class WidgetRenderTest {
         )
         save("widget-narrow-light", card(narrow, dark = false, widthDp = 180f))
         save("widget-narrow-dark", card(narrow, dark = true, widthDp = 180f))
+
+        // The same shower in Dutch, and a clear night, to see the quip wrap.
+        save("widget-nl-shower", card(narrow, dark = false, widthDp = 280f, locale = Locale.forLanguageTag("nl")))
+        save("widget-nl-narrow", card(narrow, dark = true, widthDp = 180f, locale = Locale.forLanguageTag("nl")))
+        val clearNight = PrecipitationOutlooks.from(
+            nowcast(DoubleArray(11) { 0.0 }, condition = WeatherCondition.CLEAR),
+            nowMillis = NOW,
+        )
+        (0 until 3).forEach { hour ->
+            val at = NOW + hour * 3_600_000L
+            save("widget-clear-night-$hour", card(clearNight, dark = true, widthDp = 180f, readAt = at))
+        }
     }
 
     // --- fixtures --------------------------------------------------------
@@ -164,7 +181,13 @@ class WidgetRenderTest {
 
     // --- the card --------------------------------------------------------
 
-    private fun card(outlook: PrecipitationOutlook, dark: Boolean, widthDp: Float): Bitmap {
+    private fun card(
+        outlook: PrecipitationOutlook,
+        dark: Boolean,
+        widthDp: Float,
+        locale: Locale = Locale.ENGLISH,
+        readAt: Long = NOW,
+    ): Bitmap {
         val heightDp = 140f
         val scale = PrecipitationGraph.RENDER_SCALE
         val bitmap = Bitmap.createBitmap(
@@ -185,44 +208,65 @@ class WidgetRenderTest {
             Paint(Paint.ANTI_ALIAS_FLAG).apply { color = background },
         )
 
-        val copy = WidgetCopyWriter.write(outlook.outlook, hourOfDay = 17)
+        val writer = WidgetCopyWriter(TestResources.resources(locale))
+        val copy = writer.write(outlook, nowMillis = readAt)
         val side = 14f * scale
+        val contentWidth = widthDp - 28f
         val headline = text(onBackground, (if (wide) 20f else 17f) * scale, bold = true)
         canvas.drawText(copy.headline, side, 12f * scale - headline.ascent(), headline)
 
-        val aside = text(muted, 11f * scale)
-        val asideTop = 12f * scale + 26f * scale
-        canvas.drawText(copy.aside, side, asideTop - aside.ascent(), aside)
-
-        if (wide) {
-            val wet = outlook.nowMillimetresPerHour >= IntensityScale.WET_MM_PER_HOUR
-            val stale = outlook.ageMinutes >= 30
-            val detail = when {
-                stale -> " · ${outlook.ageMinutes / 60}h ago"
-                wet -> " · ${IntensityScale.format(outlook.nowMillimetresPerHour)}"
-                else -> ""
-            }
-            val metaText = outlook.location.lowercase() + detail
-            val metaColour = when {
-                stale -> 0xFFD97706.toInt()
-                wet -> 0xFF3B82F6.toInt()
-                else -> muted
-            }
-            val meta = text(metaColour, 11f * scale, bold = wet || stale)
+        // The meta line, where the widget shows it: always on the wide size,
+        // and on the narrow one only to admit the data is old.
+        val stale = outlook.ageMinutes >= 30
+        val wet = outlook.nowMillimetresPerHour >= IntensityScale.WET_MM_PER_HOUR
+        val (quip, metaText, lines) = WidgetTextLayout.arrange(
+            copy, writer.metaChoices(outlook, wide), contentWidth, 1f,
+        )
+        val quipTop = 12f * scale + 26f * scale
+        if (metaText != null) {
+            val meta = text(
+                when {
+                    stale -> 0xFFD97706.toInt()
+                    wet -> 0xFF3B82F6.toInt()
+                    else -> muted
+                },
+                11f * scale,
+                bold = true,
+            )
             canvas.drawText(
                 metaText,
                 bitmap.width - side - meta.measureText(metaText),
-                asideTop - meta.ascent(),
+                quipTop - meta.ascent(),
                 meta,
             )
         }
 
-        val graphTop = asideTop + 15f * scale + 6f * scale
+        // The quip, wrapped the way the widget measures it.
+        val quipWidth = contentWidth -
+            (metaText?.let { WidgetTextLayout.metaWidth(it, 1f) + 8f } ?: 0f)
+        val quipPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = onBackground
+            textSize = WidgetTextLayout.QUIP_SP * scale
+            typeface = Typeface.create("sans-serif", Typeface.ITALIC)
+        }
+        val layout = StaticLayout.Builder
+            .obtain(quip, 0, quip.length, quipPaint, (quipWidth * scale).toInt())
+            .setIncludePad(false)
+            .setMaxLines(WidgetTextLayout.MAX_QUIP_LINES)
+            .setEllipsize(TextUtils.TruncateAt.END)
+            .build()
+        canvas.save()
+        canvas.translate(side, quipTop)
+        layout.draw(canvas)
+        canvas.restore()
+
+        val graphTop = quipTop + lines * WidgetTextLayout.QUIP_LINE_DP * scale + 6f * scale
         val graph = PrecipitationGraph.render(
             chart = outlook.chart,
-            widthDp = widthDp - 28f,
+            widthDp = contentWidth,
             heightDp = (heightDp * scale - graphTop - 12f * scale) / scale,
             palette = WidgetColors.graph,
+            labels = writer.graphLabels(),
         )
         if (graph != null) canvas.drawBitmap(graph, side, graphTop, null)
 

@@ -1,6 +1,11 @@
 package com.weatherquips.app.widget
 
 import android.content.Context
+import android.content.res.Resources
+import android.graphics.Paint
+import android.graphics.Typeface
+import android.text.StaticLayout
+import android.text.TextPaint
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
@@ -14,6 +19,7 @@ import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
 import androidx.glance.Image
 import androidx.glance.ImageProvider
+import androidx.glance.LocalContext
 import androidx.glance.LocalSize
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
@@ -32,14 +38,17 @@ import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
 import androidx.glance.layout.padding
 import androidx.glance.layout.size
+import androidx.glance.layout.width
+import androidx.glance.text.FontStyle
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.weatherquips.app.WeatherQuipsApplication
 import com.weatherquips.app.domain.model.weatherIconKey
+import com.weatherquips.app.locale.AppLocale
+import com.weatherquips.app.text.conditionLabel
 import com.weatherquips.app.ui.components.weatherIconRes
-import java.util.Calendar
 
 /**
  * Home-screen widget: how hard it is about to rain, and when.
@@ -62,8 +71,10 @@ class PrecipitationWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val container = (context.applicationContext as? WeatherQuipsApplication)?.container
         val cached = container?.weatherRepository?.getCachedWeather()
-        val outlook = cached?.let(PrecipitationOutlooks::from)
-        val hourOfDay = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+        val nowMillis = System.currentTimeMillis()
+        val outlook = cached?.let { PrecipitationOutlooks.from(it, nowMillis) }
+        // In the app's language, which below Android 13 is not the process's.
+        val resources = AppLocale.localized(context).resources
 
         // Being looked at is the one moment the widget knows it matters. If
         // what it is about to draw is old, ask for a fetch on the way out:
@@ -77,7 +88,8 @@ class PrecipitationWidget : GlanceAppWidget() {
             GlanceTheme(colors = WidgetColors.providers) {
                 WidgetContent(
                     outlook = outlook,
-                    hourOfDay = hourOfDay,
+                    nowMillis = nowMillis,
+                    resources = resources,
                     // The tap target is supplied from here so the content
                     // composable stays pure UI with no intent plumbing in it.
                     modifier = GlanceModifier.clickable(openRadarAction(outlook)),
@@ -98,13 +110,22 @@ class PrecipitationWidget : GlanceAppWidget() {
 @Composable
 fun WidgetContent(
     outlook: PrecipitationOutlook?,
-    hourOfDay: Int,
+    nowMillis: Long,
+    resources: Resources = LocalContext.current.resources,
     modifier: GlanceModifier = GlanceModifier,
 ) {
-    val copy = outlook?.let { WidgetCopyWriter.write(it.outlook, hourOfDay) }
-        ?: WidgetCopyWriter.empty()
+    val writer = remember(resources) { WidgetCopyWriter(resources) }
+    val copy = outlook?.let { writer.write(it, nowMillis) } ?: writer.empty()
     val size = LocalSize.current
     val wide = size.width >= PrecipitationWidget.WIDE_SIZE.width
+    val fontScale = resources.configuration.fontScale.takeIf { it > 0f } ?: 1f
+
+    val (quip, meta, quipLines) = WidgetTextLayout.arrange(
+        copy = copy,
+        metaChoices = outlook?.let { writer.metaChoices(it, wide) } ?: listOf(null),
+        contentWidthDp = size.width.value - 2 * SIDE_PADDING,
+        fontScale = fontScale,
+    )
 
     Column(
         modifier = modifier
@@ -132,23 +153,33 @@ fun WidgetContent(
                     provider = ImageProvider(
                         weatherIconRes(weatherIconKey(outlook.condition, outlook.isDay)),
                     ),
-                    contentDescription = outlook.condition.id,
+                    contentDescription = resources.getString(conditionLabel(outlook.condition)),
                     colorFilter = ColorFilter.tint(GlanceTheme.colors.onBackground),
                     modifier = GlanceModifier.size(22.dp),
                 )
             }
         }
 
-        Row(modifier = GlanceModifier.fillMaxWidth()) {
+        Row(
+            modifier = GlanceModifier.fillMaxWidth(),
+            verticalAlignment = Alignment.Top,
+        ) {
+            // The joke. Set apart from the headline by style rather than by
+            // colour alone: the fact is bold, the remark is italic.
             Text(
-                text = copy.aside,
-                style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 11.sp),
-                maxLines = 1,
+                text = quip,
+                style = TextStyle(
+                    color = GlanceTheme.colors.onBackground,
+                    fontSize = WidgetTextLayout.QUIP_SP.sp,
+                    fontStyle = FontStyle.Italic,
+                ),
+                maxLines = quipLines,
                 modifier = GlanceModifier.defaultWeight(),
             )
-            if (outlook != null && (wide || outlook.ageMinutes >= PrecipitationWidget.STALE_MINUTES)) {
+            if (meta != null && outlook != null) {
+                Spacer(modifier = GlanceModifier.width(WidgetTextLayout.META_GAP_DP.dp))
                 Text(
-                    text = meta(outlook, wide),
+                    text = meta,
                     style = TextStyle(
                         color = when {
                             outlook.ageMinutes >= PrecipitationWidget.STALE_MINUTES ->
@@ -157,7 +188,7 @@ fun WidgetContent(
                                 ColorProvider(WidgetColors.Wet)
                             else -> GlanceTheme.colors.onSurfaceVariant
                         },
-                        fontSize = 11.sp,
+                        fontSize = WidgetTextLayout.META_SP.sp,
                         fontWeight = FontWeight.Medium,
                     ),
                     maxLines = 1,
@@ -169,8 +200,9 @@ fun WidgetContent(
         if (outlook != null && !outlook.chart.isEmpty) {
             Graph(
                 chart = outlook.chart,
+                labels = writer.graphLabels(),
                 widthDp = size.width.value,
-                widgetHeightDp = size.height.value,
+                graphHeightDp = size.height.value - chromeHeight(quipLines, fontScale),
                 modifier = GlanceModifier.fillMaxWidth().defaultWeight(),
             )
         } else {
@@ -181,11 +213,7 @@ fun WidgetContent(
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
-                    text = if (outlook == null) {
-                        "Open the app once to get started"
-                    } else {
-                        "No forecast to draw. Tap to refresh."
-                    },
+                    text = writer.noGraph(hasForecast = outlook != null),
                     style = TextStyle(
                         color = GlanceTheme.colors.onSurfaceVariant,
                         fontSize = 12.sp,
@@ -197,47 +225,18 @@ fun WidgetContent(
     }
 }
 
-/**
- * The line under the remark: where, and either how hard it is raining or how
- * old the answer is.
- *
- * Age wins over rate, because a rate from three hours ago is not a rate. It
- * is also the only way a user can tell a quiet afternoon from a widget that
- * has quietly stopped refreshing.
- */
-private fun meta(outlook: PrecipitationOutlook, wide: Boolean): String {
-    val place = outlook.location.lowercase()
-    val stale = outlook.ageMinutes >= PrecipitationWidget.STALE_MINUTES
-    val detail = when {
-        stale -> "${ageLabel(outlook.ageMinutes)} ago"
-        outlook.nowMillimetresPerHour >= IntensityScale.WET_MM_PER_HOUR ->
-            IntensityScale.format(outlook.nowMillimetresPerHour)
-        else -> null
-    }
-
-    return when {
-        detail == null -> place
-        wide -> "$place · $detail"
-        // Narrow: the age is the part that cannot be guessed from the graph.
-        stale -> detail
-        else -> place
-    }
-}
-
-private fun ageLabel(minutes: Int): String =
-    if (minutes < 60) "${minutes}m" else "${minutes / 60}h"
-
 @Composable
 private fun Graph(
     chart: PrecipitationChart,
+    labels: GraphLabels,
     widthDp: Float,
-    widgetHeightDp: Float,
+    graphHeightDp: Float,
     modifier: GlanceModifier,
 ) {
     val graphWidth = (widthDp - 2 * SIDE_PADDING).coerceAtLeast(MIN_GRAPH_WIDTH)
-    val graphHeight = (widgetHeightDp - CHROME_HEIGHT).coerceAtLeast(MIN_GRAPH_HEIGHT)
-    val bitmap = remember(chart, graphWidth, graphHeight) {
-        PrecipitationGraph.render(chart, graphWidth, graphHeight, WidgetColors.graph)
+    val graphHeight = graphHeightDp.coerceAtLeast(MIN_GRAPH_HEIGHT)
+    val bitmap = remember(chart, labels, graphWidth, graphHeight) {
+        PrecipitationGraph.render(chart, graphWidth, graphHeight, WidgetColors.graph, labels)
     } ?: return
 
     Image(
@@ -248,14 +247,101 @@ private fun Graph(
     )
 }
 
+/**
+ * Measures the widget's text the way the launcher will set it.
+ *
+ * RemoteViews cannot report a layout back, and the graph is a bitmap drawn to
+ * a fixed height before the launcher lays anything out. So the quip is
+ * measured here: a line that wraps takes its second line out of the graph's
+ * height up front, instead of the graph being squashed to fit afterwards.
+ */
+internal object WidgetTextLayout {
+    const val QUIP_SP = 12f
+    const val META_SP = 11f
+
+    /** Two lines is a remark; three is an essay on a widget. */
+    const val MAX_QUIP_LINES = 2
+
+    /** Line height at 12sp, font padding included. */
+    const val QUIP_LINE_DP = 16f
+
+    /**
+     * Lines [text] needs at [widthDp]. Text size and width are both in dp
+     * here — scaled sp is just dp times the font scale — so no display
+     * metrics are needed.
+     */
+    fun quipLines(text: String, widthDp: Float, fontScale: Float): Int =
+        fullLines(text, widthDp, fontScale).coerceIn(1, MAX_QUIP_LINES)
+
+    /** Lines [text] would take with no limit, so callers can tell it would be cut. */
+    fun fullLines(text: String, widthDp: Float, fontScale: Float): Int {
+        if (text.isEmpty()) return 1
+        if (widthDp <= 0f) return Int.MAX_VALUE
+        val paint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+            textSize = QUIP_SP * fontScale
+            typeface = Typeface.create("sans-serif", Typeface.ITALIC)
+        }
+        val layout = StaticLayout.Builder
+            .obtain(text, 0, text.length, paint, widthDp.toInt().coerceAtLeast(1))
+            .setIncludePad(false)
+            .build()
+        return layout.lineCount.coerceAtLeast(1)
+    }
+
+    /** Between the quip and the meta beside it. */
+    const val META_GAP_DP = 8f
+
+    /** What the second row ends up holding. */
+    data class Arrangement(val quip: String, val meta: String?, val quipLines: Int)
+
+    /**
+     * Fits the quip and the meta line into the second row, in this order of
+     * preference: this hour's quip beside the fullest meta that leaves it
+     * room; then the leanest meta beside the first understudy that fits; and
+     * only if nothing fits at all, this hour's quip, cut at two lines.
+     */
+    fun arrange(
+        copy: WidgetCopy,
+        metaChoices: List<String?>,
+        contentWidthDp: Float,
+        fontScale: Float,
+    ): Arrangement {
+        val choices = metaChoices.ifEmpty { listOf(null) }
+        fun fits(quip: String, meta: String?) =
+            fullLines(quip, quipWidth(meta, contentWidthDp, fontScale), fontScale) <= MAX_QUIP_LINES
+        fun arranged(quip: String, meta: String?) =
+            Arrangement(quip, meta, quipLines(quip, quipWidth(meta, contentWidthDp, fontScale), fontScale))
+
+        // By index: "no meta" is itself a choice, and it is null.
+        val roomy = choices.indexOfFirst { fits(copy.quip, it) }
+        if (roomy >= 0) return arranged(copy.quip, choices[roomy])
+        val leanest = choices.last()
+        val understudy = copy.understudies.firstOrNull { fits(it, leanest) } ?: copy.quip
+        return arranged(understudy, leanest)
+    }
+
+    private fun quipWidth(meta: String?, contentWidthDp: Float, fontScale: Float): Float =
+        contentWidthDp - (meta?.let { metaWidth(it, fontScale) + META_GAP_DP } ?: 0f)
+
+    fun metaWidth(text: String, fontScale: Float): Float =
+        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            textSize = META_SP * fontScale
+            typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
+        }.measureText(text)
+}
+
+/** Padding, headline, quip and gap: the height the graph does not get. */
+private fun chromeHeight(quipLines: Int, fontScale: Float): Float =
+    2 * TOP_PADDING + (HEADLINE_HEIGHT + quipLines * WidgetTextLayout.QUIP_LINE_DP) * fontScale + GRAPH_GAP
+
 private const val SIDE_PADDING = 14f
 private const val TOP_PADDING = 12f
 
 /** Gap between the two text lines and the graph. */
 private const val GRAPH_GAP = 6f
 
-/** Padding plus the two text lines plus the gap: what the graph does not get. */
-private const val CHROME_HEIGHT = 2 * TOP_PADDING + 26f + 15f + GRAPH_GAP
+/** The headline row at 20sp, bold. */
+private const val HEADLINE_HEIGHT = 26f
 
 private const val MIN_GRAPH_WIDTH = 80f
 private const val MIN_GRAPH_HEIGHT = 28f

@@ -50,4 +50,9 @@ data class OpenMeteoDaily(
     @SerialName("weather_code") val weatherCode: List<Int?> = emptyList(),
     val sunrise: List<String?> = emptyList(),
     val sunset: List<String?> = emptyList(),
+    /** Millimetres, snow included as water. */
+    @SerialName("precipitation_sum") val precipitationSum: List<Double?> = emptyList(),
+    @SerialName("precipitation_hours") val precipitationHours: List<Double?> = emptyList(),
+    /** Centimetres. */
+    @SerialName("snowfall_sum") val snowfallSum: List<Double?> = emptyList(),
 )

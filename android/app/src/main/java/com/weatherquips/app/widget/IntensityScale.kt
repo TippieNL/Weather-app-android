@@ -10,12 +10,13 @@ import java.util.Locale
  * 2.5 mm/h, heavy above 7.6 mm/h in the classic definition) nudged down a
  * little: a widget is read at a glance, and 2 mm/h already means "take a
  * coat", so it is more useful as the start of "moderate" than the end of it.
+ * Their names on screen come from resources, via [GraphLabels].
  */
-enum class IntensityBand(val label: String, val millimetresPerHour: Double) {
-    LIGHT("light", 0.5),
-    MODERATE("moderate", 2.0),
-    HEAVY("heavy", 6.0),
-    VIOLENT("violent", 15.0),
+enum class IntensityBand(val millimetresPerHour: Double) {
+    LIGHT(0.5),
+    MODERATE(2.0),
+    HEAVY(6.0),
+    VIOLENT(15.0),
 }
 
 /**
@@ -99,13 +100,16 @@ object IntensityScale {
      * A rate as the widget prints it: one decimal while the numbers are small
      * enough for the decimal to mean something, whole millimetres after that.
      */
-    fun format(millimetresPerHour: Double, locale: Locale = Locale.getDefault()): String {
+    fun format(millimetresPerHour: Double, locale: Locale = Locale.getDefault()): String =
+        "${formatNumber(millimetresPerHour, locale)} mm/h"
+
+    /** Just the number, for callers that take the unit from resources. */
+    fun formatNumber(millimetresPerHour: Double, locale: Locale = Locale.getDefault()): String {
         val rate = millimetresPerHour.coerceAtLeast(0.0)
-        val number = if (rate < 10.0) {
+        return if (rate < 10.0) {
             formatDecimal(Math.round(rate * 10) / 10.0, locale, maxDecimals = 1)
         } else {
             formatDecimal(Math.round(rate).toDouble(), locale, maxDecimals = 0)
         }
-        return "$number mm/h"
     }
 }

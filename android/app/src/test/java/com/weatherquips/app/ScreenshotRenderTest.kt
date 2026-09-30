@@ -347,6 +347,96 @@ class ScreenshotRenderTest {
         settleAndCapture("settings-light")
     }
 
+    private fun renderDayRain(dark: Boolean, name: String) {
+        composeRule.setContent {
+            WeatherQuipsTheme(darkTheme = dark) {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background,
+                ) {
+                    com.weatherquips.app.ui.home.WeatherDetailPanel(
+                        uiState = weatherState,
+                        weather = TestWeather.assenEvening(),
+                        staleSinceMillis = null,
+                        onRefresh = {},
+                    )
+                }
+            }
+        }
+        composeRule.onNodeWithTag("${com.weatherquips.app.ui.home.TAG_DAY_ROW_PREFIX}2026-09-13").performClick()
+        settleAndCapture(name)
+    }
+
+    /** Sunday tapped open: the afternoon of showers, hour by hour. */
+    @Config(sdk = [34], qualifiers = "w411dp-h1700dp-xhdpi")
+    @Test
+    fun dayRainLight() = renderDayRain(dark = false, name = "day-rain-light")
+
+    @Config(sdk = [34], qualifiers = "w411dp-h1700dp-xhdpi")
+    @Test
+    fun dayRainDark() = renderDayRain(dark = true, name = "day-rain-dark")
+
+    /** The same, with the app in Dutch. */
+    @Config(sdk = [34], qualifiers = "nl-w411dp-h1700dp-xhdpi")
+    @Test
+    fun dayRainDutch() = renderDayRain(dark = false, name = "day-rain-nl")
+
+    @Config(sdk = [34], qualifiers = "w411dp-h2600dp-xhdpi")
+    @Test
+    fun aboutLight() {
+        composeRule.setContent {
+            WeatherQuipsTheme(darkTheme = false) {
+                com.weatherquips.app.ui.about.AboutScreen(onBack = {}, onOpenLicence = {})
+            }
+        }
+        settleAndCapture("about-light")
+    }
+
+    @Config(sdk = [34], qualifiers = "nl-w411dp-h2600dp-xhdpi")
+    @Test
+    fun aboutDarkDutch() {
+        composeRule.setContent {
+            WeatherQuipsTheme(darkTheme = true) {
+                com.weatherquips.app.ui.about.AboutScreen(onBack = {}, onOpenLicence = {})
+            }
+        }
+        settleAndCapture("about-dark-nl")
+    }
+
+    @Test
+    fun licenceLight() {
+        composeRule.setContent {
+            WeatherQuipsTheme(darkTheme = false) {
+                com.weatherquips.app.ui.about.LicenceScreen(
+                    licence = com.weatherquips.app.ui.about.LicenceText.LUCIDE,
+                    onBack = {},
+                )
+            }
+        }
+        composeRule.waitUntil(5_000) {
+            composeRule.onAllNodes(
+                androidx.compose.ui.test.hasTestTag(com.weatherquips.app.ui.about.TAG_LICENCE_TEXT),
+            ).fetchSemanticsNodes().isNotEmpty()
+        }
+        settleAndCapture("licence-light")
+    }
+
+    /** Settings in full, down to the About row, in Dutch. */
+    @Config(sdk = [34], qualifiers = "nl-w411dp-h1900dp-xhdpi")
+    @Test
+    fun settingsDutch() {
+        composeRule.setContent {
+            WeatherQuipsTheme(darkTheme = false) {
+                SettingsScreen(
+                    uiState = SettingsUiState(language = com.weatherquips.app.locale.AppLanguage.DUTCH),
+                    actions = NoOpSettingsActions,
+                    onBack = {},
+                )
+            }
+        }
+        settleAndCapture("settings-nl")
+    }
+
     /** The panel caught part-way through its opening flourish. */
     @Config(sdk = [34], qualifiers = "w411dp-h1500dp-xhdpi")
     @Test

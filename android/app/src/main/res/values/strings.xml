@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Weather Quips</string>
+    <string name="app_name" translatable="false">Weather Quips</string>
 
     <!-- Home -->
     <string name="settings">Settings</string>
@@ -42,19 +42,36 @@
     <string name="today_low">low</string>
     <string name="today_high">high</string>
     <string name="range_description">Low %1$s, high %2$s, now %3$s</string>
-    <string name="precipitation">precipitation</string>
     <string name="today">today</string>
     <string name="next_7_days">next 7 days</string>
     <string name="now">now</string>
-    <string name="precipitation_map">precipitation map</string>
     <string name="open_precipitation_map">Open precipitation map</string>
-    <string name="live_radar_overlay">live radar overlay</string>
     <string name="wind_value">%1$d km/h</string>
     <string name="percent_value">%1$d%%</string>
-    <string name="high_low">High %1$s, low %2$s</string>
     <string name="hour_description">%1$s: %2$s</string>
     <string name="hour_description_rain">%1$s: %2$s, %3$d%% chance of rain</string>
     <string name="tomorrow">tomorrow</string>
+    <string name="day_row_description">%1$s, %2$s: low %3$s, high %4$s</string>
+    <string name="day_row_description_rain">%1$s, %2$s: low %3$s, high %4$s, %5$d%% chance of rain</string>
+
+    <!-- A forecast day's rain, shown when the day is tapped -->
+    <string name="day_rain_show">Show rain for %1$s</string>
+    <string name="day_rain_hide">Hide rain for %1$s</string>
+    <string name="day_rain_unknown">No rain forecast for this day</string>
+    <string name="day_rain_dry">Looks dry all day</string>
+    <string name="day_rain_trace">Only a trace, if anything</string>
+    <string name="day_rain_amount">%1$s mm expected</string>
+    <string name="day_rain_chance">%1$d%% chance</string>
+    <string name="day_rain_window">Mostly between %1$s and %2$s</string>
+    <string name="day_rain_all_day">On and off all day</string>
+    <string name="day_rain_peak">Heaviest around %1$s: %2$s, %3$s</string>
+    <plurals name="day_rain_hours">
+        <item quantity="one">Wet for about an hour</item>
+        <item quantity="other">Wet for about %1$d hours</item>
+    </plurals>
+    <string name="day_rain_snow">Including %1$s cm of snow</string>
+    <string name="day_rain_no_hours">Hour-by-hour timing isn\'t available this far ahead</string>
+    <string name="intensity_violent">very heavy</string>
 
     <!-- Conditions, as shown next to the weather. Lowercase, in the app's style. -->
     <string name="condition_clear">clear</string>
@@ -82,7 +99,7 @@
     <string name="legend_description">Precipitation intensity scale, light to heavy</string>
     <string name="recenter_map">Centre on the forecast location</string>
     <string name="center_on_me">Centre on my location</string>
-    <string name="map_attribution">© OpenStreetMap contributors · Radar © RainViewer</string>
+    <string name="map_attribution" translatable="false">© OpenStreetMap contributors · Radar © RainViewer</string>
 
     <!-- Settings -->
     <string name="language">Language</string>
@@ -90,6 +107,32 @@
     <string name="language_system">System default</string>
     <string name="about_title">About Weather Quips</string>
     <string name="about_row_summary">Version, data sources and credits</string>
+
+    <!-- About -->
+    <string name="about_version">Version %1$s (%2$d)</string>
+    <string name="about_description">The forecast, followed by an opinion nobody asked for. A native Android version of the Weather Quips web app.</string>
+    <string name="about_made_by">Made by</string>
+    <string name="about_source_code">Source code</string>
+    <string name="about_contributors">Contributors</string>
+    <string name="about_contributors_detail">%1$s, with Claude Code as a pair programmer</string>
+    <string name="about_services">Data &amp; services</string>
+    <string name="about_privacy">No ads, no analytics, no tracking. Your location goes to these services only to fetch weather, radar and place names for it. API keys are encrypted with the Android Keystore and only ever sent to the provider they belong to.</string>
+    <string name="about_service_open_meteo">The default forecast: current weather, hourly and 7-day outlook, and the 15-minute rain nowcast. No key needed.</string>
+    <string name="about_service_openweathermap">Optional forecast provider.</string>
+    <string name="about_service_weatherapi">Optional forecast provider.</string>
+    <string name="about_service_brightsky">Rain radar nowcast for the widget in Germany and neighbouring countries.</string>
+    <string name="about_service_rainviewer">Radar images and timeline on the precipitation map.</string>
+    <string name="about_service_osm">The base map under the radar.</string>
+    <string name="about_service_nominatim">City search, and the name of the place you are in.</string>
+    <string name="about_service_location_name">Device location</string>
+    <string name="about_service_location">From Android\'s own location service, only when you choose device GPS. No third-party location SDK.</string>
+    <string name="about_needs_key">your API key</string>
+    <string name="about_libraries">Open-source libraries</string>
+    <string name="about_fonts_icons">Fonts &amp; icons</string>
+    <string name="about_trademarks">Trademarks</string>
+    <string name="about_pokemon_notice">Pokémon and Pokémon character names are trademarks of Nintendo, Creatures Inc. and GAME FREAK inc. The Pallet Town Easter egg is an unofficial fan tribute, not affiliated with or endorsed by them.</string>
+    <string name="about_open_link">Open %1$s</string>
+    <string name="about_read_licence">Read the licence</string>
     <string name="temperature_unit">Temperature Unit</string>
     <string name="unit">Unit</string>
     <string name="celsius">Celsius (°C)</string>
@@ -108,8 +151,8 @@
     <string name="weather_service">Weather Service</string>
     <string name="provider">Provider</string>
     <string name="open_meteo_free">Open-Meteo (Free)</string>
-    <string name="openweathermap">OpenWeatherMap</string>
-    <string name="weatherapi">WeatherAPI</string>
+    <string name="openweathermap" translatable="false">OpenWeatherMap</string>
+    <string name="weatherapi" translatable="false">WeatherAPI</string>
     <string name="api_key">API Key</string>
     <string name="enter_api_key">Enter API key</string>
     <string name="api_key_hint">Stored encrypted on this device only. Never sent anywhere except the provider you picked.</string>
@@ -130,7 +173,6 @@
          **word** marks the highlighted word, the same syntax the quips use. -->
     <string name="onboarding_skip">Skip</string>
     <string name="onboarding_next">Next</string>
-    <string name="onboarding_start">Let\'s get miserable</string>
     <string name="onboarding_page_indicator">Page %1$d of %2$d</string>
 
     <string name="onboarding_welcome_title">Every other weather app is **polite** about it</string>
@@ -140,7 +182,7 @@
     <string name="onboarding_quips_body">Rain means the sky is having a meltdown. A heatwave means the pavement is melting under your feet. Drag the screen up when you want the boring numbers instead.</string>
 
     <string name="onboarding_location_title">We need to know **where** you are suffering</string>
-    <string name="onboarding_location_body">Location access is how the app knows which sky to insult. Precise pins your neighbourhood, approximate settles for your region — honestly, both are fine for weather. Your coordinates go to the weather service and nowhere else.</string>
+    <string name="onboarding_location_body">Location access is how the app knows which sky to insult. Precise pins your neighbourhood, approximate settles for your region — honestly, both are fine for weather. Your coordinates only go to the services that fetch your weather and your town\'s name. Nowhere else.</string>
     <string name="onboarding_location_allow">Allow location</string>
     <string name="onboarding_location_manual">I\'ll type a city myself</string>
     <string name="onboarding_location_granted">Found you. Bad news incoming.</string>

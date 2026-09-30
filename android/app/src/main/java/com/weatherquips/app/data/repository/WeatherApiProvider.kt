@@ -69,6 +69,18 @@ class WeatherApiProvider(private val api: WeatherApiApi) : WeatherProvider {
                 date = day.date,
                 temperatureMax = day.day.maxTempC,
                 temperatureMin = day.day.minTempC,
+                precipitationMm = day.day.totalPrecipMm,
+                precipitationChance = listOfNotNull(day.day.dailyChanceOfRain, day.day.dailyChanceOfSnow)
+                    .maxOrNull(),
+                snowfallCm = day.day.totalSnowCm,
+                hours = day.hour.map { hour ->
+                    HourlyForecast(
+                        time = ProviderSupport.hourLabel(hour.time.replace(' ', 'T')),
+                        temperature = hour.tempC,
+                        precipitationChance = maxOf(hour.chanceOfRain ?: 0, hour.chanceOfSnow ?: 0),
+                        precipitationMm = hour.precipMm,
+                    )
+                },
             )
         }
 

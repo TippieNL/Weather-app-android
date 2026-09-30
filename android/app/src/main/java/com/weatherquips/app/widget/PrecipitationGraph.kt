@@ -32,6 +32,25 @@ data class GraphPalette(
 )
 
 /**
+ * The words the graph draws into its bitmap, already in the app's language.
+ * The defaults are the English resources, for tests and previews.
+ */
+data class GraphLabels(
+    val now: String = "now",
+    val light: String = "light",
+    val moderate: String = "moderate",
+    val heavy: String = "heavy",
+) {
+    fun band(band: IntensityBand): String = when (band) {
+        IntensityBand.LIGHT -> light
+        IntensityBand.MODERATE -> moderate
+        IntensityBand.HEAVY -> heavy
+        // Never drawn: the top band is the ceiling, not a gridline.
+        IntensityBand.VIOLENT -> ""
+    }
+}
+
+/**
  * The widget's precipitation graph, drawn to a bitmap.
  *
  * Glance renders through RemoteViews, which has no canvas and no path support,
@@ -86,6 +105,7 @@ object PrecipitationGraph {
         widthDp: Float,
         heightDp: Float,
         palette: GraphPalette,
+        labels: GraphLabels = GraphLabels(),
     ): Bitmap? {
         if (chart.isEmpty || widthDp <= 0f || heightDp <= 0f) return null
 
@@ -95,7 +115,7 @@ object PrecipitationGraph {
         } else {
             RENDER_SCALE
         }
-        return Renderer(scale, palette).draw(
+        return Renderer(scale, palette, labels).draw(
             chart = chart,
             width = (widthDp * scale).roundToInt().coerceAtLeast(1),
             height = (heightDp * scale).roundToInt().coerceAtLeast(1),
@@ -109,7 +129,11 @@ object PrecipitationGraph {
      * that had to be scaled down to fit the payload budget keeps its
      * proportions instead of ending up with oversized type.
      */
-    private class Renderer(private val scale: Float, private val palette: GraphPalette) {
+    private class Renderer(
+        private val scale: Float,
+        private val palette: GraphPalette,
+        private val labels: GraphLabels,
+    ) {
 
         fun draw(chart: PrecipitationChart, width: Int, height: Int): Bitmap {
             val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
@@ -228,7 +252,7 @@ object PrecipitationGraph {
             val paint = textPaint(palette.bandLabel, BAND_TEXT_DP.px)
             IntensityScale.gridBands.forEach { band ->
                 canvas.drawText(
-                    band.label,
+                    labels.band(band),
                     LABEL_INSET_DP.px,
                     y(IntensityScale.fractionOf(band)) - 1.5f.px,
                     paint,
@@ -262,7 +286,7 @@ object PrecipitationGraph {
             }
 
             val paint = textPaint(palette.nowLine, BAND_TEXT_DP.px, bold = true)
-            val label = "now"
+            val label = labels.now
             val labelWidth = paint.measureText(label)
             // Flip the label left of the line when it would run off the edge.
             val labelX = if (nowX + 2f.px + labelWidth > canvas.width) {

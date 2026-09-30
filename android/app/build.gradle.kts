@@ -58,6 +58,15 @@ android {
     // The per-app language list Android 13+ shows in system settings is
     // generated from the res/values-* folders, so adding a language never
     // means editing a hand-kept locale list as well.
+    // The language can be switched inside the app, so every language has to
+    // be on the device: Play's per-language splits would install only the
+    // system's, and switching would fall back to English.
+    bundle {
+        language {
+            enableSplit = false
+        }
+    }
+
     androidResources {
         generateLocaleConfig = true
     }

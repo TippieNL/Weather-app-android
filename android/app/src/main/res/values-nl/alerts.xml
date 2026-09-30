@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Dutch precipitation notifications. Plain text, whole-sentence templates. -->
+<resources>
+    <string-array name="alert_headlines_rain">
+        <item>De lucht gaat dit zo verpesten</item>
+        <item>Regen onderweg. Doe verbaasd.</item>
+        <item>Er valt weer water uit de lucht</item>
+        <item>Hopelijk heb je genoten van droog zijn</item>
+        <item>De wolken hebben hun besluit genomen</item>
+    </string-array>
+    <string-array name="alert_headlines_snow">
+        <item>Alles wordt zo meteen wit</item>
+        <item>Sneeuw. Want natuurlijk.</item>
+        <item>De winter doet weer dramatisch</item>
+        <item>De stoep beraamt iets tegen je</item>
+        <item>De natuur richt alles opnieuw in, in het wit</item>
+    </string-array>
+    <string-array name="alert_headlines_storm">
+        <item>De lucht verliest zijn geduld</item>
+        <item>De donder is zich daarbuiten aan het opwarmen</item>
+        <item>Er komt iets luids deze kant op</item>
+        <item>De natuur kiest vandaag voor geweld</item>
+        <item>De wolken zoeken ruzie</item>
+    </string-array>
+    <string-array name="alert_asides_rain">
+        <item>Neem de paraplu mee die je ergens laat liggen.</item>
+        <item>Of niet. Word doorweekt. Leef een beetje.</item>
+        <item>Neem een jas mee, of spijt.</item>
+        <item>Je haar had plannen. De lucht is het er niet mee eens.</item>
+    </string-array>
+    <string-array name="alert_asides_snow">
+        <item>Kleed je warm aan en loop als een pinguïn.</item>
+        <item>De wegen worden een puinhoop. Jij ook.</item>
+        <item>Laarzen. Niet die. Echte.</item>
+        <item>Alles duurt vandaag twee keer zo lang.</item>
+    </string-array>
+    <string-array name="alert_asides_storm">
+        <item>Blijf binnen en voel je er zelfvoldaan over.</item>
+        <item>Slechte dag voor een ontspannen wandeling.</item>
+        <item>Trek een stekker uit het stopcontact. Voel je voorbereid.</item>
+        <item>Laat de lucht het even uit zijn systeem gooien.</item>
+    </string-array>
+    <string name="alert_noun_rain">regen</string>
+    <string name="alert_noun_snow">sneeuw</string>
+    <string name="alert_noun_storm">onweer</string>
+    <string name="alert_summary">%1$d%% kans op %2$s</string>
+    <string name="alert_summary_peak">%1$d%% kans op %2$s, het hevigst rond %3$s</string>
+    <string name="alert_detail_chance">%1$d%% kans op %2$s vandaag.</string>
+    <string name="alert_detail_window">Verwacht het tussen %1$s en %2$s.</string>
+    <string name="alert_detail_around">Waarschijnlijk rond %1$s.</string>
+    <string name="alert_detail_peak">Het piekt op %1$d%% rond %2$s.</string>
+</resources>

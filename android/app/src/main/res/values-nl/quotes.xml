@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Dutch quips. **word** marks the highlighted word, one per quote. -->
+<resources>
+    <string-array name="quip_quotes_clear_day">
+        <item>De zon staat de lucht werkelijk te **roosteren**</item>
+        <item>Geen enkele **wolk** durfde vandaag te komen opdagen</item>
+        <item>De lucht zei **perfectie** en meende het ook</item>
+        <item>Gevaarlijk **prachtig** buiten, wees voorzichtig</item>
+    </string-array>
+    <string-array name="quip_subtitles_clear_day">
+        <item>De zon doet vandaag veel te hard haar best.</item>
+        <item>Perfecte dag om zonnebrand te vergeten en spijt te krijgen.</item>
+        <item>De natuur zegt: ga naar buiten, sukkel.</item>
+        <item>Heldere lucht, onduidelijke levenskeuzes.</item>
+    </string-array>
+    <string-array name="quip_quotes_cloudy_day">
+        <item>De lucht kijkt **somber** en eerlijk gezegd, ik ook</item>
+        <item>De wolken rolden binnen alsof ze de boel **bezitten**</item>
+        <item>Het is grijze **ellende** zonder einde in zicht</item>
+        <item>De zon meldde zich **ziek** en liet ons met deze troep zitten</item>
+    </string-array>
+    <string-array name="quip_subtitles_cloudy_day">
+        <item>Overal wolken. Geen ontsnapping.</item>
+        <item>Ook de lucht heeft therapie nodig.</item>
+        <item>De stemmingsring van de natuur zegt \'meh\'.</item>
+        <item>Perfect weer voor existentiële angst.</item>
+    </string-array>
+    <string-array name="quip_quotes_rainy_day">
+        <item>De lucht heeft een complete **inzinking** boven iedereen</item>
+        <item>Het giet alsof de wolken weer **liefdesverdriet** hebben</item>
+        <item>Alles buiten is onherkenbaar **doorweekt**</item>
+        <item>De regen besloot vandaag totaal **ellendig** te maken</item>
+    </string-array>
+    <string-array name="quip_subtitles_rainy_day">
+        <item>Neem een paraplu mee of omarm de chaos.</item>
+        <item>De lucht is net zo emotioneel als jij.</item>
+        <item>Gratis douche uit de wolken.</item>
+        <item>Perfect excuus om af te zeggen.</item>
+    </string-array>
+    <string-array name="quip_quotes_stormy_day">
+        <item>Buiten breekt op dit moment de **hel** los</item>
+        <item>De donder heeft een gigantische **driftbui** boven je hoofd</item>
+        <item>De lucht staat op volle **sloopstand**, blijf binnen</item>
+        <item>De natuur koos vandaag om compleet **los** te gaan</item>
+    </string-array>
+    <string-array name="quip_subtitles_stormy_day">
+        <item>Misschien toch maar binnen blijven, zeg ik.</item>
+        <item>De lucht heeft een zenuwinzinking.</item>
+        <item>Overal donder en drama.</item>
+        <item>De natuur zegt: \'vandaag niet\'.</item>
+    </string-array>
+    <string-array name="quip_quotes_snowy_day">
+        <item>Alles ligt weer onder **bevroren** onzin</item>
+        <item>Sneeuw valt als de **roos** van moeder natuur</item>
+        <item>De wereld is een **ijskoude** witte nachtmerrie geworden</item>
+        <item>De winter kwam langs en koos vandaag voor **geweld**</item>
+    </string-array>
+    <string-array name="quip_subtitles_snowy_day">
+        <item>Alles is koud en glad.</item>
+        <item>Tijd om te doen alsof je van de winter houdt.</item>
+        <item>Sneeuwvlokken, net als jouw smoesjes: overal.</item>
+        <item>Kleed je warm aan of lijd.</item>
+    </string-array>
+    <string-array name="quip_quotes_foggy_day">
+        <item>Je ziet in geen enkele richting ook maar **iets**</item>
+        <item>De wereld verstopt zich achter een muur van **niks**</item>
+        <item>Het zicht is compleet **weg**, succes daarbuiten</item>
+        <item>De mist rolde binnen alsof hij auditie doet voor een **horrorfilm**</item>
+    </string-array>
+    <string-array name="quip_subtitles_foggy_day">
+        <item>Zicht? Nooit van gehoord.</item>
+        <item>Silent Hill-editie van het weer.</item>
+        <item>De wereld verstopt zich voor je.</item>
+        <item>Perfect voor dramatische wandelingen.</item>
+    </string-array>
+    <string-array name="quip_quotes_windy_day">
+        <item>De wind **valt** iedereen buiten persoonlijk aan</item>
+        <item>Je kapsel wordt compleet **gesloopt** zodra je buiten komt</item>
+        <item>De lucht is vandaag compleet **doorgedraaid**</item>
+        <item>De wind waait alsof hij een **vete** met je heeft</item>
+    </string-array>
+    <string-array name="quip_subtitles_windy_day">
+        <item>Hou je spullen vast.</item>
+        <item>Slechte-haardag gegarandeerd.</item>
+        <item>De wind heeft persoonlijk iets tegen je.</item>
+        <item>De föhn van de natuur staat op standje max.</item>
+    </string-array>
+    <string-array name="quip_quotes_hot_day">
+        <item>Het is zo heet dat de stoep onder je voeten **smelt**</item>
+        <item>De zon is persoonlijk op **oorlogspad** tegen de mensheid</item>
+        <item>Naar buiten gaan voelt als een **inferno** in lopen</item>
+        <item>Je huid is over ongeveer twee minuten **verschroeid**</item>
+    </string-array>
+    <string-array name="quip_subtitles_hot_day">
+        <item>Je airco is nu je beste vriend.</item>
+        <item>Mensen zijn hier niet voor gemaakt.</item>
+        <item>Naar buiten gaan is een vergissing.</item>
+        <item>IJs is een overlevingsnoodzaak.</item>
+    </string-array>
+    <string-array name="quip_quotes_cold_day">
+        <item>Het is zo koud dat je botten zelfstandig **rillen**</item>
+        <item>De lucht **bijt** door elke laag die je bezit</item>
+        <item>Naar buiten gaan voelt als een **vriezer** vol spijt</item>
+        <item>Je gezicht is over tien seconden compleet **gevoelloos**</item>
+    </string-array>
+    <string-array name="quip_subtitles_cold_day">
+        <item>Laagjes op laagjes op laagjes.</item>
+        <item>Je neus wordt gevoelloos.</item>
+        <item>Perfect weer om kluizenaar te worden.</item>
+        <item>Zelfs de kou veroordeelt je.</item>
+    </string-array>
+    <string-array name="quip_quotes_clear_night">
+        <item>Geen wolk te zien, alleen **sterren** die je veroordelen</item>
+        <item>De lucht is kraakhelder en jij zit **binnen**</item>
+        <item>Een prachtige nacht die je gewoon gaat **verslapen**</item>
+        <item>De maan doet vannacht al het **werk**</item>
+    </string-array>
+    <string-array name="quip_subtitles_clear_night">
+        <item>Ga naar buiten. Kijk omhoog. Wees even onder de indruk.</item>
+        <item>Heldere lucht, en niemand wakker om het te zien.</item>
+        <item>De sterren kwamen opdagen. Jij niet.</item>
+        <item>Astronomisch mooi. Praktisch bedtijd.</item>
+    </string-array>
+    <string-array name="quip_quotes_cloudy_night">
+        <item>De wolken hebben elke laatste ster **opgeslokt**</item>
+        <item>Er schijnt een maan te zijn. **Zogenaamd**.</item>
+        <item>De lucht heeft de **gordijnen** voor je dichtgedaan</item>
+        <item>Alleen grijs **niets**, helemaal tot boven</item>
+    </string-array>
+    <string-array name="quip_subtitles_cloudy_night">
+        <item>Sterrenkijken is afgelast. Alweer.</item>
+        <item>De lucht is vannacht een plafond.</item>
+        <item>Niks te zien daarboven. Letterlijk.</item>
+        <item>Zelfs de maan heeft zich ziek gemeld.</item>
+    </string-array>
+    <string-array name="quip_quotes_rainy_night">
+        <item>Het regent in het **donker**, de ergste soort</item>
+        <item>Regen op het raam, blijkbaar de **hele** nacht</item>
+        <item>De lucht huilt **stilletjes** zodat niemand het merkt</item>
+        <item>Alles buiten is doorweekt en **onzichtbaar**</item>
+    </string-array>
+    <string-array name="quip_subtitles_rainy_night">
+        <item>Je ziet tenminste niet hoe erg het is.</item>
+        <item>Top om te slapen. Vreselijk om weg te gaan.</item>
+        <item>De plassen liggen daar ergens. Ergens.</item>
+        <item>Niks droogt \'s nachts. Niks.</item>
+    </string-array>
+    <string-array name="quip_quotes_stormy_night">
+        <item>Onweer in de nacht, want **slapen** was optioneel</item>
+        <item>De lucht heeft een **inzinking** in het donker</item>
+        <item>De bliksem verzorgt vannacht de **verlichting**</item>
+        <item>Daarbuiten deed net iets **boem**</item>
+    </string-array>
+    <string-array name="quip_subtitles_stormy_night">
+        <item>Succes met daar doorheen slapen.</item>
+        <item>De hond heeft hier een mening over.</item>
+        <item>Tel de seconden tussen de flitsen. Geniet.</item>
+        <item>Blijf binnen. Uiteraard.</item>
+    </string-array>
+    <string-array name="quip_quotes_snowy_night">
+        <item>De sneeuw stapelt zich op terwijl je **slaapt**</item>
+        <item>Morgenochtend is alles **wit** en afschuwelijk</item>
+        <item>De wereld wordt daarbuiten stilletjes **begraven**</item>
+        <item>Stil, ijskoud en volkomen **meedogenloos**</item>
+    </string-array>
+    <string-array name="quip_subtitles_snowy_night">
+        <item>Het woon-werkverkeer van morgen is al verpest.</item>
+        <item>Nu stil. Om acht uur chaos.</item>
+        <item>Zet de wekker vroeger. Geloof me.</item>
+        <item>Het ziet er mooi uit. Dat is het niet.</item>
+    </string-array>
+    <string-array name="quip_quotes_foggy_night">
+        <item>Mist in het donker, een **uitstekende** combinatie</item>
+        <item>Je ziet geen **hand** voor ogen, en \'s nachts is het erger</item>
+        <item>De lantaarnpalen hebben het **volledig** opgegeven</item>
+        <item>Daarbuiten is iets. Waarschijnlijk **niks**.</item>
+    </string-array>
+    <string-array name="quip_subtitles_foggy_night">
+        <item>Autorijden is vannacht een slecht idee.</item>
+        <item>Optimale horrorfilmomstandigheden.</item>
+        <item>De wereld houdt op na tien meter.</item>
+        <item>Koplampen zijn nu puur decoratief.</item>
+    </string-array>
+    <string-array name="quip_quotes_windy_night">
+        <item>De wind **huilt** en je hoort elk stukje</item>
+        <item>Buiten staat iets te **bonken** en het stopt niet</item>
+        <item>De bomen hebben een **zware** nacht</item>
+        <item>Wind klinkt in het donker altijd **erger**</item>
+    </string-array>
+    <string-array name="quip_subtitles_windy_night">
+        <item>Zet de kliko binnen. Nu.</item>
+        <item>Dat geluid is vast niks. Vast.</item>
+        <item>De tuinmeubels gaan op trektocht.</item>
+        <item>Slaap met één oor open.</item>
+    </string-array>
+    <string-array name="quip_quotes_hot_night">
+        <item>Nog steeds **kokend** heet, en de zon is al uren weg</item>
+        <item>Te warm om te slapen, te laat om te **klagen**</item>
+        <item>De hitte **weigert** vannacht botweg te vertrekken</item>
+        <item>Je slaapkamer is een **sauna** met een bed erin</item>
+    </string-array>
+    <string-array name="quip_subtitles_hot_night">
+        <item>Ventilator aan, dekbed uit, slapen nooit.</item>
+        <item>De nacht is vergeten af te koelen.</item>
+        <item>Draai je kussen om. Het helpt niet.</item>
+        <item>Tropisch, als je je ogen dichtknijpt. Ondraaglijk als je dat niet doet.</item>
+    </string-array>
+    <string-array name="quip_quotes_cold_night">
+        <item>Het **vriest** daarbuiten en het wordt nog kouder</item>
+        <item>De kou staat vlak achter de deur te **wachten**</item>
+        <item>Morgenochtend is alles keihard **bevroren**</item>
+        <item>Je voorruit zit al tegen je te **samenzweren**</item>
+    </string-array>
+    <string-array name="quip_subtitles_cold_night">
+        <item>IJskrabber in de auto. Je zult jezelf dankbaar zijn.</item>
+        <item>Verwarming aan. Geen discussie.</item>
+        <item>Ga niet naar buiten in dat jasje.</item>
+        <item>De vorst komt je ochtend halen.</item>
+    </string-array>
+</resources>

@@ -66,6 +66,19 @@ class OpenMeteoProvider(private val api: OpenMeteoApi) : WeatherProvider {
         val nowcast = nowcastFrom(response.minutely15, current.time)
             .ifEmpty { ProviderSupport.nowcastFromHourly(hourlyForecast) }
 
+        // The whole week's hours, filed under their date, for the day view.
+        val hoursByDate = ProviderSupport.hoursByDate(
+            hourly.time.indices.mapNotNull { i ->
+                val temperature = hourly.temperature.getOrNull(i) ?: return@mapNotNull null
+                hourly.time[i] to HourlyForecast(
+                    time = ProviderSupport.hourLabel(hourly.time[i]),
+                    temperature = temperature,
+                    precipitationChance = hourly.precipitationProbability.getOrNull(i) ?: 0,
+                    precipitationMm = hourly.precipitation.getOrNull(i) ?: 0.0,
+                )
+            },
+        )
+
         val daily = response.daily
         val dailyForecast = daily.time.indices
             .drop(1)
@@ -77,6 +90,11 @@ class OpenMeteoProvider(private val api: OpenMeteoApi) : WeatherProvider {
                     date = daily.time[i],
                     temperatureMax = max,
                     temperatureMin = min,
+                    precipitationMm = daily.precipitationSum.getOrNull(i),
+                    precipitationChance = daily.precipitationProbabilityMax.getOrNull(i),
+                    precipitationHours = daily.precipitationHours.getOrNull(i),
+                    snowfallCm = daily.snowfallSum.getOrNull(i),
+                    hours = hoursByDate[daily.time[i]].orEmpty(),
                 )
             }
 

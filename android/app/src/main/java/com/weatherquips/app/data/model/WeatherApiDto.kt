@@ -43,6 +43,9 @@ data class WeatherApiDay(
     @SerialName("maxtemp_c") val maxTempC: Double,
     @SerialName("mintemp_c") val minTempC: Double,
     @SerialName("daily_chance_of_rain") val dailyChanceOfRain: Int? = null,
+    @SerialName("daily_chance_of_snow") val dailyChanceOfSnow: Int? = null,
+    @SerialName("totalprecip_mm") val totalPrecipMm: Double? = null,
+    @SerialName("totalsnow_cm") val totalSnowCm: Double? = null,
 )
 
 @Serializable
@@ -50,5 +53,6 @@ data class WeatherApiHour(
     val time: String,
     @SerialName("temp_c") val tempC: Double,
     @SerialName("chance_of_rain") val chanceOfRain: Int? = null,
+    @SerialName("chance_of_snow") val chanceOfSnow: Int? = null,
     @SerialName("precip_mm") val precipMm: Double = 0.0,
 )

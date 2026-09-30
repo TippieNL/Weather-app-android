@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The widget's words. Generated once from the lists that used to live in
+  WidgetCopy.kt; edit this file directly from now on.
+
+  The headline is the fact and stays plain. The quip under it is the joke,
+  and its pools are the part meant to grow: add lines to any
+  widget_quips_* array and the widget picks them up with no code change.
+  Keep a line short enough to fit two lines on the narrow widget
+  (WidgetQuipsTest measures it), and keep night lines free of sunshine.
+-->
+<resources>
+    <!-- Headline and chrome -->
+    <string name="widget_raining_now">Raining now</string>
+    <string name="widget_snowing_now">Snowing now</string>
+    <string name="widget_storming_now">Storming now</string>
+    <string name="widget_rain_in">Rain in %1$d min</string>
+    <string name="widget_snow_in">Snow in %1$d min</string>
+    <string name="widget_storms_in">Storms in %1$d min</string>
+    <string name="widget_rain_by">Rain by %1$s</string>
+    <string name="widget_snow_by">Snow by %1$s</string>
+    <string name="widget_storms_by">Storms by %1$s</string>
+    <string name="widget_dry">Dry for now</string>
+    <string name="widget_empty_headline">No weather yet</string>
+    <string name="widget_empty_quip">Open the app once and I\'ll catch up.</string>
+    <string name="widget_empty_first_run">Open the app once to get started</string>
+    <string name="widget_empty_graph">No forecast to draw. Tap to refresh.</string>
+    <string name="widget_age_minutes">%1$dm ago</string>
+    <string name="widget_age_hours">%1$dh ago</string>
+    <string name="widget_meta">%1$s · %2$s</string>
+    <string name="rate_mm_per_hour">%1$s mm/h</string>
+    <string name="intensity_light">light</string>
+    <string name="intensity_moderate">moderate</string>
+    <string name="intensity_heavy">heavy</string>
+
+    <string-array name="widget_quips_rain_now_day">
+        <item>Of course it is. ☔</item>
+        <item>Nature\'s car wash is open.</item>
+        <item>Hope you\'re already inside.</item>
+        <item>Hair plans: cancelled.</item>
+        <item>The ducks are thrilled.</item>
+        <item>Wet. Wetter. Soaked.</item>
+    </string-array>
+
+    <string-array name="widget_quips_rain_now_night">
+        <item>Rain on the window. Stay in bed.</item>
+        <item>Perfect night for a blanket.</item>
+        <item>The rain\'s working the night shift.</item>
+        <item>Nice night to be indoors.</item>
+        <item>Streetlights, now with drizzle.</item>
+        <item>The ducks are up late.</item>
+    </string-array>
+
+    <string-array name="widget_quips_snow_now_day">
+        <item>Naturally. ❄️</item>
+        <item>Walk like a penguin.</item>
+        <item>Snowman o\'clock.</item>
+        <item>The sky is shedding again.</item>
+        <item>Everything sounds softer now.</item>
+        <item>Officially hot chocolate weather.</item>
+    </string-array>
+
+    <string-array name="widget_quips_snow_now_night">
+        <item>Snow by lamplight. Fancy.</item>
+        <item>Tomorrow\'s commute: chaos.</item>
+        <item>The world\'s getting a blanket too.</item>
+        <item>Silent night, literally.</item>
+        <item>Hot chocolate. Now.</item>
+        <item>Quietest night of the year.</item>
+    </string-array>
+
+    <string-array name="widget_quips_storm_now_day">
+        <item>Stay in. Seriously. ⚡</item>
+        <item>The sky is throwing a tantrum.</item>
+        <item>Bad day to fly a kite.</item>
+        <item>Unplug something. Just in case.</item>
+        <item>Nature is busy.</item>
+        <item>Thor is having a day.</item>
+    </string-array>
+
+    <string-array name="widget_quips_storm_now_night">
+        <item>Nobody\'s sleeping through this.</item>
+        <item>Free light show. Stay inside.</item>
+        <item>The sky is picking a fight.</item>
+        <item>Pets under the bed: normal.</item>
+        <item>Count the seconds, then hide.</item>
+        <item>Loud night. Earplugs?</item>
+    </string-array>
+
+    <string-array name="widget_quips_rain_soon_day">
+        <item>Don\'t forget your umbrella ☔</item>
+        <item>Walk fast.</item>
+        <item>Clock is ticking.</item>
+        <item>Enjoy the dry bit while it lasts.</item>
+        <item>Laundry in. Now.</item>
+        <item>The clouds are loading…</item>
+    </string-array>
+
+    <string-array name="widget_quips_rain_soon_night">
+        <item>Bring the bike in.</item>
+        <item>Dry now. Wet later. Move.</item>
+        <item>Close the windows tonight.</item>
+        <item>Head home before it pours.</item>
+        <item>Umbrella by the door. ☔</item>
+        <item>Last dry walk for the dog.</item>
+    </string-array>
+
+    <string-array name="widget_quips_snow_soon_day">
+        <item>Snow incoming. Find your gloves.</item>
+        <item>Snowman supplies: check.</item>
+        <item>Get the sledge out.</item>
+        <item>Winter\'s about to show up.</item>
+        <item>Brace for slush.</item>
+        <item>Flakes on the way. ❄️</item>
+    </string-array>
+
+    <string-array name="widget_quips_snow_soon_night">
+        <item>You might wake up to white.</item>
+        <item>Scrape the car tomorrow.</item>
+        <item>Snow is sneaking in overnight.</item>
+        <item>Park where you can dig out.</item>
+        <item>Extra blanket tonight.</item>
+        <item>It\'s coming. Quietly. ❄️</item>
+    </string-array>
+
+    <string-array name="widget_quips_clear_day">
+        <item>The sun is showing off today.</item>
+        <item>Perfect weather for doing absolutely nothing.</item>
+        <item>No excuses today. ☀️</item>
+        <item>Suspiciously pleasant.</item>
+        <item>Sunglasses. Now.</item>
+        <item>Go outside. That\'s an order.</item>
+    </string-array>
+
+    <string-array name="widget_quips_clear_night">
+        <item>Stars out. Look up. ✨</item>
+        <item>Clear skies, cold feet.</item>
+        <item>Good night for stargazing.</item>
+        <item>The moon has the stage.</item>
+        <item>Not a cloud in the dark.</item>
+        <item>Crisp, clear and quiet.</item>
+    </string-array>
+
+    <string-array name="widget_quips_cloudy_day">
+        <item>Grey, but make it fashion.</item>
+        <item>The sun called in sick.</item>
+        <item>Clouds: undefeated.</item>
+        <item>Dry, at least. Take the win.</item>
+        <item>Fifty shades of grey. ☁️</item>
+        <item>Could be worse. Could be raining.</item>
+    </string-array>
+
+    <string-array name="widget_quips_cloudy_night">
+        <item>Stars cancelled. Clouds instead.</item>
+        <item>A grey duvet over the town.</item>
+        <item>No moon tonight. Clouds said so.</item>
+        <item>Good night for the sofa.</item>
+        <item>Dry and dull. Sleep well.</item>
+        <item>The sky has the covers on.</item>
+    </string-array>
+
+    <string-array name="widget_quips_fog_day">
+        <item>Where did everything go?</item>
+        <item>Low-budget horror movie vibes.</item>
+        <item>Visibility: vibes only.</item>
+        <item>The world is buffering.</item>
+        <item>Headlights on, eyes open.</item>
+        <item>A cloud came to visit. 🌫️</item>
+    </string-array>
+
+    <string-array name="widget_quips_fog_night">
+        <item>Spooky. Very spooky.</item>
+        <item>Perfect night for a ghost story.</item>
+        <item>Streetlights in soup.</item>
+        <item>Drive slow. Like, really slow.</item>
+        <item>The night went full mystery.</item>
+        <item>Can\'t see a thing. Stay in.</item>
+    </string-array>
+
+    <string-array name="widget_quips_wind_day">
+        <item>Hold on to your hat.</item>
+        <item>Bad hair day guaranteed.</item>
+        <item>Umbrellas: don\'t bother.</item>
+        <item>Cycling? Only downwind.</item>
+        <item>The trees are dancing again.</item>
+        <item>Free wind tunnel outside. 💨</item>
+    </string-array>
+
+    <string-array name="widget_quips_wind_night">
+        <item>The house is whistling again.</item>
+        <item>Secure the bins tonight.</item>
+        <item>Windy night, busy dreams.</item>
+        <item>The wind is howling. Literally.</item>
+        <item>Garden chairs may relocate.</item>
+        <item>Rattly windows, cosy bed.</item>
+    </string-array>
+
+    <string-array name="widget_quips_hot_day">
+        <item>Sunscreen. Water. Shade.</item>
+        <item>The pavement is cooking.</item>
+        <item>Ice cream is a food group now.</item>
+        <item>Too hot to be productive.</item>
+        <item>Melting speedrun in progress. 🥵</item>
+        <item>Find some shade. Stay there.</item>
+    </string-array>
+
+    <string-array name="widget_quips_hot_night">
+        <item>Too hot to sleep. Again.</item>
+        <item>Fan on full. Duvet off.</item>
+        <item>Still warm. Still annoying.</item>
+        <item>Warm night. Open every window.</item>
+        <item>Sleep? In this heat?</item>
+        <item>Balcony weather tonight.</item>
+    </string-array>
+
+    <string-array name="widget_quips_cold_day">
+        <item>Layers. All of them.</item>
+        <item>Your nose will regret this.</item>
+        <item>Hat, scarf, gloves. Go.</item>
+        <item>Crisp. Painfully crisp. 🥶</item>
+        <item>Hot drink weather.</item>
+        <item>The heater is your best friend.</item>
+    </string-array>
+
+    <string-array name="widget_quips_cold_night">
+        <item>Blanket burrito time.</item>
+        <item>Frost incoming. Cover the car.</item>
+        <item>Extra socks tonight.</item>
+        <item>The cold is in the walls now.</item>
+        <item>Hot water bottle season.</item>
+        <item>Cold enough to see your breath.</item>
+    </string-array>
+</resources>

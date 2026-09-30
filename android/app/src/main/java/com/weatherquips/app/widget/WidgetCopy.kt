@@ -1,125 +1,165 @@
 package com.weatherquips.app.widget
 
+import android.content.res.Resources
+import androidx.core.os.ConfigurationCompat
+import com.weatherquips.app.R
 import com.weatherquips.app.notifications.PrecipitationKind
-
-/** The two lines at the top of the widget: the fact, then the remark. */
-data class WidgetCopy(val headline: String, val aside: String)
+import java.util.Locale
 
 /**
- * Widget wording.
+ * The two lines at the top of the widget: the fact, then the joke.
+ *
+ * [understudies] are the jokes to fall back on, in order, should [quip] not
+ * fit beside what the widget has to show next to it.
+ */
+data class WidgetCopy(
+    val headline: String,
+    val quip: String,
+    val understudies: List<String> = emptyList(),
+)
+
+/**
+ * Widget wording, in whatever language [resources] are in.
  *
  * Inverted from the notification on purpose. A notification is read once, so
  * the joke leads and the figures follow; a widget is glanced at twenty times a
- * day, so the fact leads and the remark is the small print.
+ * day, so the fact leads and the joke sits under it.
  *
- * The remark varies with the hour rather than at random: a widget that tells a
- * different joke every time it refreshes is noise, but one that never changes
- * gets stale by lunchtime.
+ * The joke comes from [WidgetQuips], which rotates it by the hour: a widget
+ * that tells a different joke every refresh is noise, but one that never
+ * changes gets stale by lunchtime.
  */
-object WidgetCopyWriter {
+class WidgetCopyWriter(private val resources: Resources) {
 
-    /** Minutes are useful inside the hour; past that, say the clock time. */
-    private const val MINUTES_WORTH_COUNTING = 90
+    private val locale: Locale =
+        ConfigurationCompat.getLocales(resources.configuration)[0] ?: Locale.getDefault()
 
-    /** Nobody acts on "in 23 minutes". */
-    private const val ROUNDING_MINUTES = 5
-
-    private val fallingNowAsides = mapOf(
-        PrecipitationKind.RAIN to listOf(
-            "Of course it is.",
-            "Right on cue.",
-            "Hope you're already inside.",
-        ),
-        PrecipitationKind.SNOW to listOf(
-            "Naturally.",
-            "Walk carefully out there.",
-            "It is settling, too.",
-        ),
-        PrecipitationKind.STORM to listOf(
-            "Stay in.",
-            "Nature is busy.",
-            "Bad time for a walk.",
-        ),
-    )
-
-    /** For the nowcast, where the arrival is close enough to plan around. */
-    private val imminentAsides = listOf(
-        "Walk fast.",
-        "Clock is ticking.",
-        "You have been warned.",
-        "Time to find a roof.",
-    )
-
-    private val startsAtAsides = listOf(
-        "Enjoy the dry bit.",
-        "Plan accordingly.",
-        "Later, but not much later.",
-        "Consider yourself told.",
-    )
-
-    private val dryAsides = listOf(
-        "Nothing falling. Yet.",
-        "No excuses today.",
-        "Make the most of it.",
-        "Suspiciously pleasant.",
-    )
-
-    /**
-     * @param hourOfDay used only to rotate the remark, so it changes a few
-     *                  times a day but never mid-refresh.
-     */
-    fun write(outlook: Outlook, hourOfDay: Int): WidgetCopy = when (outlook) {
-        is Outlook.FallingNow -> WidgetCopy(
-            headline = when (outlook.kind) {
-                PrecipitationKind.RAIN -> "Raining now"
-                PrecipitationKind.SNOW -> "Snowing now"
-                PrecipitationKind.STORM -> "Storming now"
-            },
-            aside = fallingNowAsides.getValue(outlook.kind).rotate(hourOfDay),
+    fun write(outlook: PrecipitationOutlook, nowMillis: Long): WidgetCopy {
+        val lineup = WidgetQuips.lineup(
+            resources = resources,
+            mood = WidgetMood.of(outlook.outlook, outlook.condition),
+            isDay = outlook.isDay,
+            nowMillis = nowMillis,
         )
+        return WidgetCopy(
+            headline = headline(outlook.outlook),
+            quip = lineup.firstOrNull().orEmpty(),
+            understudies = lineup.drop(1),
+        )
+    }
 
-        is Outlook.StartsIn -> WidgetCopy(
-            headline = if (outlook.minutesAway <= MINUTES_WORTH_COUNTING) {
-                "${outlook.kind.noun} in ${roundMinutes(outlook.minutesAway)} min"
-            } else {
-                "${outlook.kind.noun} by ${outlook.time}"
-            },
-            aside = if (outlook.minutesAway <= MINUTES_WORTH_COUNTING) {
-                imminentAsides.rotate(hourOfDay)
-            } else {
-                startsAtAsides.rotate(hourOfDay)
+    fun headline(outlook: Outlook): String = when (outlook) {
+        is Outlook.FallingNow -> resources.getString(
+            when (outlook.kind) {
+                PrecipitationKind.RAIN -> R.string.widget_raining_now
+                PrecipitationKind.SNOW -> R.string.widget_snowing_now
+                PrecipitationKind.STORM -> R.string.widget_storming_now
             },
         )
 
-        is Outlook.StartsAt -> WidgetCopy(
-            headline = "${outlook.kind.noun} by ${outlook.time}",
-            aside = startsAtAsides.rotate(hourOfDay),
-        )
+        is Outlook.StartsIn -> if (outlook.minutesAway <= MINUTES_WORTH_COUNTING) {
+            resources.getString(inMinutes(outlook.kind), roundMinutes(outlook.minutesAway))
+        } else {
+            resources.getString(byTime(outlook.kind), outlook.time)
+        }
 
-        Outlook.Dry -> WidgetCopy(
-            headline = "Dry for now",
-            aside = dryAsides.rotate(hourOfDay),
-        )
+        is Outlook.StartsAt -> resources.getString(byTime(outlook.kind), outlook.time)
+
+        Outlook.Dry -> resources.getString(R.string.widget_dry)
     }
 
     /** Copy for a widget that has never managed to load anything. */
     fun empty() = WidgetCopy(
-        headline = "No weather yet",
-        aside = "Open the app once and I'll catch up.",
+        headline = resources.getString(R.string.widget_empty_headline),
+        quip = resources.getString(R.string.widget_empty_quip),
     )
 
-    private val PrecipitationKind.noun: String
-        get() = when (this) {
-            PrecipitationKind.RAIN -> "Rain"
-            PrecipitationKind.SNOW -> "Snow"
-            PrecipitationKind.STORM -> "Storms"
+    /** What goes where the graph would be, when there is none to draw. */
+    fun noGraph(hasForecast: Boolean): String = resources.getString(
+        if (hasForecast) R.string.widget_empty_graph else R.string.widget_empty_first_run,
+    )
+
+    /**
+     * The line beside the quip: where, and either how hard it is raining or
+     * how old the answer is. The most informative version first.
+     */
+    fun meta(outlook: PrecipitationOutlook, wide: Boolean): String? = metaChoices(outlook, wide).first()
+
+    /**
+     * Versions of the meta line, most to least informative, for the layout to
+     * pick the first one that leaves the quip room. `null` means no meta.
+     *
+     * Age wins over rate, because a rate from three hours ago is not a rate.
+     * It is also the only way a user can tell a quiet afternoon from a widget
+     * that has quietly stopped refreshing — so it is never dropped. The place
+     * goes first: the user nearly always knows where they are.
+     */
+    fun metaChoices(outlook: PrecipitationOutlook, wide: Boolean): List<String?> {
+        val place = outlook.location.lowercase(locale).let {
+            // A long place name would squeeze the quip beside it to nothing.
+            if (it.length > MAX_PLACE_CHARS) it.take(MAX_PLACE_CHARS - 1).trimEnd() + "…" else it
         }
+        val stale = outlook.ageMinutes >= PrecipitationWidget.STALE_MINUTES
+        val wet = outlook.nowMillimetresPerHour >= IntensityScale.WET_MM_PER_HOUR
+
+        return when {
+            stale -> {
+                val age = age(outlook.ageMinutes)
+                if (wide) listOf(resources.getString(R.string.widget_meta, place, age), age) else listOf(age)
+            }
+            // Narrow: the graph already says it all; the quip gets the width.
+            !wide -> listOf(null)
+            wet -> {
+                val rate = rate(outlook.nowMillimetresPerHour)
+                listOf(resources.getString(R.string.widget_meta, place, rate), rate, null)
+            }
+            else -> listOf(place, null)
+        }
+    }
+
+    /** A rate as the widget prints it, unit included. */
+    fun rate(millimetresPerHour: Double): String =
+        resources.getString(R.string.rate_mm_per_hour, IntensityScale.formatNumber(millimetresPerHour, locale))
+
+    /** The words drawn into the graph bitmap. */
+    fun graphLabels() = GraphLabels(
+        now = resources.getString(R.string.now),
+        light = resources.getString(R.string.intensity_light),
+        moderate = resources.getString(R.string.intensity_moderate),
+        heavy = resources.getString(R.string.intensity_heavy),
+    )
+
+    private fun age(minutes: Int): String = if (minutes < 60) {
+        resources.getString(R.string.widget_age_minutes, minutes)
+    } else {
+        resources.getString(R.string.widget_age_hours, minutes / 60)
+    }
+
+    private fun inMinutes(kind: PrecipitationKind) = when (kind) {
+        PrecipitationKind.RAIN -> R.string.widget_rain_in
+        PrecipitationKind.SNOW -> R.string.widget_snow_in
+        PrecipitationKind.STORM -> R.string.widget_storms_in
+    }
+
+    private fun byTime(kind: PrecipitationKind) = when (kind) {
+        PrecipitationKind.RAIN -> R.string.widget_rain_by
+        PrecipitationKind.SNOW -> R.string.widget_snow_by
+        PrecipitationKind.STORM -> R.string.widget_storms_by
+    }
 
     /** Rounded to five minutes, but never down to "in 0 min". */
     private fun roundMinutes(minutes: Int): Int =
         (Math.round(minutes / ROUNDING_MINUTES.toDouble()).toInt() * ROUNDING_MINUTES)
             .coerceAtLeast(ROUNDING_MINUTES)
 
-    private fun List<String>.rotate(hourOfDay: Int): String =
-        this[((hourOfDay % size) + size) % size]
+    private companion object {
+        /** Minutes are useful inside the hour; past that, say the clock time. */
+        const val MINUTES_WORTH_COUNTING = 90
+
+        /** Nobody acts on "in 23 minutes". */
+        const val ROUNDING_MINUTES = 5
+
+        /** Enough for nearly every town; the rest get an ellipsis. */
+        const val MAX_PLACE_CHARS = 16
+    }
 }

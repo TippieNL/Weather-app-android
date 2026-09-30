@@ -1,6 +1,32 @@
 package com.weatherquips.app.ui.home
 
 import androidx.annotation.DrawableRes
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.text.style.TextOverflow
+import com.weatherquips.app.domain.model.DailyForecast
+import com.weatherquips.app.text.forecastDayName
+import com.weatherquips.app.ui.theme.Motion
+import com.weatherquips.app.ui.theme.WeatherQuipsColors
+import kotlinx.coroutines.delay
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -531,11 +557,18 @@ private fun Modifier.offsetFromBottomFraction(fraction: () -> Float): Modifier =
     }
 }
 
+// BringIntoViewRequester is still marked experimental in this Compose release,
+// but it is the supported way to scroll a lazy list to a child's new bounds.
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun WeeklyCard(uiState: HomeUiState, weather: WeatherData) {
-    val settings = uiState.settings
     val days = weather.dailyForecast
     if (days.isEmpty()) return
+
+    // The open day, kept by date rather than position so a refresh that
+    // rolls the week over closes it instead of opening the wrong day, and
+    // saveable so it survives rotation and the trip to the radar and back.
+    var selectedDate by rememberSaveable { mutableStateOf<String?>(null) }
 
     val scale = remember(days) {
         val weekLow = days.minOf { it.temperatureMin }
@@ -545,75 +578,174 @@ private fun WeeklyCard(uiState: HomeUiState, weather: WeatherData) {
     }
 
     QuipCard(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(20.dp)) {
+        // Rows carry their own inset so the selection highlight has room
+        // around the text; the title is inset to line up with them.
+        Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 20.dp)) {
             Text(
                 text = stringResource(R.string.next_7_days),
                 style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(horizontal = 8.dp),
             )
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(10.dp))
             Column(
-                verticalArrangement = Arrangement.spacedBy(14.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
                 modifier = Modifier.testTag(TAG_DAILY),
             ) {
-                val reveal = LocalPanelReveal.current
                 days.forEachIndexed { index, day ->
-                    val low = Formatters.formatTempDegrees(day.temperatureMin, settings.temperatureUnit)
-                    val high = Formatters.formatTempDegrees(day.temperatureMax, settings.temperatureUnit)
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clearAndSetSemantics {
-                                contentDescription = "${day.day}: $low to $high"
-                            },
+                    val selected = day.date == selectedDate
+                    DayRow(
+                        day = day,
+                        index = index,
+                        selected = selected,
+                        scale = scale,
+                        uiState = uiState,
+                        onClick = { selectedDate = if (selected) null else day.date },
+                    )
+                    AnimatedVisibility(
+                        visible = selected,
+                        enter = expandVertically(
+                            animationSpec = tween(Motion.MEDIUM, easing = Motion.EmphasizedDecelerate),
+                            expandFrom = Alignment.Top,
+                        ) + fadeIn(tween(Motion.MEDIUM, delayMillis = Motion.SHORT / 2)),
+                        exit = shrinkVertically(
+                            animationSpec = tween(Motion.SHORT, easing = Motion.EmphasizedAccelerate),
+                            shrinkTowards = Alignment.Top,
+                        ) + fadeOut(tween(Motion.SHORT / 2)),
                     ) {
-                        Column(modifier = Modifier.width(84.dp)) {
-                            Text(
-                                text = day.day,
-                                style = MaterialTheme.typography.titleMedium,
-                                maxLines = 1,
-                            )
-                            Text(
-                                text = Formatters.formatDate(day.date, settings.dateFormat),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1,
-                            )
+                        val rain = remember(day) { DayRains.of(day) }
+                        val requester = remember { BringIntoViewRequester() }
+                        // The last days sit at the bottom of the panel; opening
+                        // one should not leave its answer below the fold.
+                        LaunchedEffect(day.date) {
+                            delay(Motion.MEDIUM.toLong())
+                            requester.bringIntoView()
                         }
-                        Text(
-                            text = low,
-                            style = MaterialTheme.typography.titleSmall,
-                            color = temperatureColorFor(day.temperatureMin),
-                            textAlign = TextAlign.End,
-                            maxLines = 1,
-                            modifier = Modifier.width(38.dp),
-                        )
-                        Spacer(Modifier.width(10.dp))
-                        TemperatureRangeBar(
-                            minCelsius = day.temperatureMin,
-                            maxCelsius = day.temperatureMax,
-                            scaleMinCelsius = scale.first,
-                            scaleMaxCelsius = scale.second,
-                            modifier = Modifier.weight(1f),
-                            growth = {
-                                panelStage(
-                                    reveal(),
-                                    delayMillis = 2 * CARD_STAGGER_MILLIS + index * ROW_STAGGER_MILLIS,
-                                )
-                            },
-                        )
-                        Spacer(Modifier.width(10.dp))
-                        Text(
-                            text = high,
-                            style = MaterialTheme.typography.titleSmall,
-                            color = temperatureColorFor(day.temperatureMax),
-                            maxLines = 1,
-                            modifier = Modifier.width(38.dp),
+                        DayRainDetail(
+                            rain = rain,
+                            settings = uiState.settings,
+                            modifier = Modifier.bringIntoViewRequester(requester),
                         )
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun DayRow(
+    day: DailyForecast,
+    index: Int,
+    selected: Boolean,
+    scale: Pair<Double, Double>,
+    uiState: HomeUiState,
+    onClick: () -> Unit,
+) {
+    val settings = uiState.settings
+    val reveal = LocalPanelReveal.current
+    val name = forecastDayName(index, day.date)
+    val date = Formatters.formatDate(day.date, settings.dateFormat)
+    val low = Formatters.formatTempDegrees(day.temperatureMin, settings.temperatureUnit)
+    val high = Formatters.formatTempDegrees(day.temperatureMax, settings.temperatureUnit)
+    // Only worth a mark when it might actually rain.
+    val chance = day.precipitationChance?.takeIf { it >= DayRains.DRY_CHANCE }
+    val description = if (chance != null) {
+        stringResource(R.string.day_row_description_rain, name, date, low, high, chance)
+    } else {
+        stringResource(R.string.day_row_description, name, date, low, high)
+    }
+    val clickLabel = stringResource(if (selected) R.string.day_rain_hide else R.string.day_rain_show, name)
+    val highlight by animateColorAsState(
+        // Tinted rather than grey: the temperature bar's track is grey, and a
+        // grey highlight swallowed it.
+        targetValue = if (selected) WeatherQuipsColors.Cold.copy(alpha = 0.09f) else Color.Transparent,
+        animationSpec = tween(Motion.SHORT),
+        label = "day-highlight",
+    )
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        // Order matters: semantics are collected inner to outer, and
+        // clearAndSetSemantics drops what the modifiers inside it declared.
+        // The tag sits outside it to survive; selectable sits inside so its
+        // unlabelled click action gives way to the labelled one here.
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(highlight)
+            .testTag("$TAG_DAY_ROW_PREFIX${day.date}")
+            .clearAndSetSemantics {
+                contentDescription = description
+                this.selected = selected
+                role = Role.Button
+                onClick(label = clickLabel) { onClick(); true }
+            }
+            .selectable(selected = selected, role = Role.Button, onClick = onClick)
+            .padding(horizontal = 8.dp, vertical = 7.dp),
+    ) {
+        Column(modifier = Modifier.width(92.dp)) {
+            Text(
+                text = name,
+                style = MaterialTheme.typography.titleMedium,
+                maxLines = 1,
+            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = date,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
+                if (chance != null) {
+                    Spacer(Modifier.width(6.dp))
+                    Icon(
+                        painter = painterResource(R.drawable.ic_umbrella),
+                        contentDescription = null,
+                        tint = WeatherQuipsColors.Cold,
+                        modifier = Modifier.size(10.dp),
+                    )
+                    Spacer(Modifier.width(2.dp))
+                    Text(
+                        text = stringResource(R.string.percent_value, chance),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = WeatherQuipsColors.Cold,
+                        maxLines = 1,
+                    )
+                }
+            }
+        }
+        Text(
+            text = low,
+            style = MaterialTheme.typography.titleSmall,
+            color = temperatureColorFor(day.temperatureMin),
+            textAlign = TextAlign.End,
+            maxLines = 1,
+            modifier = Modifier.width(38.dp),
+        )
+        Spacer(Modifier.width(10.dp))
+        TemperatureRangeBar(
+            minCelsius = day.temperatureMin,
+            maxCelsius = day.temperatureMax,
+            scaleMinCelsius = scale.first,
+            scaleMaxCelsius = scale.second,
+            modifier = Modifier.weight(1f),
+            growth = {
+                panelStage(
+                    reveal(),
+                    delayMillis = 2 * CARD_STAGGER_MILLIS + index * ROW_STAGGER_MILLIS,
+                )
+            },
+        )
+        Spacer(Modifier.width(10.dp))
+        Text(
+            text = high,
+            style = MaterialTheme.typography.titleSmall,
+            color = temperatureColorFor(day.temperatureMax),
+            maxLines = 1,
+            modifier = Modifier.width(38.dp),
+        )
     }
 }
 
@@ -631,3 +763,4 @@ const val TAG_DETAIL_RANGE = "detail-range"
 const val TAG_DETAIL_STATS = "detail-stats"
 const val TAG_HOURLY = "detail-hourly"
 const val TAG_DAILY = "detail-daily"
+const val TAG_DAY_ROW_PREFIX = "detail-day-"

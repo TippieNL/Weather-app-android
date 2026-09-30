@@ -41,6 +41,11 @@ import com.weatherquips.app.ui.precipitation.PrecipitationMapScreen
 import com.weatherquips.app.ui.precipitation.PrecipitationViewModel
 import com.weatherquips.app.ui.settings.SettingsScreen
 import com.weatherquips.app.ui.settings.SettingsViewModel
+import android.net.Uri
+import androidx.compose.ui.platform.LocalConfiguration
+import com.weatherquips.app.ui.about.AboutScreen
+import com.weatherquips.app.ui.about.LicenceScreen
+import com.weatherquips.app.ui.about.LicenceText
 
 /**
  * Routes. Precipitation carries its coordinates in the route, the same way the
@@ -51,6 +56,10 @@ object Routes {
     const val HOME = "home"
     const val SETTINGS = "settings"
     const val PRECIPITATION = "precipitation/{lat}/{lon}"
+    const val ABOUT = "about"
+    const val LICENCE = "licence/{asset}"
+
+    fun licence(licence: LicenceText): String = "licence/${Uri.encode(licence.asset)}"
 
     fun precipitation(coordinates: Coordinates): String =
         "precipitation/${coordinates.latitude}/${coordinates.longitude}"
@@ -167,15 +176,54 @@ fun WeatherQuipsNavHost(
         composable(
             route = Routes.SETTINGS,
             enterTransition = { comeForward() },
+            exitTransition = { recede() },
+            popEnterTransition = { returnForward() },
             popExitTransition = { fallBack() },
         ) {
             val viewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.factory())
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+            // The view model outlives the recreation a language change causes,
+            // so it re-reads the language whenever the locale on screen moves.
+            val locales = LocalConfiguration.current.locales
+            LaunchedEffect(locales) { viewModel.refreshLanguage() }
             SettingsScreen(
                 uiState = uiState,
                 actions = viewModel,
                 onBack = { navController.popBackStack() },
+                onOpenAbout = { navController.navigateSingleTop(Routes.ABOUT) },
             )
+        }
+
+        // About and its licences go deeper on the same axis settings came in on.
+        composable(
+            route = Routes.ABOUT,
+            enterTransition = { comeForward() },
+            exitTransition = { recede() },
+            popEnterTransition = { returnForward() },
+            popExitTransition = { fallBack() },
+        ) {
+            AboutScreen(
+                onBack = { navController.popBackStack() },
+                onOpenLicence = { licence -> navController.navigateSingleTop(Routes.licence(licence)) },
+            )
+        }
+
+        composable(
+            route = Routes.LICENCE,
+            arguments = listOf(navArgument("asset") { type = NavType.StringType }),
+            enterTransition = { comeForward() },
+            popExitTransition = { fallBack() },
+        ) { entry ->
+            val licence = entry.arguments?.getString("asset")?.let(LicenceText::forAsset)
+            if (licence == null) {
+                // A stale or mangled deep link: nothing to show, so go back.
+                LaunchedEffect(Unit) { navController.popBackStack() }
+            } else {
+                LicenceScreen(
+                    licence = licence,
+                    onBack = { navController.popBackStack() },
+                )
+            }
         }
 
         composable(

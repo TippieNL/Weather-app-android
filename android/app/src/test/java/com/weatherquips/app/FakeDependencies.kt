@@ -18,6 +18,15 @@ import kotlinx.coroutines.flow.update
 /** Shared fixtures for the ViewModel and UI tests. */
 object TestWeather {
 
+    /** A day of hours, dry except for the given (millimetres, chance) per hour. */
+    fun dayOfHours(vararg wet: Pair<Int, Pair<Double, Int>>): List<HourlyForecast> {
+        val byHour = wet.toMap()
+        return (0..23).map { hour ->
+            val (mm, chance) = byHour[hour] ?: (0.0 to 0)
+            HourlyForecast("%02d:00".format(hour), 15.0, chance, mm)
+        }
+    }
+
     /** The exact reading from the reported screenshot, for visual comparison. */
     fun assenEvening() = WeatherData(
         condition = WeatherCondition.CLOUDY,
@@ -38,8 +47,28 @@ object TestWeather {
         uvIndex = 0.2,
         pressure = 1018,
         dailyForecast = listOf(
-            DailyForecast("tomorrow", "2026-09-12", 20.0, 11.0),
-            DailyForecast("sunday", "2026-09-13", 19.0, 15.0),
+            // Dry: nothing falls and the chance never gets going.
+            DailyForecast(
+                "tomorrow", "2026-09-12", 20.0, 11.0,
+                precipitationMm = 0.0,
+                precipitationChance = 5,
+                precipitationHours = 0.0,
+                hours = dayOfHours(),
+            ),
+            // An afternoon of showers, 14:00 to 19:00, heaviest at 16:00.
+            DailyForecast(
+                "sunday", "2026-09-13", 19.0, 15.0,
+                precipitationMm = 6.4,
+                precipitationChance = 80,
+                precipitationHours = 5.0,
+                hours = dayOfHours(
+                    14 to (0.4 to 60),
+                    15 to (1.2 to 75),
+                    16 to (2.6 to 80),
+                    17 to (1.6 to 70),
+                    18 to (0.6 to 50),
+                ),
+            ),
             DailyForecast("monday", "2026-09-14", 20.0, 10.0),
             DailyForecast("tuesday", "2026-09-15", 22.0, 15.0),
             DailyForecast("wednesday", "2026-09-16", 21.0, 13.0),

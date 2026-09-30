@@ -52,7 +52,9 @@ object AppLocale {
     fun set(context: Context, language: AppLanguage): Boolean {
         // Kept on every version: it is what text outside activities reads
         // below 13, and a fallback should the platform service be missing.
-        prefs(context).edit().putString(KEY_TAG, language.tag).commit()
+        // apply() updates the in-memory copy at once, which is what the
+        // recreated activity reads; the disk write can follow in the background.
+        prefs(context).edit().putString(KEY_TAG, language.tag).apply()
         if (platformManaged) {
             val manager = context.getSystemService(LocaleManager::class.java)
             if (manager != null) {

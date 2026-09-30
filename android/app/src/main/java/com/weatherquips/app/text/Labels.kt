@@ -7,6 +7,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import com.weatherquips.app.R
 import com.weatherquips.app.domain.model.WeatherCondition
+import com.weatherquips.app.widget.IntensityBand
 import java.text.NumberFormat
 import java.time.LocalDate
 import java.time.format.DateTimeParseException
@@ -30,6 +31,14 @@ fun conditionLabel(condition: WeatherCondition): Int = when (condition) {
     WeatherCondition.WINDY -> R.string.condition_windy
     WeatherCondition.HOT -> R.string.condition_hot
     WeatherCondition.COLD -> R.string.condition_cold
+}
+
+@StringRes
+fun intensityLabel(band: IntensityBand): Int = when (band) {
+    IntensityBand.LIGHT -> R.string.intensity_light
+    IntensityBand.MODERATE -> R.string.intensity_moderate
+    IntensityBand.HEAVY -> R.string.intensity_heavy
+    IntensityBand.VIOLENT -> R.string.intensity_violent
 }
 
 /** The locale the UI is currently drawn in, which follows the app language. */

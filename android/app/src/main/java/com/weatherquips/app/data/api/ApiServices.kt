@@ -34,7 +34,8 @@ interface OpenMeteoApi {
                 "relative_humidity_2m,surface_pressure,uv_index,is_day"
         const val DAILY_FIELDS =
             "temperature_2m_max,temperature_2m_min,precipitation_probability_max," +
-                "uv_index_max,weather_code,sunrise,sunset"
+                "uv_index_max,weather_code,sunrise,sunset," +
+                "precipitation_sum,precipitation_hours,snowfall_sum"
         const val HOURLY_FIELDS = "temperature_2m,precipitation_probability,precipitation"
 
         /** Drives the widget's intensity graph; free and key-less like the rest. */

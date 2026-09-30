@@ -96,7 +96,7 @@ class OnboardingUiTest {
             "Location access is how the app knows which sky to insult. " +
                 "Precise pins your neighbourhood, approximate settles for your region — " +
                 "honestly, both are fine for weather. " +
-                "Your coordinates go to the weather service and nowhere else.",
+                "Your coordinates only go to the services that fetch your weather and your town's name. Nowhere else.",
         ).assertExists()
     }
 

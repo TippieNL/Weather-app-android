@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Dutch Pallet Town lines. Pokémon, move, item and place names keep their English names, as in the Dutch releases. -->
+<resources>
+    <string name="pokemon_banner">Welkom in Pallet Town, Trainer!</string>
+    <string name="pokemon_ball">Poké Ball</string>
+    <string name="pokemon_silhouette">Silhouet van een mysterieuze Pokémon</string>
+    <string-array name="pokemon_quotes_clear_day">
+        <item>Professor Oak zegt dat het een perfecte dag is om aan je Pokémon-reis te beginnen!</item>
+        <item>Pikachu ligt buiten lekker in de zon.</item>
+        <item>Heldere lucht, Trainer. Het avontuur wacht!</item>
+    </string-array>
+    <string-array name="pokemon_subtitles_clear_day">
+        <item>Route 1 ligt wijd open. Gotta catch \'em all.</item>
+    </string-array>
+    <string-array name="pokemon_quotes_cloudy_day">
+        <item>Een mysterieuze dag om het hoge gras te verkennen.</item>
+        <item>Ergens wacht een wilde Pokémon om ontdekt te worden.</item>
+        <item>Het weer is misschien grijs, avontuur nooit.</item>
+    </string-array>
+    <string-array name="pokemon_subtitles_cloudy_day">
+        <item>Hou het hoge gras goed in de gaten.</item>
+    </string-array>
+    <string-array name="pokemon_quotes_rainy_day">
+        <item>Squirtle heeft vandaag blijkbaar extra water ingeroepen.</item>
+        <item>Een regenachtige route is perfect voor Water-type Pokémon.</item>
+        <item>Vergeet je Pokédex niet, Trainer. Regen houdt geen avontuur tegen.</item>
+    </string-array>
+    <string-array name="pokemon_subtitles_rainy_day">
+        <item>Prima visweer langs de route.</item>
+    </string-array>
+    <string-array name="pokemon_quotes_stormy_day">
+        <item>Pikachu lijkt ongewoon enthousiast over de verwachting van vandaag.</item>
+        <item>Electric-type Pokémon hebben de tijd van hun leven.</item>
+        <item>Pas op, Trainer. De lucht gebruikt Thunder!</item>
+    </string-array>
+    <string-array name="pokemon_subtitles_stormy_day">
+        <item>De Power Plant zoemt van de energie.</item>
+    </string-array>
+    <string-array name="pokemon_quotes_snowy_day">
+        <item>Het lijkt buiten wel een congres van Ice-type Pokémon.</item>
+        <item>Perfect weer voor een bezoek aan Snowpoint City.</item>
+        <item>Zelfs Lapras heeft het vandaag misschien koud.</item>
+    </string-array>
+    <string-array name="pokemon_subtitles_snowy_day">
+        <item>Neem wat Burn Heals mee… en een jas.</item>
+    </string-array>
+    <string-array name="pokemon_quotes_foggy_day">
+        <item>Er kan net achter de mist een wilde Pokémon verstopt zitten.</item>
+        <item>De mist rolt binnen als een trage Confuse Ray.</item>
+        <item>Voorzichtig, Trainer — het zicht is slecht op deze route.</item>
+    </string-array>
+    <string-array name="pokemon_subtitles_foggy_day">
+        <item>Neem een Pokémon mee die Defog kent.</item>
+    </string-array>
+    <string-array name="pokemon_quotes_windy_day">
+        <item>Pidgeotto surfen vandaag op de luchtstromen.</item>
+        <item>Flying-type Pokémon zijn massaal op pad.</item>
+        <item>De wind brengt de belofte van een nieuw avontuur.</item>
+    </string-array>
+    <string-array name="pokemon_subtitles_windy_day">
+        <item>Perfecte rugwind voor je volgende avontuur.</item>
+    </string-array>
+    <string-array name="pokemon_quotes_hot_day">
+        <item>Charmander bloeit helemaal op in deze hitte.</item>
+        <item>Fire-types voelen zich vandaag helemaal thuis.</item>
+        <item>Blijf drinken, Trainer — zelfs Growlithe ligt te hijgen.</item>
+    </string-array>
+    <string-array name="pokemon_subtitles_hot_day">
+        <item>Snel — haal een Fresh Water uit de automaat.</item>
+    </string-array>
+    <string-array name="pokemon_quotes_cold_day">
+        <item>Glaceon zou zich helemaal thuis voelen in deze kou.</item>
+        <item>Kleed je warm aan, Trainer — er ligt een ijzige route voor je.</item>
+        <item>Ice-type Pokémon genieten van de koudegolf.</item>
+    </string-array>
+    <string-array name="pokemon_subtitles_cold_day">
+        <item>Mt. Coronet-weer, gewoon hier thuis.</item>
+    </string-array>
+    <string-array name="pokemon_quotes_clear_night">
+        <item>Heldere nacht. Perfect om een Clefairy te spotten.</item>
+        <item>De sterren staan boven Pallet Town, Trainer.</item>
+        <item>Professor Oak is blijkbaar nog wakker in het lab.</item>
+    </string-array>
+    <string-array name="pokemon_subtitles_clear_night">
+        <item>Sla je spel op en kijk even omhoog.</item>
+    </string-array>
+    <string-array name="pokemon_quotes_cloudy_night">
+        <item>Geen sterren vannacht. Het hoge gras ziet er donkerder uit dan anders.</item>
+        <item>Daar ritselde iets. Vast een Rattata.</item>
+        <item>Een goede nacht om in het Pokémon Center te blijven.</item>
+    </string-array>
+    <string-array name="pokemon_subtitles_cloudy_night">
+        <item>Blijf in het donker op het pad.</item>
+    </string-array>
+    <string-array name="pokemon_quotes_rainy_night">
+        <item>De hele nacht regen op het dak. Squirtle keurt het goed.</item>
+        <item>Water-types hebben daarbuiten de tijd van hun leven.</item>
+        <item>Een natte nacht voor wie tussen twee steden vastzit.</item>
+    </string-array>
+    <string-array name="pokemon_subtitles_rainy_night">
+        <item>Goede nacht om te vissen, als je durft.</item>
+    </string-array>
+    <string-array name="pokemon_quotes_stormy_night">
+        <item>Onweer in het donker. Pikachu is klaarwakker.</item>
+        <item>De Power Plant is van hieruit te zien.</item>
+        <item>Electric-types geloven vannacht niet in bedtijd.</item>
+    </string-array>
+    <string-array name="pokemon_subtitles_stormy_night">
+        <item>Haal de stekker uit de PC-box. Voor de zekerheid.</item>
+    </string-array>
+    <string-array name="pokemon_quotes_snowy_night">
+        <item>Sneeuw die in het donker valt. Heel Snowpoint.</item>
+        <item>Ice-types genieten daarbuiten van de stilte.</item>
+        <item>Bij zonsopgang is alles bedolven, Trainer.</item>
+    </string-array>
+    <string-array name="pokemon_subtitles_snowy_night">
+        <item>Neem Burn Heals mee en een heel dikke jas.</item>
+    </string-array>
+    <string-array name="pokemon_quotes_foggy_night">
+        <item>Mist in de nacht. Daar kan van alles rondlopen.</item>
+        <item>Zicht nul. Neem een Pokémon mee die Flash kent.</item>
+        <item>De routebordjes zijn compleet verdwenen, Trainer.</item>
+    </string-array>
+    <string-array name="pokemon_subtitles_foggy_night">
+        <item>Defog zou nu enorm handig zijn.</item>
+    </string-array>
+    <string-array name="pokemon_quotes_windy_night">
+        <item>De wind rammelt de hele nacht aan de ramen.</item>
+        <item>Flying-types zitten daarboven ergens te genieten.</item>
+        <item>Een ruwe nacht om tussen twee steden te kamperen.</item>
+    </string-array>
+    <string-array name="pokemon_subtitles_windy_night">
+        <item>Zet de tent goed vast, Trainer.</item>
+    </string-array>
+    <string-array name="pokemon_quotes_hot_night">
+        <item>Zelfs de nacht is warm. Fire-types zijn in hun element.</item>
+        <item>Een broeierige nacht op Route 1. Niemand slaapt.</item>
+        <item>Growlithe heeft het opgegeven en ligt languit op de vloer.</item>
+    </string-array>
+    <string-array name="pokemon_subtitles_hot_night">
+        <item>Pak een Fresh Water. Slapen is optioneel.</item>
+    </string-array>
+    <string-array name="pokemon_quotes_cold_night">
+        <item>Een ijskoude nacht. Glaceon bloeit op, jij niet.</item>
+        <item>Koud genoeg om je adem te zien op Route 1.</item>
+        <item>Zelfs de verwarming van het Pokémon Center heeft het zwaar.</item>
+    </string-array>
+    <string-array name="pokemon_subtitles_cold_night">
+        <item>Mt. Coronet-weer, vlak voor de deur.</item>
+    </string-array>
+</resources>

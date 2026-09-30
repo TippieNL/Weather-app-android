@@ -51,6 +51,16 @@ internal object ProviderSupport {
         null
     }
 
+    /**
+     * Groups hours by the date in their timestamp ("2026-09-05T14:00" files
+     * under "2026-09-05"), keeping their order. The timestamps are local to
+     * the forecast location, so a day here is that place's day.
+     */
+    fun hoursByDate(stamped: List<Pair<String, HourlyForecast>>): Map<String, List<HourlyForecast>> =
+        stamped
+            .filter { (timestamp, _) -> timestamp.length >= 10 }
+            .groupBy(keySelector = { it.first.take(10) }, valueTransform = { it.second })
+
     /** "2026-09-05T14:00" or "2026-09-05 14:00" → "14:00". */
     fun hourLabel(timestamp: String): String =
         if (timestamp.length >= 13) timestamp.substring(11, 13) + ":00" else timestamp

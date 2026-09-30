@@ -5,7 +5,6 @@
 -->
 <resources>
     <string name="pokemon_banner">Welcome to Pallet Town, Trainer!</string>
-    <string name="pokemon_title">Weather Quips: Pokémon Edition</string>
     <string name="pokemon_ball">Poké Ball</string>
     <string name="pokemon_silhouette">Mystery Pokémon silhouette</string>
     <string-array name="pokemon_quotes_clear_day">
@@ -46,7 +45,7 @@
         <item>Even Lapras might be feeling chilly today.</item>
     </string-array>
     <string-array name="pokemon_subtitles_snowy_day">
-        <item>Better pack some Burn Heals... and a coat.</item>
+        <item>Better pack some Burn Heals… and a coat.</item>
     </string-array>
     <string-array name="pokemon_quotes_foggy_day">
         <item>A wild Pokémon could be hiding just beyond the mist.</item>

@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The widget's words. Generated once from the lists that used to live in
+  WidgetCopy.kt; edit this file directly from now on.
+
+  The headline is the fact and stays plain. The quip under it is the joke,
+  and its pools are the part meant to grow: add lines to any
+  widget_quips_* array and the widget picks them up with no code change.
+  Keep a line short enough to fit two lines on the narrow widget
+  (WidgetQuipsTest measures it), and keep night lines free of sunshine.
+-->
+<resources>
+    <!-- Headline and chrome -->
+    <string name="widget_raining_now">Het regent nu</string>
+    <string name="widget_snowing_now">Het sneeuwt nu</string>
+    <string name="widget_storming_now">Het onweert nu</string>
+    <string name="widget_rain_in">Regen over %1$d min</string>
+    <string name="widget_snow_in">Sneeuw over %1$d min</string>
+    <string name="widget_storms_in">Onweer over %1$d min</string>
+    <string name="widget_rain_by">Regen rond %1$s</string>
+    <string name="widget_snow_by">Sneeuw rond %1$s</string>
+    <string name="widget_storms_by">Onweer rond %1$s</string>
+    <string name="widget_dry">Voorlopig droog</string>
+    <string name="widget_empty_headline">Nog geen weer</string>
+    <string name="widget_empty_quip">Open de app één keer, dan haal ik het in.</string>
+    <string name="widget_empty_first_run">Open de app één keer om te beginnen</string>
+    <string name="widget_empty_graph">Geen verwachting om te tekenen. Tik om te vernieuwen.</string>
+    <string name="widget_age_minutes">%1$d min geleden</string>
+    <string name="widget_age_hours">%1$d u geleden</string>
+    <string name="widget_meta">%1$s · %2$s</string>
+    <string name="rate_mm_per_hour">%1$s mm/u</string>
+    <string name="intensity_light">licht</string>
+    <string name="intensity_moderate">matig</string>
+    <string name="intensity_heavy">zwaar</string>
+
+    <string-array name="widget_quips_rain_now_day">
+        <item>Natuurlijk. ☔</item>
+        <item>Gratis autowasbeurt buiten.</item>
+        <item>Hopelijk zit je al binnen.</item>
+        <item>Kapsel? Vergeet het maar.</item>
+        <item>De eenden zijn dolblij.</item>
+        <item>Nat. Natter. Kletsnat.</item>
+    </string-array>
+
+    <string-array name="widget_quips_rain_now_night">
+        <item>Regen op het raam. Blijf liggen.</item>
+        <item>Perfecte avond voor een dekentje.</item>
+        <item>De regen draait nachtdienst.</item>
+        <item>Lekker binnen blijven vanavond.</item>
+        <item>Lantaarnpalen, nu met motregen.</item>
+        <item>De eenden blijven laat op.</item>
+    </string-array>
+
+    <string-array name="widget_quips_snow_now_day">
+        <item>Uiteraard. ❄️</item>
+        <item>Loop als een pinguïn.</item>
+        <item>Tijd voor een sneeuwpop.</item>
+        <item>De lucht verliest weer vlokken.</item>
+        <item>Alles klinkt ineens zachter.</item>
+        <item>Officieel chocomelkweer.</item>
+    </string-array>
+
+    <string-array name="widget_quips_snow_now_night">
+        <item>Sneeuw in het lamplicht. Chic.</item>
+        <item>Morgen: chaos op de weg.</item>
+        <item>De wereld krijgt ook een deken.</item>
+        <item>Stille nacht, letterlijk.</item>
+        <item>Warme chocomel. Nu.</item>
+        <item>Stilste nacht van het jaar.</item>
+    </string-array>
+
+    <string-array name="widget_quips_storm_now_day">
+        <item>Blijf binnen. Echt. ⚡</item>
+        <item>De lucht heeft een driftbui.</item>
+        <item>Slechte dag om te vliegeren.</item>
+        <item>Stekker eruit. Voor de zekerheid.</item>
+        <item>De natuur heeft het druk.</item>
+        <item>Donar heeft een zware dag.</item>
+    </string-array>
+
+    <string-array name="widget_quips_storm_now_night">
+        <item>Hier slaapt niemand doorheen.</item>
+        <item>Gratis lichtshow. Blijf binnen.</item>
+        <item>De lucht zoekt ruzie.</item>
+        <item>Huisdieren onder het bed: normaal.</item>
+        <item>Tel de seconden en duik weg.</item>
+        <item>Luide nacht. Oordopjes?</item>
+    </string-array>
+
+    <string-array name="widget_quips_rain_soon_day">
+        <item>Vergeet je paraplu niet ☔</item>
+        <item>Doorlopen.</item>
+        <item>De klok tikt.</item>
+        <item>Geniet van het droge stukje.</item>
+        <item>Was van de lijn. Nu.</item>
+        <item>De wolken zijn aan het laden…</item>
+    </string-array>
+
+    <string-array name="widget_quips_rain_soon_night">
+        <item>Zet de fiets binnen.</item>
+        <item>Nu droog. Straks nat. Opschieten.</item>
+        <item>Doe de ramen dicht vanavond.</item>
+        <item>Ga naar huis voor het giet.</item>
+        <item>Paraplu bij de deur. ☔</item>
+        <item>Laatste droge rondje met de hond.</item>
+    </string-array>
+
+    <string-array name="widget_quips_snow_soon_day">
+        <item>Sneeuw op komst. Handschoenen!</item>
+        <item>Sneeuwpopspullen: check.</item>
+        <item>Haal de slee maar tevoorschijn.</item>
+        <item>De winter komt zo langs.</item>
+        <item>Bereid je voor op sneeuwprut.</item>
+        <item>Vlokken onderweg. ❄️</item>
+    </string-array>
+
+    <string-array name="widget_quips_snow_soon_night">
+        <item>Misschien word je wit wakker.</item>
+        <item>Morgen de auto krabben.</item>
+        <item>Vannacht sluipt de sneeuw binnen.</item>
+        <item>Parkeer waar je kunt uitgraven.</item>
+        <item>Extra deken vannacht.</item>
+        <item>Hij komt eraan. Stilletjes. ❄️</item>
+    </string-array>
+
+    <string-array name="widget_quips_clear_day">
+        <item>De zon loopt vandaag te pronken.</item>
+        <item>Perfect weer om helemaal niks te doen.</item>
+        <item>Geen smoesjes vandaag. ☀️</item>
+        <item>Verdacht aangenaam.</item>
+        <item>Zonnebril op. Nu.</item>
+        <item>Naar buiten. Dat is een bevel.</item>
+    </string-array>
+
+    <string-array name="widget_quips_clear_night">
+        <item>Sterren te zien. Kijk omhoog. ✨</item>
+        <item>Heldere lucht, koude voeten.</item>
+        <item>Goede nacht om sterren te kijken.</item>
+        <item>De maan heeft het podium.</item>
+        <item>Geen wolkje in het donker.</item>
+        <item>Fris, helder en stil.</item>
+    </string-array>
+
+    <string-array name="widget_quips_cloudy_day">
+        <item>Grijs, maar dan modieus.</item>
+        <item>De zon heeft zich ziek gemeld.</item>
+        <item>Wolken: ongeslagen.</item>
+        <item>Wel droog. Pak die winst.</item>
+        <item>Vijftig tinten grijs. ☁️</item>
+        <item>Kan erger. Kan regenen.</item>
+    </string-array>
+
+    <string-array name="widget_quips_cloudy_night">
+        <item>Sterren afgelast. Wolken dus.</item>
+        <item>Een grijs dekbed boven de stad.</item>
+        <item>Geen maan vannacht. Zeggen de wolken.</item>
+        <item>Goede avond voor de bank.</item>
+        <item>Droog en saai. Slaap lekker.</item>
+        <item>De lucht ligt onder de dekens.</item>
+    </string-array>
+
+    <string-array name="widget_quips_fog_day">
+        <item>Waar is alles gebleven?</item>
+        <item>Goedkope horrorfilmsfeer.</item>
+        <item>Zicht: op gevoel.</item>
+        <item>De wereld is aan het bufferen.</item>
+        <item>Lichten aan, ogen open.</item>
+        <item>Er kwam een wolk op visite. 🌫️</item>
+    </string-array>
+
+    <string-array name="widget_quips_fog_night">
+        <item>Spannend. Heel spannend.</item>
+        <item>Perfecte avond voor een spookverhaal.</item>
+        <item>Lantaarns in de erwtensoep.</item>
+        <item>Rij langzaam. Echt langzaam.</item>
+        <item>De nacht doet mysterieus.</item>
+        <item>Je ziet geen hand. Blijf binnen.</item>
+    </string-array>
+
+    <string-array name="widget_quips_wind_day">
+        <item>Hou je hoed vast.</item>
+        <item>Slechte-haardag gegarandeerd.</item>
+        <item>Paraplu? Laat maar.</item>
+        <item>Fietsen? Alleen met de wind mee.</item>
+        <item>De bomen dansen weer.</item>
+        <item>Gratis windtunnel buiten. 💨</item>
+    </string-array>
+
+    <string-array name="widget_quips_wind_night">
+        <item>Het huis fluit weer.</item>
+        <item>Zet de kliko vast vannacht.</item>
+        <item>Winderige nacht, drukke dromen.</item>
+        <item>De wind huilt. Letterlijk.</item>
+        <item>Tuinstoelen kunnen verhuizen.</item>
+        <item>Rammelende ramen, warm bed.</item>
+    </string-array>
+
+    <string-array name="widget_quips_hot_day">
+        <item>Zonnebrand. Water. Schaduw.</item>
+        <item>De stoep staat te garen.</item>
+        <item>IJs is nu een voedselgroep.</item>
+        <item>Te warm om productief te zijn.</item>
+        <item>Smelten in recordtempo. 🥵</item>
+        <item>Zoek schaduw. Blijf daar.</item>
+    </string-array>
+
+    <string-array name="widget_quips_hot_night">
+        <item>Te warm om te slapen. Weer.</item>
+        <item>Ventilator vol aan. Dekbed weg.</item>
+        <item>Nog steeds warm. Nog steeds irritant.</item>
+        <item>Warme nacht. Alle ramen open.</item>
+        <item>Slapen? Met deze hitte?</item>
+        <item>Balkonweer vanavond.</item>
+    </string-array>
+
+    <string-array name="widget_quips_cold_day">
+        <item>Laagjes. Allemaal.</item>
+        <item>Je neus gaat hier spijt van krijgen.</item>
+        <item>Muts, sjaal, handschoenen. Gaan.</item>
+        <item>Fris. Pijnlijk fris. 🥶</item>
+        <item>Warme-chocomelkweer.</item>
+        <item>De verwarming is je beste vriend.</item>
+    </string-array>
+
+    <string-array name="widget_quips_cold_night">
+        <item>Tijd voor een dekenburrito.</item>
+        <item>Vorst op komst. Dek de auto af.</item>
+        <item>Extra sokken vannacht.</item>
+        <item>De kou zit in de muren.</item>
+        <item>Kruikenseizoen.</item>
+        <item>Koud genoeg om je adem te zien.</item>
+    </string-array>
+</resources>

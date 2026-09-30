@@ -32,28 +32,27 @@ class OpenWeatherMapProvider(private val api: OpenWeatherMapApi) : WeatherProvid
         val current = api.current(coordinates.latitude, coordinates.longitude, apiKey)
         val forecast = api.forecast(coordinates.latitude, coordinates.longitude, apiKey)
 
-        val hourlyForecast = forecast.list.take(8).map { entry ->
-            HourlyForecast(
-                time = utcHourLabel(entry.dt),
-                temperature = entry.main.temp,
-                precipitationChance = entry.pop?.let { (it * 100).roundToInt() } ?: 0,
-                // OWM reports a volume per three-hour slot; the app wants per hour.
-                precipitationMm = entry.precipitationMm() / OWM_SLOT_HOURS,
-            )
-        }
+        // OWM stamps everything in UTC; the location's offset turns that into
+        // its own clock, so "14:00" and "tomorrow" mean what they do there.
+        val offset = ZoneOffset.ofTotalSeconds(current.timezone ?: 0)
+        val hourlyForecast = forecast.list.take(8).map { it.toHourly(offset) }
 
-        // Group the 3-hourly entries per UTC day, then drop today, as on the web.
-        val byDate = LinkedHashMap<String, MutableList<Double>>()
-        forecast.list.forEach { entry ->
-            val date = Instant.ofEpochSecond(entry.dt).atOffset(ZoneOffset.UTC).toLocalDate().toString()
-            byDate.getOrPut(date) { mutableListOf() }.add(entry.main.temp)
+        // Group the 3-hourly entries per local day, then drop today, as on the web.
+        val byDate = forecast.list.groupBy { entry ->
+            Instant.ofEpochSecond(entry.dt).atOffset(offset).toLocalDate().toString()
         }
-        val dailyForecast = byDate.entries.drop(1).take(6).mapIndexed { index, (date, temps) ->
+        val dailyForecast = byDate.entries.drop(1).take(6).mapIndexed { index, (date, entries) ->
             DailyForecast(
                 day = ProviderSupport.dayLabel(index, date),
                 date = date,
-                temperatureMax = temps.max(),
-                temperatureMin = temps.min(),
+                temperatureMax = entries.maxOf { it.main.temp },
+                temperatureMin = entries.minOf { it.main.temp },
+                precipitationMm = entries.sumOf { it.precipitationMm() },
+                precipitationChance = entries.maxOf { it.chancePercent() },
+                // OWM has no hours-of-rain figure and its snow is water
+                // equivalent, not depth; neither is invented here.
+                hours = entries.map { it.toHourly(offset) },
+                hourStep = OWM_SLOT_HOURS.toInt(),
             )
         }
 
@@ -105,12 +104,17 @@ class OpenWeatherMapProvider(private val api: OpenWeatherMapApi) : WeatherProvid
     private fun OwmForecastEntry.precipitationMm(): Double =
         (rain?.threeHours ?: 0.0) + (snow?.threeHours ?: 0.0)
 
+    private fun OwmForecastEntry.chancePercent(): Int = pop?.let { (it * 100).roundToInt() } ?: 0
+
+    private fun OwmForecastEntry.toHourly(offset: ZoneOffset) = HourlyForecast(
+        time = "%02d:00".format(Instant.ofEpochSecond(dt).atOffset(offset).hour),
+        temperature = main.temp,
+        precipitationChance = chancePercent(),
+        // OWM reports a volume per three-hour slot; the app wants per hour.
+        precipitationMm = precipitationMm() / OWM_SLOT_HOURS,
+    )
+
     private companion object {
         const val OWM_SLOT_HOURS = 3.0
-    }
-
-    private fun utcHourLabel(epochSeconds: Long): String {
-        val hour = Instant.ofEpochSecond(epochSeconds).atOffset(ZoneOffset.UTC).hour
-        return "%02d:00".format(hour)
     }
 }

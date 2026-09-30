@@ -11,6 +11,9 @@ import com.weatherquips.app.domain.model.NowcastPoint
 import com.weatherquips.app.domain.model.WeatherCondition
 import com.weatherquips.app.widget.PrecipitationOutlooks
 import com.weatherquips.app.widget.WidgetContent
+import com.weatherquips.app.widget.WidgetMood
+import com.weatherquips.app.widget.WidgetQuips
+import java.util.Locale
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -26,6 +29,8 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
 class PrecipitationWidgetTest {
+
+    private val english get() = TestResources.resources()
 
     private val wide = DpSize(280.dp, 140.dp)
     private val narrow = DpSize(180.dp, 140.dp)
@@ -71,10 +76,11 @@ class PrecipitationWidgetTest {
             nowMillis = NOW,
         )
 
-        provideComposable { WidgetContent(outlook = outlook, hourOfDay = 9) }
+        provideComposable { WidgetContent(outlook = outlook, nowMillis = NOW, resources = english) }
 
         onNode(hasText("Rain in 45 min")).assertExists()
-        onNode(hasText("Clock is ticking.")).assertExists()
+        // The joke under it comes from the pool for rain on its way.
+        onNode(hasText(WidgetQuips.pick(english, WidgetMood.RAIN_SOON, outlook.isDay, NOW))).assertExists()
         // The place it is reporting on, so two widgets are told apart.
         onNode(hasText("assen")).assertExists()
     }
@@ -84,7 +90,7 @@ class PrecipitationWidgetTest {
         setAppWidgetSize(wide)
         val outlook = PrecipitationOutlooks.from(nowcast(0.8, 1.4, 1.8, 1.2, 0.4), nowMillis = NOW)
 
-        provideComposable { WidgetContent(outlook = outlook, hourOfDay = 9) }
+        provideComposable { WidgetContent(outlook = outlook, nowMillis = NOW, resources = english) }
 
         onNode(hasText("Raining now")).assertExists()
         onNode(hasText("assen · 1.8 mm/h")).assertExists()
@@ -95,7 +101,7 @@ class PrecipitationWidgetTest {
         setAppWidgetSize(wide)
         val outlook = PrecipitationOutlooks.from(nowcast(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0), nowMillis = NOW)
 
-        provideComposable { WidgetContent(outlook = outlook, hourOfDay = 9) }
+        provideComposable { WidgetContent(outlook = outlook, nowMillis = NOW, resources = english) }
 
         onNode(hasText("Dry for now")).assertExists()
         // No rate to report, so the place stands alone.
@@ -110,7 +116,7 @@ class PrecipitationWidgetTest {
             nowMillis = NOW,
         )
 
-        provideComposable { WidgetContent(outlook = outlook, hourOfDay = 9) }
+        provideComposable { WidgetContent(outlook = outlook, nowMillis = NOW, resources = english) }
 
         onNode(hasText("Rain by 16:00")).assertExists()
     }
@@ -120,7 +126,7 @@ class PrecipitationWidgetTest {
         runGlanceAppWidgetUnitTest {
             setAppWidgetSize(wide)
 
-            provideComposable { WidgetContent(outlook = null, hourOfDay = 9) }
+            provideComposable { WidgetContent(outlook = null, nowMillis = NOW, resources = english) }
 
             onNode(hasText("No weather yet")).assertExists()
         }
@@ -135,7 +141,7 @@ class PrecipitationWidgetTest {
                 nowMillis = NOW + 20 * 60 * 60_000L,
             )
 
-            provideComposable { WidgetContent(outlook = outlook, hourOfDay = 9) }
+            provideComposable { WidgetContent(outlook = outlook, nowMillis = NOW, resources = english) }
 
             onNode(hasText("No forecast to draw. Tap to refresh.")).assertExists()
         }
@@ -145,7 +151,7 @@ class PrecipitationWidgetTest {
         runGlanceAppWidgetUnitTest {
             setAppWidgetSize(wide)
 
-            provideComposable { WidgetContent(outlook = null, hourOfDay = 9) }
+            provideComposable { WidgetContent(outlook = null, nowMillis = NOW, resources = english) }
 
             onNode(hasText("Open the app once to get started")).assertExists()
         }
@@ -159,7 +165,7 @@ class PrecipitationWidgetTest {
                 nowMillis = NOW + 3 * 60 * 60_000L,
             )
 
-            provideComposable { WidgetContent(outlook = outlook, hourOfDay = 9) }
+            provideComposable { WidgetContent(outlook = outlook, nowMillis = NOW, resources = english) }
 
             onNode(hasText("assen · 3h ago")).assertExists()
         }
@@ -173,7 +179,7 @@ class PrecipitationWidgetTest {
                 nowMillis = NOW + 95 * 60_000L,
             )
 
-            provideComposable { WidgetContent(outlook = outlook, hourOfDay = 9) }
+            provideComposable { WidgetContent(outlook = outlook, nowMillis = NOW, resources = english) }
 
             onNode(hasText("1h ago")).assertExists()
         }
@@ -183,7 +189,7 @@ class PrecipitationWidgetTest {
         setAppWidgetSize(wide)
         val outlook = PrecipitationOutlooks.from(nowcast(0.0, 0.0, 0.0, 0.0), nowMillis = NOW)
 
-        provideComposable { WidgetContent(outlook = outlook, hourOfDay = 9) }
+        provideComposable { WidgetContent(outlook = outlook, nowMillis = NOW, resources = english) }
 
         onNode(hasText("assen")).assertExists()
     }
@@ -193,8 +199,50 @@ class PrecipitationWidgetTest {
         setAppWidgetSize(narrow)
         val outlook = PrecipitationOutlooks.from(nowcast(0.0, 0.0, 0.0, 0.9, 1.6), nowMillis = NOW)
 
-        provideComposable { WidgetContent(outlook = outlook, hourOfDay = 9) }
+        provideComposable { WidgetContent(outlook = outlook, nowMillis = NOW, resources = english) }
 
         onNode(hasText("Rain in 15 min")).assertExists()
+    }
+
+    @Test
+    fun `the widget speaks the app's language`() = runGlanceAppWidgetUnitTest {
+        setAppWidgetSize(wide)
+        val dutch = TestResources.resources(Locale.forLanguageTag("nl"))
+        val outlook = PrecipitationOutlooks.from(
+            nowcast(0.0, 0.0, 0.0, 0.0, 0.0, 1.4, 2.2),
+            nowMillis = NOW,
+        )
+
+        provideComposable { WidgetContent(outlook = outlook, nowMillis = NOW, resources = dutch) }
+
+        onNode(hasText("Regen over 45 min")).assertExists()
+        onNode(hasText(WidgetQuips.pick(dutch, WidgetMood.RAIN_SOON, outlook.isDay, NOW))).assertExists()
+    }
+
+    @Test
+    fun `a stale widget says its age in the app's language`() = runGlanceAppWidgetUnitTest {
+        setAppWidgetSize(wide)
+        val dutch = TestResources.resources(Locale.forLanguageTag("nl"))
+        val outlook = PrecipitationOutlooks.from(
+            nowcast(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+            nowMillis = NOW + 3 * 60 * 60_000L,
+        )
+
+        provideComposable {
+            WidgetContent(outlook = outlook, nowMillis = NOW + 3 * 60 * 60_000L, resources = dutch)
+        }
+
+        onNode(hasText("assen · 3 u geleden")).assertExists()
+    }
+
+    @Test
+    fun `an empty widget has something to say in the app's language`() = runGlanceAppWidgetUnitTest {
+        setAppWidgetSize(wide)
+        val dutch = TestResources.resources(Locale.forLanguageTag("nl"))
+
+        provideComposable { WidgetContent(outlook = null, nowMillis = NOW, resources = dutch) }
+
+        onNode(hasText("Nog geen weer")).assertExists()
+        onNode(hasText("Open de app één keer om te beginnen")).assertExists()
     }
 }

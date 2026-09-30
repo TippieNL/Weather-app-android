@@ -8,7 +8,7 @@ import com.weatherquips.app.domain.model.LocationMode
 import com.weatherquips.app.domain.model.NowcastPoint
 import com.weatherquips.app.widget.ChartResolution
 import com.weatherquips.app.widget.PrecipitationOutlooks
-import com.weatherquips.app.widget.WidgetCopyWriter
+import com.weatherquips.app.widget.Outlook
 import com.weatherquips.app.widget.WidgetLocation
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -154,9 +154,14 @@ class WidgetRefreshTest {
         // Fetched at noon, read at three: the first hour worth naming is the
         // one still ahead, not the one the forecast opened with.
         val stale = at(hoursLater = 3)
-        val headline = WidgetCopyWriter.write(stale.outlook, hourOfDay = 15).headline
+        val announced = when (val outlook = stale.outlook) {
+            is Outlook.StartsAt -> outlook.time
+            is Outlook.StartsIn -> outlook.time
+            else -> null
+        }
+        assertTrue("expected an arrival time, got ${stale.outlook}", announced != null)
         listOf("12:00", "13:00", "14:00").forEach {
-            assertFalse("announced $it, which is in the past: $headline", headline.contains(it))
+            assertFalse("announced $it, which is in the past", announced == it)
         }
     }
 

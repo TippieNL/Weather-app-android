@@ -13,9 +13,17 @@ import com.weatherquips.app.widget.WidgetCopyWriter
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 /** What the widget decides to say, which is the part worth pinning down. */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class WidgetOutlookTest {
+
+    /** The headlines are resources now, so they are read in English. */
+    private val copy by lazy { WidgetCopyWriter(TestResources.resources()) }
 
     /** A forecast with only hourly probabilities, as the paid providers give. */
     /** A fixed clock: the widget ages its series against the cache time. */
@@ -69,7 +77,7 @@ class WidgetOutlookTest {
         val outlook = PrecipitationOutlooks.from(withNowcast(0.8, 1.2, 1.8, 1.4, 0.6), nowMillis = NOW)
         assertEquals(Outlook.FallingNow(PrecipitationKind.RAIN, 1.8), outlook.outlook)
         assertEquals(1.8, outlook.nowMillimetresPerHour, 0.0001)
-        assertEquals("Raining now", WidgetCopyWriter.write(outlook.outlook, 9).headline)
+        assertEquals("Raining now", copy.headline(outlook.outlook))
     }
 
     @Test
@@ -84,23 +92,23 @@ class WidgetOutlookTest {
         starts as Outlook.StartsIn
         assertEquals(45, starts.minutesAway)
         assertEquals("18:45", starts.time)
-        assertEquals("Rain in 45 min", WidgetCopyWriter.write(starts, 9).headline)
+        assertEquals("Rain in 45 min", copy.headline(starts))
     }
 
     @Test
     fun `arrival is rounded to something a person would act on`() {
         val outlook = Outlook.StartsIn(PrecipitationKind.RAIN, "18:23", minutesAway = 23)
-        assertEquals("Rain in 25 min", WidgetCopyWriter.write(outlook, 9).headline)
+        assertEquals("Rain in 25 min", copy.headline(outlook))
 
         // Never "in 0 min" — that is what "Raining now" is for.
         val imminent = Outlook.StartsIn(PrecipitationKind.RAIN, "18:02", minutesAway = 2)
-        assertEquals("Rain in 5 min", WidgetCopyWriter.write(imminent, 9).headline)
+        assertEquals("Rain in 5 min", copy.headline(imminent))
     }
 
     @Test
     fun `far-off rain gets a clock time instead of a minute count`() {
         val outlook = Outlook.StartsIn(PrecipitationKind.SNOW, "20:15", minutesAway = 105)
-        assertEquals("Snow by 20:15", WidgetCopyWriter.write(outlook, 9).headline)
+        assertEquals("Snow by 20:15", copy.headline(outlook))
     }
 
     @Test
@@ -264,7 +272,7 @@ class WidgetOutlookTest {
             nowMillis = NOW,
         )
         assertEquals(Outlook.Dry, outlook.outlook)
-        assertEquals("Dry for now", WidgetCopyWriter.write(outlook.outlook, hourOfDay = 9).headline)
+        assertEquals("Dry for now", copy.headline(outlook.outlook))
     }
 
     @Test
@@ -279,7 +287,7 @@ class WidgetOutlookTest {
         starts as Outlook.StartsAt
         assertEquals("16:00", starts.time)
         assertEquals(70, starts.chancePercent)
-        assertEquals("Rain by 16:00", WidgetCopyWriter.write(starts, hourOfDay = 9).headline)
+        assertEquals("Rain by 16:00", copy.headline(starts))
     }
 
     @Test
@@ -317,7 +325,7 @@ class WidgetOutlookTest {
 
         assertEquals(
             "Snowing now",
-            WidgetCopyWriter.write(Outlook.FallingNow(PrecipitationKind.SNOW), hourOfDay = 3).headline,
+            copy.headline(Outlook.FallingNow(PrecipitationKind.SNOW)),
         )
     }
 
@@ -347,17 +355,8 @@ class WidgetOutlookTest {
     }
 
     @Test
-    fun `the remark rotates through the day but never mid-refresh`() {
-        val outlook = Outlook.Dry
-        val sameHour = (0 until 5).map { WidgetCopyWriter.write(outlook, hourOfDay = 13).aside }
-        assertEquals("the remark changed without the hour changing", 1, sameHour.distinct().size)
-
-        val acrossDay = (0 until 24).map { WidgetCopyWriter.write(outlook, hourOfDay = it).aside }
-        assertTrue("the remark never changes all day", acrossDay.distinct().size > 1)
-    }
-
-    @Test
-    fun `copy never leaves a blank line on the widget`() {
+    fun `every headline and every label the widget draws is translated`() {
+        val dutch = WidgetCopyWriter(TestResources.resources(java.util.Locale.forLanguageTag("nl")))
         PrecipitationKind.entries.forEach { kind ->
             listOf(
                 Outlook.FallingNow(kind, 2.4),
@@ -366,14 +365,16 @@ class WidgetOutlookTest {
                 Outlook.StartsAt(kind, "16:00", 70),
                 Outlook.Dry,
             ).forEach { outlook ->
-                (0 until 24).forEach { hour ->
-                    val copy = WidgetCopyWriter.write(outlook, hour)
-                    assertTrue("blank headline for $outlook", copy.headline.isNotBlank())
-                    assertTrue("blank aside for $outlook", copy.aside.isNotBlank())
-                }
+                val english = copy.headline(outlook)
+                val translated = dutch.headline(outlook)
+                assertTrue("$outlook is still English in Dutch: $translated", english != translated)
             }
         }
-        assertTrue(WidgetCopyWriter.empty().headline.isNotBlank())
-        assertTrue(WidgetCopyWriter.empty().aside.isNotBlank())
+        assertTrue(copy.empty() != dutch.empty())
+        assertTrue(copy.noGraph(true) != dutch.noGraph(true))
+        assertTrue(copy.noGraph(false) != dutch.noGraph(false))
+        val (en, nl) = copy.graphLabels() to dutch.graphLabels()
+        listOf(en.now to nl.now, en.light to nl.light, en.moderate to nl.moderate, en.heavy to nl.heavy)
+            .forEach { (a, b) -> assertTrue("graph label '$a' untranslated", a != b) }
     }
 }

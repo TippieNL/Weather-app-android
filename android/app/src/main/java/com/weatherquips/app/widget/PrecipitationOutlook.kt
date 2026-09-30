@@ -6,6 +6,7 @@ import com.weatherquips.app.domain.model.HourlyForecast
 import com.weatherquips.app.domain.model.NowcastPoint
 import com.weatherquips.app.domain.model.WeatherCondition
 import com.weatherquips.app.domain.model.WeatherData
+import com.weatherquips.app.domain.model.isDayFromHour
 import com.weatherquips.app.notifications.PrecipitationAlerts
 import com.weatherquips.app.notifications.PrecipitationKind
 import java.util.TimeZone
@@ -123,6 +124,9 @@ object PrecipitationOutlooks {
 
     private const val MILLIS_PER_MINUTE = 60_000L
 
+    /** How long the provider's day-or-night flag is taken at its word. */
+    private const val DAYLIGHT_TRUST_MINUTES = 60
+
     private const val MINUTES_PER_HOUR = 60.0
 
     /**
@@ -155,7 +159,7 @@ object PrecipitationOutlooks {
             chart = chart,
             nowMillimetresPerHour = nowRate,
             condition = data.condition,
-            isDay = data.isDay,
+            isDay = isDayAt(data, age, nowMillis),
             location = data.location,
             updatedAtMillis = cached.fetchedAtEpochMillis,
             ageMinutes = age,
@@ -201,6 +205,23 @@ object PrecipitationOutlooks {
         } else {
             Series(minuteLevel, isSubHourly = true)
         }
+    }
+
+    /**
+     * Whether it is daytime where the forecast is, now rather than when it
+     * was fetched.
+     *
+     * Fresh data carries the provider's own answer. A cache that has sat
+     * through a refresh drought would otherwise keep a sun icon — and daytime
+     * jokes — up long after dark, so past an hour the location's clock
+     * decides, by the same rule the providers use.
+     */
+    private fun isDayAt(data: WeatherData, ageMinutes: Int, nowMillis: Long): Boolean {
+        if (ageMinutes < DAYLIGHT_TRUST_MINUTES) return data.isDay
+        val offsetSeconds = data.utcOffsetSeconds
+            ?: TimeZone.getDefault().getOffset(nowMillis) / 1000
+        val minutesOfDay = Math.floorMod(nowMillis / MILLIS_PER_MINUTE + offsetSeconds / 60, 24 * 60L)
+        return isDayFromHour((minutesOfDay / 60).toInt())
     }
 
     /** How far into its clock hour a moment sits, where the weather is. */
