@@ -1,5 +1,8 @@
 package com.weatherquips.app.widget
 
+import com.weatherquips.app.text.formatDecimal
+import java.util.Locale
+
 /**
  * Named precipitation intensities, the way a rain radar labels them.
  *
@@ -96,12 +99,13 @@ object IntensityScale {
      * A rate as the widget prints it: one decimal while the numbers are small
      * enough for the decimal to mean something, whole millimetres after that.
      */
-    fun format(millimetresPerHour: Double): String {
+    fun format(millimetresPerHour: Double, locale: Locale = Locale.getDefault()): String {
         val rate = millimetresPerHour.coerceAtLeast(0.0)
-        return if (rate < 10.0) {
-            "${(Math.round(rate * 10) / 10.0)} mm/h"
+        val number = if (rate < 10.0) {
+            formatDecimal(Math.round(rate * 10) / 10.0, locale, maxDecimals = 1)
         } else {
-            "${Math.round(rate)} mm/h"
+            formatDecimal(Math.round(rate).toDouble(), locale, maxDecimals = 0)
         }
+        return "$number mm/h"
     }
 }

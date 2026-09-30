@@ -43,6 +43,8 @@ import com.weatherquips.app.ui.components.PokeballGlyph
 import com.weatherquips.app.ui.components.QuipCard
 import com.weatherquips.app.ui.components.RefreshButton
 import com.weatherquips.app.ui.components.TemperatureRangeBar
+import com.weatherquips.app.text.conditionLabel
+import com.weatherquips.app.text.currentLocale
 import androidx.compose.ui.graphics.graphicsLayer
 import com.weatherquips.app.ui.components.panelStage
 import com.weatherquips.app.ui.components.LocalPanelReveal
@@ -140,7 +142,7 @@ private fun MainWeatherCard(
                 }
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    text = weather.condition.id,
+                    text = stringResource(conditionLabel(weather.condition)),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.testTag(TAG_DETAIL_CONDITION),
@@ -274,7 +276,7 @@ private fun StatsGrid(weather: WeatherData, uiState: HomeUiState) {
         StatTile(
             iconRes = R.drawable.ic_weather_clear_day,
             label = stringResource(R.string.uv_index),
-            value = Formatters.formatUv(weather.uvIndex),
+            value = Formatters.formatUv(weather.uvIndex, currentLocale()),
         ),
         StatTile(
             iconRes = R.drawable.ic_gauge,
@@ -410,17 +412,18 @@ private fun HourColumn(
         Formatters.formatHourLabel(hour.time, settings.timeFormat)
     }
     val temperature = Formatters.formatTempDegrees(hour.temperature, settings.temperatureUnit)
+    val hourDescription = if (hour.precipitationChance > 0) {
+        stringResource(R.string.hour_description_rain, label, temperature, hour.precipitationChance)
+    } else {
+        stringResource(R.string.hour_description, label, temperature)
+    }
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .width(40.dp)
             .clearAndSetSemantics {
-                contentDescription = if (hour.precipitationChance > 0) {
-                    "$label: $temperature, ${hour.precipitationChance}% chance of rain"
-                } else {
-                    "$label: $temperature"
-                }
+                contentDescription = hourDescription
             },
     ) {
         Text(
@@ -450,7 +453,11 @@ private fun HourColumn(
         if (showPrecipitation) {
             Spacer(Modifier.height(8.dp))
             Text(
-                text = if (hour.precipitationChance > 0) "${hour.precipitationChance}%" else "",
+                text = if (hour.precipitationChance > 0) {
+                    stringResource(R.string.percent_value, hour.precipitationChance)
+                } else {
+                    ""
+                },
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,

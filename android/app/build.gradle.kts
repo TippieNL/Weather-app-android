@@ -18,6 +18,11 @@ android {
         versionCode = 1
         versionName = "1.0"
 
+        // Only the languages the app is actually translated into. Keeps the
+        // APK from carrying dozens of library translations for languages the
+        // app itself would not speak, which would give a half-translated UI.
+        resourceConfigurations += listOf("en", "nl")
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -46,6 +51,15 @@ android {
 
     buildFeatures {
         compose = true
+        // The About page shows the real version name and code.
+        buildConfig = true
+    }
+
+    // The per-app language list Android 13+ shows in system settings is
+    // generated from the res/values-* folders, so adding a language never
+    // means editing a hand-kept locale list as well.
+    androidResources {
+        generateLocaleConfig = true
     }
 
     testOptions {

@@ -28,6 +28,9 @@ import androidx.glance.appwidget.updateAll
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import com.weatherquips.app.locale.LanguageController
+import com.weatherquips.app.locale.PlatformLanguageController
 
 /**
  * Hand-rolled dependency container.
@@ -93,6 +96,21 @@ class AppContainer(private val context: Context) {
     val precipitationScheduler: PrecipitationScheduler by lazy { PrecipitationScheduler(context) }
 
     val alertThrottle: AlertThrottle by lazy { AlertThrottle(cacheDataStore) }
+
+    val languageController: LanguageController by lazy {
+        PlatformLanguageController(context, onChanged = ::onLanguageChanged)
+    }
+
+    /**
+     * Everything that shows text outside an activity, redrawn in the new
+     * language. The channel name is re-registered; the widget is re-rendered.
+     */
+    fun onLanguageChanged() {
+        notificationHelper.ensureChannel()
+        applicationScope.launch {
+            runCatching { PrecipitationWidget().updateAll(context) }
+        }
+    }
 
     private companion object {
         const val SETTINGS_STORE = "weather_quips_settings"

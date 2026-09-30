@@ -16,6 +16,8 @@ import com.weatherquips.app.domain.model.LocationMode
 import com.weatherquips.app.domain.model.TemperatureUnit
 import com.weatherquips.app.domain.model.TimeFormat
 import com.weatherquips.app.domain.model.WeatherService
+import com.weatherquips.app.locale.AppLanguage
+import com.weatherquips.app.locale.LanguageController
 import com.weatherquips.app.domain.quotes.PokemonQuips
 import com.weatherquips.app.domain.repository.GeocodingRepository
 import com.weatherquips.app.domain.repository.SettingsRepository
@@ -55,6 +57,8 @@ data class SettingsUiState(
      */
     val manualLocationInput: String = "",
     val apiKeyInput: String = "",
+    /** The app's language, which lives with the platform rather than in DataStore. */
+    val language: AppLanguage = AppLanguage.SYSTEM,
 )
 
 /**
@@ -78,6 +82,17 @@ interface SettingsActions {
     fun toggleNotifications(enabled: Boolean)
 
     fun sendTestNotification(): Boolean
+
+    /**
+     * Switches the app's language.
+     *
+     * @return true when the caller must recreate its activity to show it —
+     *         below Android 13, where the platform does not.
+     */
+    fun setLanguage(language: AppLanguage): Boolean = false
+
+    /** Re-reads the language, which the user may have changed in system settings. */
+    fun refreshLanguage() = Unit
 }
 
 class SettingsViewModel(
@@ -85,6 +100,7 @@ class SettingsViewModel(
     private val geocodingRepository: GeocodingRepository,
     private val notificationHelper: NotificationHelper,
     private val precipitationScheduler: PrecipitationScheduler,
+    private val languageController: LanguageController = FixedLanguage,
 ) : ViewModel(), SettingsActions {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -104,6 +120,7 @@ class SettingsViewModel(
     private var apiKeyEdited = false
 
     init {
+        _uiState.update { it.copy(language = languageController.current()) }
         viewModelScope.launch {
             settingsRepository.settings.collect { settings ->
                 _uiState.update { current ->
@@ -261,7 +278,7 @@ class SettingsViewModel(
 
     /** Posts the sample alert from the settings screen. */
     override fun sendTestNotification(): Boolean =
-        notificationHelper.notifyPrecipitation(PrecipitationAlerts.sample())
+        notificationHelper.notifyPrecipitation(PrecipitationAlerts.sample(notificationHelper.alertText()))
 
     private fun edit(transform: (AppSettings) -> AppSettings) {
         viewModelScope.launch { settingsRepository.update(transform) }
@@ -279,8 +296,15 @@ class SettingsViewModel(
                     geocodingRepository = resolved.geocodingRepository,
                     notificationHelper = resolved.notificationHelper,
                     precipitationScheduler = resolved.precipitationScheduler,
+                    languageController = resolved.languageController,
                 )
             }
         }
     }
+}
+
+/** For contexts with no language machinery behind them: tests and previews. */
+private object FixedLanguage : LanguageController {
+    override fun current() = AppLanguage.SYSTEM
+    override fun set(language: AppLanguage) = false
 }

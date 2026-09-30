@@ -13,6 +13,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import com.weatherquips.app.MainActivity
+import com.weatherquips.app.locale.AppLocale
 import com.weatherquips.app.R
 import com.weatherquips.app.domain.model.Coordinates
 
@@ -23,16 +24,22 @@ import com.weatherquips.app.domain.model.Coordinates
  */
 class NotificationHelper(private val context: Context) {
 
+    /** Strings in the app's chosen language, which below Android 13 is not the process default. */
+    private val text: Context get() = AppLocale.localized(context)
+
+    /** Alert wording in the app's language, for [PrecipitationAlerts.build]. */
+    fun alertText(): AlertText = ResourceAlertText(text.resources)
+
     fun ensureChannel() {
         val manager = ContextCompat.getSystemService(context, NotificationManager::class.java) ?: return
         if (manager.getNotificationChannel(CHANNEL_PRECIPITATION) != null) return
 
         val channel = NotificationChannel(
             CHANNEL_PRECIPITATION,
-            context.getString(R.string.notification_channel_precipitation),
+            text.getString(R.string.notification_channel_precipitation),
             NotificationManager.IMPORTANCE_DEFAULT,
         ).apply {
-            description = context.getString(R.string.notification_channel_precipitation_description)
+            description = text.getString(R.string.notification_channel_precipitation_description)
             enableVibration(true)
         }
         manager.createNotificationChannel(channel)
@@ -91,7 +98,7 @@ class NotificationHelper(private val context: Context) {
             builder.addAction(
                 NotificationCompat.Action.Builder(
                     R.drawable.ic_map,
-                    context.getString(R.string.notification_action_radar),
+                    text.getString(R.string.notification_action_radar),
                     openApp(destination = DESTINATION_RADAR, coordinates = coordinates),
                 ).build(),
             )

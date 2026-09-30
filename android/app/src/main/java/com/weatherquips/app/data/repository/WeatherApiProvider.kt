@@ -78,8 +78,6 @@ class WeatherApiProvider(private val api: WeatherApiApi) : WeatherProvider {
             temperature = current.tempC,
             description = condition.id,
             location = locationName,
-            funnyQuote = "",
-            subtitle = "",
             feelsLike = current.feelsLikeC,
             temperatureMax = today.day.maxTempC,
             temperatureMin = today.day.minTempC,

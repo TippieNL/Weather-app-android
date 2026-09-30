@@ -7,6 +7,8 @@ import com.weatherquips.app.domain.model.Coordinates
 import com.weatherquips.app.domain.model.WeatherCondition
 import com.weatherquips.app.domain.model.WeatherData
 import com.weatherquips.app.domain.quotes.PokemonQuips
+import com.weatherquips.app.text.QuipArrays
+import com.weatherquips.app.text.QuipRef
 import com.weatherquips.app.domain.repository.WeatherError
 
 /** User-facing error copy. Raw exceptions never reach the UI. */
@@ -73,11 +75,13 @@ data class HomeUiState(
     val phase: HomePhase = HomePhase.Loading,
     val isRefreshing: Boolean = false,
     val settings: AppSettings = AppSettings(),
-    /** Pokémon-mode quote, recomputed only when the condition changes. */
-    val pokemonQuote: String = "",
-    val pokemonSubtitle: String = "",
+    /**
+     * Pokémon-mode pick, recomputed only when the condition changes; null while
+     * the Easter egg is off.
+     */
+    val pokemonSeed: Int? = null,
     val pokemonSilhouette: PokemonQuips.Silhouette = PokemonQuips.Silhouette.SPARK,
-    /** What [pokemonQuote] was generated for, so it only changes when they do. */
+    /** What [pokemonSeed] was picked for, so it only changes when they do. */
     val pokemonQuoteCondition: WeatherCondition? = null,
     val pokemonQuoteIsDay: Boolean? = null,
 ) {
@@ -97,10 +101,26 @@ data class HomeUiState(
             else -> null
         }
 
-    /** The quote actually shown, honouring the Easter egg. */
-    val displayQuote: String
-        get() = if (isPokemonMode) pokemonQuote else weather?.funnyQuote.orEmpty()
+    /** The quote actually shown, honouring the Easter egg. Resolved to text when drawn. */
+    val quote: QuipRef
+        get() {
+            val current = weather ?: return QuipRef.NONE
+            return if (isPokemonMode) {
+                pokemonSeed?.let { QuipRef(QuipArrays.pokemonQuotes(current.condition, current.isDay), it) }
+                    ?: QuipRef.NONE
+            } else {
+                QuipRef(QuipArrays.quotes(current.condition, current.isDay), current.quoteSeed)
+            }
+        }
 
-    val displaySubtitle: String
-        get() = if (isPokemonMode) pokemonSubtitle else weather?.subtitle.orEmpty()
+    val subtitle: QuipRef
+        get() {
+            val current = weather ?: return QuipRef.NONE
+            return if (isPokemonMode) {
+                pokemonSeed?.let { QuipRef(QuipArrays.pokemonSubtitles(current.condition, current.isDay), it) }
+                    ?: QuipRef.NONE
+            } else {
+                QuipRef(QuipArrays.subtitles(current.condition, current.isDay), current.subtitleSeed)
+            }
+        }
 }

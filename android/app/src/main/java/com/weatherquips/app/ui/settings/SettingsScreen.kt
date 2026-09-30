@@ -1,6 +1,15 @@
 package com.weatherquips.app.ui.settings
 
 import android.Manifest
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
+import com.weatherquips.app.locale.AppLanguage
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -73,12 +82,14 @@ fun SettingsScreen(
     actions: SettingsActions,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    onOpenAbout: () -> Unit = {},
 ) {
     val settings = uiState.settings
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val accents = LocalAccents.current
     val blockedMessage = stringResource(R.string.notifications_blocked)
+    val activity = LocalContext.current.findActivity()
 
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
@@ -122,6 +133,23 @@ fun SettingsScreen(
                 .testTag(TAG_SETTINGS_SCREEN),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            SectionTitle(stringResource(R.string.language))
+            SettingsDropdown(
+                label = stringResource(R.string.app_language),
+                options = AppLanguage.entries,
+                selected = uiState.language,
+                // Each language in its own name, so it can be found by someone
+                // who cannot read the one currently on screen.
+                optionLabel = { it.endonym() ?: stringResource(R.string.language_system) },
+                onSelect = { language ->
+                    // Android 13+ recreates the screen itself; below that the
+                    // new language only appears once the activity is rebuilt.
+                    if (actions.setLanguage(language)) activity?.recreate()
+                },
+                testTag = TAG_LANGUAGE_DROPDOWN,
+            )
+
+            SectionDivider()
             SectionTitle(stringResource(R.string.temperature_unit))
             SettingsDropdown(
                 label = stringResource(R.string.unit),
@@ -303,6 +331,9 @@ fun SettingsScreen(
                     Text(stringResource(R.string.test_notification))
                 }
             }
+
+            SectionDivider()
+            AboutRow(onClick = onOpenAbout)
         }
     }
 }
@@ -338,6 +369,40 @@ private fun GeocodeStatus(
             }
         }
     }
+}
+
+@Composable
+private fun AboutRow(onClick: () -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(vertical = 14.dp, horizontal = 4.dp)
+            .testTag(TAG_ABOUT_ROW),
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(stringResource(R.string.about_title), style = MaterialTheme.typography.titleMedium)
+            Text(
+                stringResource(R.string.about_row_summary),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Icon(
+            painter = painterResource(R.drawable.ic_chevron_right),
+            contentDescription = null,
+            modifier = Modifier.size(18.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+private tailrec fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
 }
 
 @Composable
@@ -395,6 +460,8 @@ private fun <T> SettingsDropdown(
 }
 
 const val TAG_SETTINGS_SCREEN = "settings-screen"
+const val TAG_LANGUAGE_DROPDOWN = "settings-language"
+const val TAG_ABOUT_ROW = "settings-about"
 const val TAG_SETTINGS_BACK = "settings-back"
 const val TAG_UNIT_DROPDOWN = "settings-unit"
 const val TAG_TIME_DROPDOWN = "settings-time"

@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The home screen quips. One pair of arrays per condition, for day and for night:
+  the headline quotes, and the smaller subtitles under them.
+  **word** marks the highlighted word and must survive translation.
+  Add a line to an array to add a quip; no code changes needed.
+-->
+<resources>
+    <string-array name="quip_quotes_clear_day">
+        <item>The sun is absolutely **roasting** the sky right now</item>
+        <item>Not a single **cloud** dared to show up today</item>
+        <item>The sky said **perfection** and really meant it</item>
+        <item>Dangerously **gorgeous** out there, proceed with caution</item>
+    </string-array>
+    <string-array name="quip_subtitles_clear_day">
+        <item>The sun is trying too hard today.</item>
+        <item>Perfect day to forget sunscreen and regret it.</item>
+        <item>Nature\'s way of saying go outside, loser.</item>
+        <item>Clear skies, unclear life choices.</item>
+    </string-array>
+    <string-array name="quip_quotes_cloudy_day">
+        <item>The sky looks **depressed** and honestly, same</item>
+        <item>Clouds rolled in like they **own** the damn place</item>
+        <item>It\'s giving overcast **sadness** with no end in sight</item>
+        <item>The sun called in **sick** and left us with this mess</item>
+    </string-array>
+    <string-array name="quip_subtitles_cloudy_day">
+        <item>Clouds everywhere. No escape.</item>
+        <item>The sky needs therapy too.</item>
+        <item>Nature\'s mood ring says \'blah\'.</item>
+        <item>Perfect weather for existential dread.</item>
+    </string-array>
+    <string-array name="quip_quotes_rainy_day">
+        <item>The sky is having a full **meltdown** on everyone</item>
+        <item>It\'s pouring like the clouds are **heartbroken** again</item>
+        <item>Everything outside is **soaked** beyond recognition</item>
+        <item>Rain decided to make today absolutely **miserable**</item>
+    </string-array>
+    <string-array name="quip_subtitles_rainy_day">
+        <item>Bring an umbrella or embrace the chaos.</item>
+        <item>The sky is as emotional as you.</item>
+        <item>Free shower from the clouds.</item>
+        <item>Perfect excuse to cancel plans.</item>
+    </string-array>
+    <string-array name="quip_quotes_stormy_day">
+        <item>All hell is **breaking** loose out there right now</item>
+        <item>Thunder is throwing a massive **tantrum** overhead</item>
+        <item>The sky is in full **destruction** mode, stay inside</item>
+        <item>Nature picked today to go completely **unhinged**</item>
+    </string-array>
+    <string-array name="quip_subtitles_stormy_day">
+        <item>Maybe stay inside, just saying.</item>
+        <item>The sky is having a breakdown.</item>
+        <item>Thunder and drama everywhere.</item>
+        <item>Nature\'s way of saying \'not today\'.</item>
+    </string-array>
+    <string-array name="quip_quotes_snowy_day">
+        <item>Everything is covered in **frozen** nonsense again</item>
+        <item>Snow is falling like nature\'s **dandruff** everywhere</item>
+        <item>The world turned into a **freezing** white nightmare</item>
+        <item>Winter just showed up and chose **violence** today</item>
+    </string-array>
+    <string-array name="quip_subtitles_snowy_day">
+        <item>Everything is cold and slippery.</item>
+        <item>Time to pretend you like winter.</item>
+        <item>Snowflakes like your excuses - everywhere.</item>
+        <item>Bundle up or suffer.</item>
+    </string-array>
+    <string-array name="quip_quotes_foggy_day">
+        <item>Can\'t see a damn **thing** in any direction</item>
+        <item>The world is hiding behind a wall of **nothing**</item>
+        <item>Visibility is absolutely **gone**, good luck out there</item>
+        <item>Fog rolled in like it\'s auditioning for a **horror** movie</item>
+    </string-array>
+    <string-array name="quip_subtitles_foggy_day">
+        <item>Vision? We don\'t know her.</item>
+        <item>Silent Hill weather edition.</item>
+        <item>The world is hiding from you.</item>
+        <item>Perfect for dramatic walks.</item>
+    </string-array>
+    <string-array name="quip_quotes_windy_day">
+        <item>The wind is personally **attacking** everyone outside</item>
+        <item>Hair\'s getting absolutely **destroyed** the second you step out</item>
+        <item>The air has gone completely **berserk** today</item>
+        <item>Wind is blowing like it has a **vendetta** against you</item>
+    </string-array>
+    <string-array name="quip_subtitles_windy_day">
+        <item>Hold onto your stuff.</item>
+        <item>Bad hair day guaranteed.</item>
+        <item>The wind has personal beef with you.</item>
+        <item>Nature\'s blow dryer on full blast.</item>
+    </string-array>
+    <string-array name="quip_quotes_hot_day">
+        <item>It\'s so hot the pavement is **melting** under your feet</item>
+        <item>The sun is on a personal **warpath** against humanity</item>
+        <item>Stepping outside feels like walking into an **inferno**</item>
+        <item>Your skin will be **scorched** in approximately two minutes</item>
+    </string-array>
+    <string-array name="quip_subtitles_hot_day">
+        <item>Your AC is your best friend now.</item>
+        <item>Humans were not designed for this.</item>
+        <item>Walking outside is a mistake.</item>
+        <item>Ice cream is a survival necessity.</item>
+    </string-array>
+    <string-array name="quip_quotes_cold_day">
+        <item>It\'s so cold your bones are **shivering** independently</item>
+        <item>The air is **biting** through every layer you own</item>
+        <item>Stepping outside feels like entering an **icebox** of regret</item>
+        <item>Your face will be completely **numb** in about ten seconds</item>
+    </string-array>
+    <string-array name="quip_subtitles_cold_day">
+        <item>Layers on layers on layers.</item>
+        <item>Your nose will be numb.</item>
+        <item>Perfect weather to become a hermit.</item>
+        <item>Even the cold is judging you.</item>
+    </string-array>
+    <string-array name="quip_quotes_clear_night">
+        <item>Not a cloud up there, just **stars** judging you</item>
+        <item>The sky is perfectly clear and you are **inside**</item>
+        <item>A gorgeous night you will **sleep** straight through</item>
+        <item>The moon is doing all the **work** tonight</item>
+    </string-array>
+    <string-array name="quip_subtitles_clear_night">
+        <item>Go outside. Look up. Be briefly amazed.</item>
+        <item>Clear skies, and nobody awake to see them.</item>
+        <item>The stars turned up. You didn\'t.</item>
+        <item>Astronomically lovely. Practically bedtime.</item>
+    </string-array>
+    <string-array name="quip_quotes_cloudy_night">
+        <item>The clouds **swallowed** every last star</item>
+        <item>There is a moon up there. **Allegedly**.</item>
+        <item>The sky closed the **curtains** on you</item>
+        <item>Just grey **nothing**, all the way up</item>
+    </string-array>
+    <string-array name="quip_subtitles_cloudy_night">
+        <item>Stargazing is cancelled. Again.</item>
+        <item>The sky is a ceiling tonight.</item>
+        <item>Nothing to see up there. Literally.</item>
+        <item>Even the moon called in sick.</item>
+    </string-array>
+    <string-array name="quip_quotes_rainy_night">
+        <item>It is raining in the **dark**, the worst kind</item>
+        <item>Rain on the window **all** night, apparently</item>
+        <item>The sky is crying **quietly** so nobody notices</item>
+        <item>Everything out there is soaked and **invisible**</item>
+    </string-array>
+    <string-array name="quip_subtitles_rainy_night">
+        <item>At least you can\'t see how bad it is.</item>
+        <item>Great for sleeping. Awful for leaving.</item>
+        <item>The puddles are out there. Somewhere.</item>
+        <item>Nothing dries overnight. Nothing.</item>
+    </string-array>
+    <string-array name="quip_quotes_stormy_night">
+        <item>Thunder at night, because **sleep** was optional</item>
+        <item>The sky is having a **breakdown** in the dark</item>
+        <item>Lightning is handling the **lighting** tonight</item>
+        <item>Something out there just went **bang**</item>
+    </string-array>
+    <string-array name="quip_subtitles_stormy_night">
+        <item>Good luck sleeping through that.</item>
+        <item>The dog has opinions about this.</item>
+        <item>Count the seconds between flashes. Enjoy.</item>
+        <item>Stay in. Obviously.</item>
+    </string-array>
+    <string-array name="quip_quotes_snowy_night">
+        <item>Snow is piling up while you **sleep**</item>
+        <item>It will be **white** and awful by morning</item>
+        <item>The world is being quietly **buried** out there</item>
+        <item>Silent, freezing and utterly **relentless**</item>
+    </string-array>
+    <string-array name="quip_subtitles_snowy_night">
+        <item>Tomorrow\'s commute is already ruined.</item>
+        <item>Quiet now. Chaos at eight.</item>
+        <item>Set the alarm earlier. Trust me.</item>
+        <item>It looks lovely. It is not.</item>
+    </string-array>
+    <string-array name="quip_quotes_foggy_night">
+        <item>Fog after dark, an **excellent** combination</item>
+        <item>You cannot see a **thing**, and it is worse at night</item>
+        <item>The streetlights have given up **entirely**</item>
+        <item>Something is out there. Probably **nothing**.</item>
+    </string-array>
+    <string-array name="quip_subtitles_foggy_night">
+        <item>Driving is a bad idea tonight.</item>
+        <item>Peak horror-film conditions.</item>
+        <item>The world ends at ten metres.</item>
+        <item>Headlights are purely decorative now.</item>
+    </string-array>
+    <string-array name="quip_quotes_windy_night">
+        <item>The wind is **howling** and you will hear every bit</item>
+        <item>Something outside is **banging** and it is not stopping</item>
+        <item>The trees are having a **rough** night of it</item>
+        <item>Wind always sounds **worse** in the dark</item>
+    </string-array>
+    <string-array name="quip_subtitles_windy_night">
+        <item>Bring the bins in. Now.</item>
+        <item>That noise is probably nothing. Probably.</item>
+        <item>The garden furniture is migrating.</item>
+        <item>Sleep with one ear open.</item>
+    </string-array>
+    <string-array name="quip_quotes_hot_night">
+        <item>Still **boiling**, and the sun left hours ago</item>
+        <item>Too hot to sleep, too late to **complain**</item>
+        <item>The heat flatly **refuses** to leave tonight</item>
+        <item>Your bedroom is a **sauna** with a bed in it</item>
+    </string-array>
+    <string-array name="quip_subtitles_hot_night">
+        <item>Fan on, duvet off, sleep never.</item>
+        <item>The night forgot to cool down.</item>
+        <item>Flip the pillow. It won\'t help.</item>
+        <item>Tropical, if you squint. Unbearable if you don\'t.</item>
+    </string-array>
+    <string-array name="quip_quotes_cold_night">
+        <item>It is **freezing** out there and still dropping</item>
+        <item>The cold is **waiting** just outside the door</item>
+        <item>Everything will be **frozen** solid by morning</item>
+        <item>Your windscreen is already **plotting** against you</item>
+    </string-array>
+    <string-array name="quip_subtitles_cold_night">
+        <item>Scraper in the car. You\'ll thank yourself.</item>
+        <item>Heating on. No debate.</item>
+        <item>Do not go out in that jacket.</item>
+        <item>The frost is coming for your morning.</item>
+    </string-array>
+</resources>

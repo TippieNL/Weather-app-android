@@ -10,7 +10,9 @@ import com.weatherquips.app.domain.model.CachedWeather
 import com.weatherquips.app.domain.model.Coordinates
 import com.weatherquips.app.domain.model.LocationMode
 import com.weatherquips.app.domain.model.WeatherCondition
-import com.weatherquips.app.domain.quotes.PokemonQuips
+import com.weatherquips.app.text.QuipArrays
+import com.weatherquips.app.text.QuipRef
+import com.weatherquips.app.text.quipText
 import com.weatherquips.app.domain.repository.WeatherError
 import com.weatherquips.app.location.LocationProvider
 import com.weatherquips.app.notifications.AlertThrottle
@@ -197,20 +199,21 @@ class HomeViewModelTest {
             alertThrottle = AlertThrottle(throttleStore),
         )
         advanceUntilIdle()
-        val weatherQuote = viewModel.uiState.value.displayQuote
-        assertTrue(weatherQuote.isNotBlank())
+        assertTrue(viewModel.uiState.value.quote != QuipRef.NONE)
 
         settings.update { it.copy(pokemonMode = true) }
         advanceUntilIdle()
 
         val state = viewModel.uiState.value
         assertTrue("the easter egg never engaged", state.isPokemonMode)
-        assertTrue("the quote stayed empty", state.displayQuote.isNotBlank())
-        assertTrue(
-            "not a themed quote: ${state.displayQuote}",
-            state.displayQuote in PokemonQuips.quotesFor(WeatherCondition.STORMY, isDay = false),
+        assertTrue("the quote stayed empty", state.quote != QuipRef.NONE)
+        assertEquals(
+            "not a themed quote",
+            QuipArrays.pokemonQuotes(WeatherCondition.STORMY, isDay = false),
+            state.quote.array,
         )
-        assertTrue(state.displaySubtitle.isNotBlank())
+        assertTrue(TestResources.resources().quipText(state.quote).isNotBlank())
+        assertTrue(TestResources.resources().quipText(state.subtitle).isNotBlank())
     }
 
     @Test
@@ -231,13 +234,22 @@ class HomeViewModelTest {
             alertThrottle = AlertThrottle(throttleStore),
         )
         advanceUntilIdle()
-        assertTrue(viewModel.uiState.value.displayQuote in PokemonQuips.quotesFor(WeatherCondition.STORMY, isDay = false))
+        assertEquals(
+            QuipArrays.pokemonQuotes(WeatherCondition.STORMY, isDay = false),
+            viewModel.uiState.value.quote.array,
+        )
 
         settings.update { it.copy(pokemonMode = false) }
         advanceUntilIdle()
 
-        assertEquals(weather.funnyQuote, viewModel.uiState.value.displayQuote)
-        assertEquals(weather.subtitle, viewModel.uiState.value.displaySubtitle)
+        assertEquals(
+            QuipRef(QuipArrays.quotes(WeatherCondition.STORMY, isDay = false), weather.quoteSeed),
+            viewModel.uiState.value.quote,
+        )
+        assertEquals(
+            QuipRef(QuipArrays.subtitles(WeatherCondition.STORMY, isDay = false), weather.subtitleSeed),
+            viewModel.uiState.value.subtitle,
+        )
     }
 
     @Test
@@ -256,10 +268,7 @@ class HomeViewModelTest {
 
         val state = viewModel.uiState.value
         assertTrue(state.isPokemonMode)
-        assertTrue(state.displayQuote.isNotBlank())
-        assertTrue(
-            state.displayQuote in
-                PokemonQuips.quotesFor(WeatherCondition.STORMY, isDay = false),
-        )
+        assertEquals(QuipArrays.pokemonQuotes(WeatherCondition.STORMY, isDay = false), state.quote.array)
+        assertTrue(TestResources.resources().quipText(state.quote).isNotBlank())
     }
 }

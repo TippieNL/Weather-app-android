@@ -83,8 +83,13 @@ data class WeatherData(
     val temperature: Double,
     val description: String,
     val location: String,
-    val funnyQuote: String,
-    val subtitle: String,
+    /**
+     * Which quip to show, as seeds rather than text. The line is looked up in
+     * the current language when drawn, so a cached forecast follows a
+     * language switch instead of staying in whatever was active at fetch time.
+     */
+    val quoteSeed: Int = 0,
+    val subtitleSeed: Int = 0,
     val feelsLike: Double,
     val temperatureMax: Double,
     val temperatureMin: Double,

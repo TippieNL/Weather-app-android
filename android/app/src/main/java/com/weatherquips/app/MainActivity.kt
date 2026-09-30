@@ -1,5 +1,6 @@
 package com.weatherquips.app
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -15,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.weatherquips.app.domain.model.Coordinates
+import com.weatherquips.app.locale.AppLocale
 import com.weatherquips.app.notifications.NotificationHelper
 import com.weatherquips.app.ui.navigation.AppStartViewModel
 import com.weatherquips.app.ui.navigation.Routes
@@ -25,6 +27,12 @@ import com.weatherquips.app.ui.theme.WeatherQuipsTheme
 data class PendingDestination(val route: String, val coordinates: Coordinates?)
 
 class MainActivity : ComponentActivity() {
+
+    // Below Android 13 the chosen language is applied here; above it the
+    // platform has already done it and this returns the context untouched.
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(AppLocale.wrap(newBase))
+    }
 
     /**
      * Screen requested by a notification tap, if any. Held as state because the

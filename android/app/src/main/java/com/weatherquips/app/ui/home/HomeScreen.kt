@@ -31,6 +31,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import com.weatherquips.app.ui.components.WeatherAtmosphere
 import com.weatherquips.app.ui.components.rememberAnimationsEnabled
 import com.weatherquips.app.ui.theme.Motion
+import com.weatherquips.app.text.quipText
+import com.weatherquips.app.text.conditionLabel
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -579,7 +581,7 @@ private fun HeroContent(
                             exploding = exploding,
                             contentDescription = stringResource(
                                 R.string.detail_feels_like,
-                                weather.condition.id,
+                                stringResource(conditionLabel(weather.condition)),
                                 Formatters.formatTemp(weather.feelsLike, settings.temperatureUnit),
                             ),
                             modifier = Modifier.clickable(
@@ -606,10 +608,15 @@ private fun HeroContent(
 
             Spacer(Modifier.height(24.dp))
 
+            // Looked up here, in whatever language is active, from the seed the
+            // forecast carries.
+            val quoteText = quipText(uiState.quote)
+            val subtitleText = quipText(uiState.subtitle)
+
             // A refresh brings a new quip: the old one lifts away and the new
             // one rises into its place, so the change is seen, not just noticed.
             AnimatedContent(
-                targetState = uiState.displayQuote,
+                targetState = quoteText,
                 transitionSpec = {
                     (
                         slideInVertically(tween(Motion.LONG, easing = Motion.EmphasizedDecelerate)) { it / 3 } +
@@ -642,7 +649,7 @@ private fun HeroContent(
             Spacer(Modifier.height(12.dp))
 
             Crossfade(
-                targetState = uiState.displaySubtitle,
+                targetState = subtitleText,
                 animationSpec = tween(Motion.MEDIUM),
                 modifier = Modifier.staged(intro, 2),
                 label = "subtitle",
@@ -980,7 +987,7 @@ private fun PokemonBanner(modifier: Modifier = Modifier) {
     val accents = LocalAccents.current
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
         Text(
-            text = PokemonQuips.BANNER,
+            text = stringResource(R.string.pokemon_banner),
             style = MaterialTheme.typography.titleMedium,
             color = Color.White,
             textAlign = TextAlign.Center,

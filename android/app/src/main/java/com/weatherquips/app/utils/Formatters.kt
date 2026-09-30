@@ -3,6 +3,7 @@ package com.weatherquips.app.utils
 import com.weatherquips.app.domain.model.DateFormat
 import com.weatherquips.app.domain.model.TemperatureUnit
 import com.weatherquips.app.domain.model.TimeFormat
+import com.weatherquips.app.text.formatDecimal
 import java.util.Locale
 import kotlin.math.roundToInt
 
@@ -68,13 +69,12 @@ object Formatters {
     /** Wind speed is always km/h in this app, matching the web UI. */
     fun formatWind(kmh: Double): Int = kmh.roundToInt()
 
-    /** UV index keeps one decimal, exactly like the web API's rounding. */
-    fun formatUv(uv: Double): String {
+    /**
+     * UV index keeps one decimal, exactly like the web API's rounding, with the
+     * decimal separator of the language on screen ("0,2" in Dutch).
+     */
+    fun formatUv(uv: Double, locale: Locale = Locale.getDefault()): String {
         val rounded = (uv * 10).roundToInt() / 10.0
-        return if (rounded % 1.0 == 0.0) {
-            rounded.toInt().toString()
-        } else {
-            String.format(Locale.US, "%.1f", rounded)
-        }
+        return formatDecimal(rounded, locale, maxDecimals = 1)
     }
 }

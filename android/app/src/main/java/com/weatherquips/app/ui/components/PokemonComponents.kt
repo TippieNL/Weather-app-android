@@ -1,5 +1,6 @@
 package com.weatherquips.app.ui.components
 
+import com.weatherquips.app.R
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -7,6 +8,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
@@ -103,7 +105,7 @@ private fun DrawScope.drawPokeball(
 fun PokeballIcon(
     modifier: Modifier = Modifier,
     size: Dp = 160.dp,
-    contentDescription: String? = "Poké Ball",
+    contentDescription: String? = stringResource(R.string.pokemon_ball),
 ) {
     val animationsEnabled = rememberAnimationsEnabled()
     val transition = rememberInfiniteTransition(label = "pokeball")
@@ -229,6 +231,7 @@ fun PokemonSilhouette(
     color: Color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.22f),
 ) {
     val animationsEnabled = rememberAnimationsEnabled()
+    val silhouetteLabel = stringResource(R.string.pokemon_silhouette)
     // An infinite transition rather than a `while (true)` animate loop: the
     // loop is a coroutine that never completes, which leaves Compose
     // permanently non-idle and hangs anything that waits for it.
@@ -251,7 +254,7 @@ fun PokemonSilhouette(
         modifier = modifier
             .size(size)
             .graphicsLayer { translationY = bob }
-            .semantics { contentDescription = "Mystery Pokémon silhouette" },
+            .semantics { contentDescription = silhouetteLabel },
     ) {
         drawCreature(silhouette, this.size.minDimension, color)
     }

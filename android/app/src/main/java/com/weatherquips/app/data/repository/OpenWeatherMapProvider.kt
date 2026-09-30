@@ -84,8 +84,6 @@ class OpenWeatherMapProvider(private val api: OpenWeatherMapApi) : WeatherProvid
             temperature = current.main.temp,
             description = condition.id,
             location = locationName,
-            funnyQuote = "",
-            subtitle = "",
             feelsLike = current.main.feelsLike,
             temperatureMax = current.main.tempMax,
             temperatureMin = current.main.tempMin,

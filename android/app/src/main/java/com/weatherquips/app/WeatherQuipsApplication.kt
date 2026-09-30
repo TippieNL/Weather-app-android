@@ -1,6 +1,7 @@
 package com.weatherquips.app
 
 import android.app.Application
+import android.os.LocaleList
 import com.weatherquips.app.domain.model.LocationMode
 import com.weatherquips.app.widget.WidgetRefreshScheduler
 import kotlinx.coroutines.CoroutineScope
@@ -14,10 +15,13 @@ class WeatherQuipsApplication : Application() {
     lateinit var container: AppContainer
         private set
 
+    private var lastLocales: LocaleList? = null
+
     override fun onCreate() {
         super.onCreate()
         container = AppContainer(this)
         container.notificationHelper.ensureChannel()
+        lastLocales = resources.configuration.locales
 
         // osmdroid needs a User-Agent (OSM tile policy) and its own cache dir.
         Configuration.getInstance().apply {
@@ -42,6 +46,21 @@ class WeatherQuipsApplication : Application() {
             // a force stop, an OEM battery manager — left it off for good.
             val widgets = WidgetRefreshScheduler(this@WeatherQuipsApplication)
             if (widgets.hasWidgets()) widgets.setEnabled(true)
+        }
+    }
+
+    /**
+     * On Android 13+ a language change — from the app or from system settings —
+     * arrives here once it has taken effect. The activity is recreated by the
+     * platform; the widget and the notification channel are not, so they are
+     * redrawn here.
+     */
+    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+        super.onConfigurationChanged(newConfig)
+        val locales = newConfig.locales
+        if (locales != lastLocales) {
+            lastLocales = locales
+            container.onLanguageChanged()
         }
     }
 }

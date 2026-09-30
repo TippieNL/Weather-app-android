@@ -49,8 +49,8 @@ class PrecipitationWorker(
         if (!PrecipitationAlerts.shouldNotify(data)) return Result.success()
         if (!container.alertThrottle.shouldSend()) return Result.success()
 
-        val posted = container.notificationHelper
-            .notifyPrecipitation(PrecipitationAlerts.build(data), coordinates)
+        val helper = container.notificationHelper
+        val posted = helper.notifyPrecipitation(PrecipitationAlerts.build(data, helper.alertText()), coordinates)
         if (posted) container.alertThrottle.markSent()
         return Result.success()
     }

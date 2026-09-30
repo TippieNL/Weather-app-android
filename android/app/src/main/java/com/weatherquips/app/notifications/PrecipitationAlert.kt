@@ -1,5 +1,7 @@
 package com.weatherquips.app.notifications
 
+import android.content.res.Resources
+import com.weatherquips.app.R
 import com.weatherquips.app.domain.model.HourlyForecast
 import com.weatherquips.app.domain.model.WeatherCondition
 import com.weatherquips.app.domain.model.WeatherData
@@ -25,11 +27,74 @@ data class PrecipitationAlert(
 )
 
 /**
+ * The words an alert is made of, in some language.
+ *
+ * Whole sentences with slots rather than fragments to glue together, so a
+ * translation can put the time before the chance, or the noun anywhere.
+ */
+interface AlertText {
+    fun headlines(kind: PrecipitationKind): List<String>
+    fun asides(kind: PrecipitationKind): List<String>
+    fun summary(chance: Int, kind: PrecipitationKind): String
+    fun summaryWithPeak(chance: Int, kind: PrecipitationKind, peakTime: String): String
+    fun detailChance(chance: Int, kind: PrecipitationKind): String
+    fun detailWindow(start: String, end: String): String
+    fun detailAround(time: String): String
+    fun detailPeak(chance: Int, time: String): String
+}
+
+/** [AlertText] from string resources — res/values/alerts.xml and its translations. */
+class ResourceAlertText(private val resources: Resources) : AlertText {
+
+    override fun headlines(kind: PrecipitationKind): List<String> = resources.getStringArray(
+        when (kind) {
+            PrecipitationKind.RAIN -> R.array.alert_headlines_rain
+            PrecipitationKind.SNOW -> R.array.alert_headlines_snow
+            PrecipitationKind.STORM -> R.array.alert_headlines_storm
+        },
+    ).toList()
+
+    override fun asides(kind: PrecipitationKind): List<String> = resources.getStringArray(
+        when (kind) {
+            PrecipitationKind.RAIN -> R.array.alert_asides_rain
+            PrecipitationKind.SNOW -> R.array.alert_asides_snow
+            PrecipitationKind.STORM -> R.array.alert_asides_storm
+        },
+    ).toList()
+
+    private fun noun(kind: PrecipitationKind) = resources.getString(
+        when (kind) {
+            PrecipitationKind.RAIN -> R.string.alert_noun_rain
+            PrecipitationKind.SNOW -> R.string.alert_noun_snow
+            PrecipitationKind.STORM -> R.string.alert_noun_storm
+        },
+    )
+
+    override fun summary(chance: Int, kind: PrecipitationKind) =
+        resources.getString(R.string.alert_summary, chance, noun(kind))
+
+    override fun summaryWithPeak(chance: Int, kind: PrecipitationKind, peakTime: String) =
+        resources.getString(R.string.alert_summary_peak, chance, noun(kind), peakTime)
+
+    override fun detailChance(chance: Int, kind: PrecipitationKind) =
+        resources.getString(R.string.alert_detail_chance, chance, noun(kind))
+
+    override fun detailWindow(start: String, end: String) =
+        resources.getString(R.string.alert_detail_window, start, end)
+
+    override fun detailAround(time: String) = resources.getString(R.string.alert_detail_around, time)
+
+    override fun detailPeak(chance: Int, time: String) =
+        resources.getString(R.string.alert_detail_peak, chance, time)
+}
+
+/**
  * Alert wording, in the same voice as the quips on the home screen.
  *
- * Kept pure, and free of the `**highlight**` markers the in-app quotes use:
- * a notification is plain text, so a marker would be shown to the user rather
- * than rendered.
+ * Pure: the words come in through [AlertText], so the decisions — what to
+ * say, when, and which data backs it — are testable without Android. Free of
+ * the `**highlight**` markers the in-app quotes use: a notification is plain
+ * text, so a marker would be shown to the user rather than rendered.
  */
 object PrecipitationAlerts {
 
@@ -46,111 +111,57 @@ object PrecipitationAlerts {
         else -> PrecipitationKind.RAIN
     }
 
-    private val headlines: Map<PrecipitationKind, List<String>> = mapOf(
-        PrecipitationKind.RAIN to listOf(
-            "The sky is about to ruin this",
-            "Rain incoming. Act surprised.",
-            "Water is falling out of the sky again",
-            "Hope you enjoyed being dry",
-            "The clouds have made their decision",
-        ),
-        PrecipitationKind.SNOW to listOf(
-            "Everything is about to go white",
-            "Snow. Because of course.",
-            "Winter is being dramatic again",
-            "The pavement is plotting against you",
-            "Nature is redecorating in white",
-        ),
-        PrecipitationKind.STORM to listOf(
-            "The sky is losing its temper",
-            "Thunder is warming up out there",
-            "Something loud this way comes",
-            "Nature has chosen violence today",
-            "The clouds are spoiling for a fight",
-        ),
-    )
-
-    /** The closing jab. Advice, delivered rudely. */
-    private val asides: Map<PrecipitationKind, List<String>> = mapOf(
-        PrecipitationKind.RAIN to listOf(
-            "Take the umbrella you will leave somewhere.",
-            "Or don't. Get soaked. Live a little.",
-            "Bring a coat, or bring regret.",
-            "Your hair had plans. The sky disagrees.",
-        ),
-        PrecipitationKind.SNOW to listOf(
-            "Bundle up and walk like a penguin.",
-            "The roads will be a mess. So will you.",
-            "Boots. Not those ones. Proper ones.",
-            "Everything takes twice as long today.",
-        ),
-        PrecipitationKind.STORM to listOf(
-            "Stay inside and feel smug about it.",
-            "Bad day for a leisurely stroll.",
-            "Unplug something. Feel prepared.",
-            "Let the sky get it out of its system.",
-        ),
-    )
-
-    fun headlinesFor(kind: PrecipitationKind): List<String> = headlines.getValue(kind)
-
-    fun asidesFor(kind: PrecipitationKind): List<String> = asides.getValue(kind)
-
     fun build(
         data: WeatherData,
+        text: AlertText,
         random: Random = Random.Default,
     ): PrecipitationAlert {
         val kind = kindOf(data.condition)
         val timing = timingOf(data.hourlyForecast)
-        val noun = when (kind) {
-            PrecipitationKind.RAIN -> "rain"
-            PrecipitationKind.SNOW -> "snow"
-            PrecipitationKind.STORM -> "storms"
+        val chance = data.precipitationChance
+
+        val summary = if (timing?.peakTime != null) {
+            text.summaryWithPeak(chance, kind, timing.peakTime)
+        } else {
+            text.summary(chance, kind)
         }
 
-        val summary = buildString {
-            append("${data.precipitationChance}% chance of $noun")
-            if (timing?.peakTime != null) {
-                append(", heaviest around ${timing.peakTime}")
-            }
-        }
-
-        val detail = buildString {
-            append("${data.precipitationChance}% chance of $noun today.")
+        val sentences = buildList {
+            add(text.detailChance(chance, kind))
             if (timing != null) {
                 when {
                     timing.start != null && timing.end != null && timing.start != timing.end ->
-                        append(" Expect it between ${timing.start} and ${timing.end}.")
-                    timing.start != null ->
-                        append(" Most likely around ${timing.start}.")
+                        add(text.detailWindow(timing.start, timing.end))
+                    timing.start != null -> add(text.detailAround(timing.start))
                 }
                 if (timing.peakTime != null && timing.peakChance > 0) {
-                    append(" It peaks at ${timing.peakChance}% around ${timing.peakTime}.")
+                    add(text.detailPeak(timing.peakChance, timing.peakTime))
                 }
             }
-            append("\n\n")
-            append(asides.getValue(kind).random(random))
         }
 
         return PrecipitationAlert(
             kind = kind,
-            headline = headlines.getValue(kind).random(random),
+            headline = text.headlines(kind).random(random),
             summary = summary,
-            detail = detail,
+            detail = sentences.joinToString(" ") + "\n\n" + text.asides(kind).random(random),
             location = data.location.takeIf { it.isNotBlank() },
         )
     }
 
     /** The demo alert behind the "Test notification" button in settings. */
-    fun sample(random: Random = Random.Default): PrecipitationAlert {
+    fun sample(text: AlertText, random: Random = Random.Default): PrecipitationAlert {
         val kind = PrecipitationKind.RAIN
+        val detail = listOf(
+            text.detailChance(75, kind),
+            text.detailWindow("14:00", "18:00"),
+            text.detailPeak(90, "16:00"),
+        ).joinToString(" ")
         return PrecipitationAlert(
             kind = kind,
-            headline = headlines.getValue(kind).random(random),
-            summary = "75% chance of rain, heaviest around 16:00",
-            detail = "75% chance of rain today. Expect it between 14:00 and 18:00. " +
-                "It peaks at 90% around 16:00.\n\n" +
-                asides.getValue(kind).random(random),
+            headline = text.headlines(kind).random(random),
+            summary = text.summaryWithPeak(75, kind, "16:00"),
+            detail = detail + "\n\n" + text.asides(kind).random(random),
             location = "Assen",
         )
     }

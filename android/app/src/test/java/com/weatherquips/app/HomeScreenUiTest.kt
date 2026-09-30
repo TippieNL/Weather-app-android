@@ -22,6 +22,7 @@ import androidx.compose.ui.test.swipeRight
 import androidx.compose.ui.test.swipeLeft
 import com.weatherquips.app.domain.model.AppSettings
 import com.weatherquips.app.domain.model.Coordinates
+import com.weatherquips.app.domain.model.WeatherCondition
 import com.weatherquips.app.domain.model.TemperatureUnit
 import com.weatherquips.app.ui.home.HomePhase
 import com.weatherquips.app.ui.home.HomeScreen
@@ -92,7 +93,9 @@ class HomeScreenUiTest {
 
         composeRule.onNodeWithTag(TAG_QUOTE).assertIsDisplayed()
         composeRule.onNodeWithTag(TAG_SUBTITLE).assertIsDisplayed()
-        composeRule.onNodeWithText("Clouds everywhere. No escape.").assertIsDisplayed()
+        // The fixture is a cloudy night; seed 0 picks the first night subtitle.
+        composeRule.onNodeWithText(TestResources.subtitles(WeatherCondition.CLOUDY, isDay = false)[0])
+            .assertIsDisplayed()
         composeRule.onNodeWithTag(TAG_TEMPERATURE).assertTextEquals("15°C")
         composeRule.onNodeWithTag(TAG_LOCATION).assertTextEquals("Assen")
     }
@@ -103,7 +106,9 @@ class HomeScreenUiTest {
 
         // The screen reader hears the sentence, not the "**" syntax.
         composeRule
-            .onNodeWithContentDescription("Clouds rolled in like they own the damn place")
+            .onNodeWithContentDescription(
+                TestResources.quotes(WeatherCondition.CLOUDY, isDay = false)[1].replace("**", ""),
+            )
             .assertIsDisplayed()
     }
 

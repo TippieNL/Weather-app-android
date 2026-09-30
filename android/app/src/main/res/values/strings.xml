@@ -52,6 +52,20 @@
     <string name="wind_value">%1$d km/h</string>
     <string name="percent_value">%1$d%%</string>
     <string name="high_low">High %1$s, low %2$s</string>
+    <string name="hour_description">%1$s: %2$s</string>
+    <string name="hour_description_rain">%1$s: %2$s, %3$d%% chance of rain</string>
+    <string name="tomorrow">tomorrow</string>
+
+    <!-- Conditions, as shown next to the weather. Lowercase, in the app's style. -->
+    <string name="condition_clear">clear</string>
+    <string name="condition_cloudy">cloudy</string>
+    <string name="condition_rainy">rainy</string>
+    <string name="condition_stormy">stormy</string>
+    <string name="condition_snowy">snowy</string>
+    <string name="condition_foggy">foggy</string>
+    <string name="condition_windy">windy</string>
+    <string name="condition_hot">hot</string>
+    <string name="condition_cold">cold</string>
 
     <!-- Precipitation map -->
     <string name="precipitation_forecast">Precipitation forecast</string>
@@ -71,6 +85,11 @@
     <string name="map_attribution">© OpenStreetMap contributors · Radar © RainViewer</string>
 
     <!-- Settings -->
+    <string name="language">Language</string>
+    <string name="app_language">App language</string>
+    <string name="language_system">System default</string>
+    <string name="about_title">About Weather Quips</string>
+    <string name="about_row_summary">Version, data sources and credits</string>
     <string name="temperature_unit">Temperature Unit</string>
     <string name="unit">Unit</string>
     <string name="celsius">Celsius (°C)</string>
@@ -129,7 +148,7 @@
 
     <!-- Widget -->
     <string name="widget_name">Rain check</string>
-    <string name="widget_description">How likely it is to rain over the next few hours.</string>
+    <string name="widget_description">How hard it is about to rain, and when.</string>
 
     <!-- Notifications -->
     <string name="notification_channel_precipitation">Precipitation alerts</string>

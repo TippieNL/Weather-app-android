@@ -86,8 +86,6 @@ class OpenMeteoProvider(private val api: OpenMeteoApi) : WeatherProvider {
             temperature = current.temperature,
             description = condition.id,
             location = locationName,
-            funnyQuote = "",
-            subtitle = "",
             feelsLike = current.apparentTemperature,
             temperatureMax = daily.temperatureMax.firstOrNull() ?: current.temperature,
             temperatureMin = daily.temperatureMin.firstOrNull() ?: current.temperature,

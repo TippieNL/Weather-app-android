@@ -12,7 +12,9 @@ import com.weatherquips.app.domain.model.NowcastPoint
 import com.weatherquips.app.domain.model.WeatherCondition
 import com.weatherquips.app.domain.model.WeatherData
 import com.weatherquips.app.domain.model.WeatherService
-import com.weatherquips.app.domain.quotes.FunnyQuotes
+import com.weatherquips.app.text.QuipArrays
+import com.weatherquips.app.ui.home.HomePhase
+import com.weatherquips.app.ui.home.HomeUiState
 import com.weatherquips.app.domain.repository.GeocodingRepository
 import com.weatherquips.app.domain.repository.RadarNowcastRepository
 import com.weatherquips.app.domain.repository.WeatherError
@@ -34,6 +36,7 @@ import java.io.File
 import java.io.IOException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
+import kotlin.random.Random
 
 /** Provider selection, quote attachment, caching and error translation. */
 class WeatherRepositoryTest {
@@ -107,12 +110,14 @@ class WeatherRepositoryTest {
     private fun repository(
         vararg providers: WeatherProvider,
         radar: RadarNowcastRepository? = null,
+        random: Random = Random.Default,
     ) = WeatherRepositoryImpl(
         providers = providers.toList(),
         geocodingRepository = FakeGeocoding(),
         cache = cache,
         radarNowcast = radar,
         dispatcher = dispatcher,
+        random = random,
     )
 
     private val radarSeries = listOf(
@@ -194,37 +199,43 @@ class WeatherRepositoryTest {
     }
 
     @Test
-    fun `a fresh quote is attached to every result`() = runTest {
+    fun `a fresh quip is picked for every result`() = runTest {
+        // The provider knows nothing about quips; the repository picks one on
+        // every fetch, as the web server did on every response.
         val provider = FakeProvider(
             WeatherService.OPEN_METEO,
-            Result.success(TestWeather.sample(quote = "", subtitle = "")),
+            Result.success(TestWeather.sample(quoteSeed = 0, subtitleSeed = 0)),
         )
+        val repository = repository(provider, random = Random(7))
+        val expected = Random(7)
 
-        val weather = repository(provider).getWeather(coordinates, WeatherService.OPEN_METEO, "")
+        val first = repository.getWeather(coordinates, WeatherService.OPEN_METEO, "")
+        assertEquals(expected.nextInt(0, Int.MAX_VALUE), first.quoteSeed)
+        assertEquals(expected.nextInt(0, Int.MAX_VALUE), first.subtitleSeed)
 
-        assertTrue(weather.funnyQuote in FunnyQuotes.quotesFor(WeatherCondition.CLOUDY, isDay = false))
-        assertTrue(weather.subtitle in FunnyQuotes.subtitlesFor(WeatherCondition.CLOUDY, isDay = false))
+        val second = repository.getWeather(coordinates, WeatherService.OPEN_METEO, "")
+        assertTrue("the same quip twice in a row", second.quoteSeed != first.quoteSeed)
     }
 
     @Test
-    fun `the quote follows the sun at the location`() = runTest {
-        // TestWeather.sample() is a night reading (isDay = false).
-        val night = repository(FakeProvider(WeatherService.OPEN_METEO))
+    fun `the quip is cached as a seed, so it follows a later language switch`() = runTest {
+        repository(FakeProvider(WeatherService.OPEN_METEO), random = Random(3))
             .getWeather(coordinates, WeatherService.OPEN_METEO, "")
-        assertTrue(
-            "used a daytime quote after dark: ${night.funnyQuote}",
-            night.funnyQuote in FunnyQuotes.quotesFor(WeatherCondition.CLOUDY, isDay = false),
-        )
+        val cached = cache.read()!!.data
+        // Nothing language-specific is stored: the text is looked up when drawn.
+        assertTrue(cached.quoteSeed >= 0)
+        assertTrue(cached.subtitleSeed >= 0)
+    }
 
-        val dayProvider = FakeProvider(
-            WeatherService.OPEN_METEO,
-            Result.success(TestWeather.sample().copy(isDay = true)),
+    @Test
+    fun `the quote follows the sun at the location`() {
+        // TestWeather.sample() is a night reading (isDay = false).
+        fun stateFor(isDay: Boolean) = HomeUiState(
+            phase = HomePhase.Success(TestWeather.sample().copy(isDay = isDay), coordinates),
         )
-        val day = repository(dayProvider).getWeather(coordinates, WeatherService.OPEN_METEO, "")
-        assertTrue(
-            "used a night quote in daylight: ${day.funnyQuote}",
-            day.funnyQuote in FunnyQuotes.quotesFor(WeatherCondition.CLOUDY, isDay = true),
-        )
+        assertEquals(QuipArrays.quotes(WeatherCondition.CLOUDY, isDay = false), stateFor(isDay = false).quote.array)
+        assertEquals(QuipArrays.quotes(WeatherCondition.CLOUDY, isDay = true), stateFor(isDay = true).quote.array)
+        assertEquals(QuipArrays.subtitles(WeatherCondition.CLOUDY, isDay = false), stateFor(isDay = false).subtitle.array)
     }
 
     @Test

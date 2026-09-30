@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Precipitation notifications. Plain text: no **highlight** markers, since a
+  notification would show them literally. Sentences are whole templates so word
+  order can change in translation; the noun (%2$s) is one of alert_noun_*.
+-->
+<resources>
+    <string-array name="alert_headlines_rain">
+        <item>The sky is about to ruin this</item>
+        <item>Rain incoming. Act surprised.</item>
+        <item>Water is falling out of the sky again</item>
+        <item>Hope you enjoyed being dry</item>
+        <item>The clouds have made their decision</item>
+    </string-array>
+    <string-array name="alert_headlines_snow">
+        <item>Everything is about to go white</item>
+        <item>Snow. Because of course.</item>
+        <item>Winter is being dramatic again</item>
+        <item>The pavement is plotting against you</item>
+        <item>Nature is redecorating in white</item>
+    </string-array>
+    <string-array name="alert_headlines_storm">
+        <item>The sky is losing its temper</item>
+        <item>Thunder is warming up out there</item>
+        <item>Something loud this way comes</item>
+        <item>Nature has chosen violence today</item>
+        <item>The clouds are spoiling for a fight</item>
+    </string-array>
+    <string-array name="alert_asides_rain">
+        <item>Take the umbrella you will leave somewhere.</item>
+        <item>Or don\'t. Get soaked. Live a little.</item>
+        <item>Bring a coat, or bring regret.</item>
+        <item>Your hair had plans. The sky disagrees.</item>
+    </string-array>
+    <string-array name="alert_asides_snow">
+        <item>Bundle up and walk like a penguin.</item>
+        <item>The roads will be a mess. So will you.</item>
+        <item>Boots. Not those ones. Proper ones.</item>
+        <item>Everything takes twice as long today.</item>
+    </string-array>
+    <string-array name="alert_asides_storm">
+        <item>Stay inside and feel smug about it.</item>
+        <item>Bad day for a leisurely stroll.</item>
+        <item>Unplug something. Feel prepared.</item>
+        <item>Let the sky get it out of its system.</item>
+    </string-array>
+    <string name="alert_noun_rain">rain</string>
+    <string name="alert_noun_snow">snow</string>
+    <string name="alert_noun_storm">storms</string>
+    <string name="alert_summary">%1$d%% chance of %2$s</string>
+    <string name="alert_summary_peak">%1$d%% chance of %2$s, heaviest around %3$s</string>
+    <string name="alert_detail_chance">%1$d%% chance of %2$s today.</string>
+    <string name="alert_detail_window">Expect it between %1$s and %2$s.</string>
+    <string name="alert_detail_around">Most likely around %1$s.</string>
+    <string name="alert_detail_peak">It peaks at %1$d%% around %2$s.</string>
+</resources>

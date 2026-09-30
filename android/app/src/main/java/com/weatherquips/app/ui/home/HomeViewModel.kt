@@ -29,6 +29,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.random.Random
 
 /**
  * Owns the home screen's state, so it survives rotation and — because the phase
@@ -206,7 +207,10 @@ class HomeViewModel(
         if (!PrecipitationAlerts.shouldNotify(weather)) return
         if (!alertThrottle.shouldSend()) return
 
-        if (notificationHelper.notifyPrecipitation(PrecipitationAlerts.build(weather), coordinates)) {
+        if (notificationHelper.notifyPrecipitation(
+                PrecipitationAlerts.build(weather, notificationHelper.alertText()),
+                coordinates,
+            )) {
             alertThrottle.markSent()
         }
     }
@@ -218,30 +222,23 @@ class HomeViewModel(
      */
     private fun HomeUiState.withPokemonQuote(settings: AppSettings): HomeUiState {
         if (!settings.isPokemonModeActive) {
-            return if (pokemonQuote.isEmpty()) {
+            return if (pokemonSeed == null) {
                 this
             } else {
-                copy(
-                    pokemonQuote = "",
-                    pokemonSubtitle = "",
-                    pokemonQuoteCondition = null,
-                    pokemonQuoteIsDay = null,
-                )
+                copy(pokemonSeed = null, pokemonQuoteCondition = null, pokemonQuoteIsDay = null)
             }
         }
         val current = weather ?: return this
         val condition = current.condition
         // Day and night have separate sets, so crossing sunset has to re-pick.
-        if (pokemonQuote.isNotEmpty() &&
+        if (pokemonSeed != null &&
             pokemonQuoteCondition == condition &&
             pokemonQuoteIsDay == current.isDay
         ) {
             return this
         }
-        val quip = PokemonQuips.quote(condition, current.isDay)
         return copy(
-            pokemonQuote = quip.quote,
-            pokemonSubtitle = quip.subtitle,
+            pokemonSeed = Random.nextInt(0, Int.MAX_VALUE),
             pokemonSilhouette = PokemonQuips.randomSilhouette(),
             pokemonQuoteCondition = condition,
             pokemonQuoteIsDay = current.isDay,

@@ -25,8 +25,10 @@ object TestWeather {
         temperature = 17.0,
         description = "cloudy",
         location = "Assen",
-        funnyQuote = "Clouds rolled in like they **own** the damn place",
-        subtitle = "Clouds everywhere. No escape.",
+        // Cloudy daytime: "Clouds rolled in like they **own** the damn place" and
+        // "Clouds everywhere. No escape." — the lines in the reported screenshot.
+        quoteSeed = 1,
+        subtitleSeed = 0,
         feelsLike = 18.0,
         temperatureMax = 17.0,
         temperatureMin = 12.0,
@@ -61,8 +63,8 @@ object TestWeather {
 
     fun sample(
         condition: WeatherCondition = WeatherCondition.CLOUDY,
-        quote: String = "Clouds rolled in like they **own** the damn place",
-        subtitle: String = "Clouds everywhere. No escape.",
+        quoteSeed: Int = 1,
+        subtitleSeed: Int = 0,
         temperature: Double = 15.0,
         location: String = "Assen",
     ) = WeatherData(
@@ -71,8 +73,8 @@ object TestWeather {
         temperature = temperature,
         description = condition.id,
         location = location,
-        funnyQuote = quote,
-        subtitle = subtitle,
+        quoteSeed = quoteSeed,
+        subtitleSeed = subtitleSeed,
         feelsLike = 14.0,
         temperatureMax = 18.0,
         temperatureMin = 14.0,

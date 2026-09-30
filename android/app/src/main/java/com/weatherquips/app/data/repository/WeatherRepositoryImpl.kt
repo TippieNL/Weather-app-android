@@ -5,7 +5,6 @@ import com.weatherquips.app.domain.model.CachedWeather
 import com.weatherquips.app.domain.model.Coordinates
 import com.weatherquips.app.domain.model.WeatherData
 import com.weatherquips.app.domain.model.WeatherService
-import com.weatherquips.app.domain.quotes.FunnyQuotes
 import com.weatherquips.app.domain.repository.GeocodingRepository
 import com.weatherquips.app.domain.repository.RadarNowcastRepository
 import com.weatherquips.app.domain.repository.WeatherError
@@ -63,8 +62,12 @@ class WeatherRepositoryImpl(
         // The web server regenerated the quote on every response — even cache
         // hits — so refreshing always produces a new quip. Same here, and the
         // set depends on whether the sun is up at the location.
-        val quip = FunnyQuotes.random(data.condition, data.isDay, random)
-        val withQuote = data.copy(funnyQuote = quip.quote, subtitle = quip.subtitle)
+        // Seeds, not text: the line is chosen from the right day or night set,
+        // in the right language, when it is drawn.
+        val withQuote = data.copy(
+            quoteSeed = random.nextInt(0, Int.MAX_VALUE),
+            subtitleSeed = random.nextInt(0, Int.MAX_VALUE),
+        )
 
         // Radar beats the model for the next two hours, and it is what the
         // app's own map is showing. Best effort: no radar, or a radar that is

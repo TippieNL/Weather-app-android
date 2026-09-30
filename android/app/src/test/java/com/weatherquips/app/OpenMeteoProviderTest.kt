@@ -172,7 +172,7 @@ class OpenMeteoProviderTest {
     @Test
     fun `quotes are attached by the repository, not the provider`() = runTest {
         val weather = OpenMeteoProvider(FakeApi(response())).fetch(coordinates, "", "Assen")
-        assertEquals("", weather.funnyQuote)
-        assertEquals("", weather.subtitle)
+        assertEquals(0, weather.quoteSeed)
+        assertEquals(0, weather.subtitleSeed)
     }
 }

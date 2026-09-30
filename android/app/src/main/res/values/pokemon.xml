@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The Pallet Town Easter egg, a fan tribute. Pokémon names are trademarks of
+  Nintendo / Creatures Inc. / GAME FREAK inc. and stay as they are in translation.
+-->
+<resources>
+    <string name="pokemon_banner">Welcome to Pallet Town, Trainer!</string>
+    <string name="pokemon_title">Weather Quips: Pokémon Edition</string>
+    <string name="pokemon_ball">Poké Ball</string>
+    <string name="pokemon_silhouette">Mystery Pokémon silhouette</string>
+    <string-array name="pokemon_quotes_clear_day">
+        <item>Professor Oak says it\'s a perfect day to start your Pokémon journey!</item>
+        <item>Pikachu is soaking up the sunshine outside.</item>
+        <item>Clear skies ahead, Trainer. Adventure awaits!</item>
+    </string-array>
+    <string-array name="pokemon_subtitles_clear_day">
+        <item>Route 1 is wide open. Go catch \'em all.</item>
+    </string-array>
+    <string-array name="pokemon_quotes_cloudy_day">
+        <item>A mysterious day for exploring tall grass.</item>
+        <item>Somewhere, a wild Pokémon is waiting to be discovered.</item>
+        <item>The weather may be gray, but adventure never is.</item>
+    </string-array>
+    <string-array name="pokemon_subtitles_cloudy_day">
+        <item>Keep your eyes on the tall grass.</item>
+    </string-array>
+    <string-array name="pokemon_quotes_rainy_day">
+        <item>Looks like Squirtle called in some extra water support today.</item>
+        <item>A rainy route is perfect for Water-type Pokémon.</item>
+        <item>Don\'t forget your Pokédex, Trainer. Rain won\'t stop an adventure.</item>
+    </string-array>
+    <string-array name="pokemon_subtitles_rainy_day">
+        <item>Great fishing weather down by the route.</item>
+    </string-array>
+    <string-array name="pokemon_quotes_stormy_day">
+        <item>Pikachu seems unusually excited about today\'s forecast.</item>
+        <item>Electric-type Pokémon are having the time of their lives.</item>
+        <item>Watch out, Trainer. The skies are using Thunder!</item>
+    </string-array>
+    <string-array name="pokemon_subtitles_stormy_day">
+        <item>The Power Plant is buzzing with energy.</item>
+    </string-array>
+    <string-array name="pokemon_quotes_snowy_day">
+        <item>Looks like an Ice-type Pokémon convention outside.</item>
+        <item>Perfect weather for a visit to Snowpoint City.</item>
+        <item>Even Lapras might be feeling chilly today.</item>
+    </string-array>
+    <string-array name="pokemon_subtitles_snowy_day">
+        <item>Better pack some Burn Heals... and a coat.</item>
+    </string-array>
+    <string-array name="pokemon_quotes_foggy_day">
+        <item>A wild Pokémon could be hiding just beyond the mist.</item>
+        <item>The fog rolls in like a slow Confuse Ray.</item>
+        <item>Tread carefully, Trainer — visibility is low on this route.</item>
+    </string-array>
+    <string-array name="pokemon_subtitles_foggy_day">
+        <item>Bring a Pokémon that knows Defog.</item>
+    </string-array>
+    <string-array name="pokemon_quotes_windy_day">
+        <item>Pidgeotto are riding the air currents today.</item>
+        <item>Flying-type Pokémon are out in full force.</item>
+        <item>The wind carries the promise of a new adventure.</item>
+    </string-array>
+    <string-array name="pokemon_subtitles_windy_day">
+        <item>A perfect tailwind for your next adventure.</item>
+    </string-array>
+    <string-array name="pokemon_quotes_hot_day">
+        <item>Charmander is thriving in this heat.</item>
+        <item>Fire-types are feeling right at home today.</item>
+        <item>Stay hydrated, Trainer — even Growlithe is panting.</item>
+    </string-array>
+    <string-array name="pokemon_subtitles_hot_day">
+        <item>Quick — grab a Fresh Water from the vending machine.</item>
+    </string-array>
+    <string-array name="pokemon_quotes_cold_day">
+        <item>Glaceon would feel right at home in this chill.</item>
+        <item>Bundle up, Trainer — it\'s a frosty route ahead.</item>
+        <item>Ice-type Pokémon are loving the cold snap.</item>
+    </string-array>
+    <string-array name="pokemon_subtitles_cold_day">
+        <item>Mt. Coronet weather, right here at home.</item>
+    </string-array>
+    <string-array name="pokemon_quotes_clear_night">
+        <item>Clear night. Perfect for spotting a Clefairy.</item>
+        <item>The stars are out over Pallet Town, Trainer.</item>
+        <item>Professor Oak is still awake in the lab, apparently.</item>
+    </string-array>
+    <string-array name="pokemon_subtitles_clear_night">
+        <item>Save your game and look up for a minute.</item>
+    </string-array>
+    <string-array name="pokemon_quotes_cloudy_night">
+        <item>No stars tonight. The tall grass looks darker than usual.</item>
+        <item>Something rustled out there. Probably a Rattata.</item>
+        <item>A good night to stay in the Pokémon Center.</item>
+    </string-array>
+    <string-array name="pokemon_subtitles_cloudy_night">
+        <item>Stay on the path after dark.</item>
+    </string-array>
+    <string-array name="pokemon_quotes_rainy_night">
+        <item>Rain on the roof all night. Squirtle approves.</item>
+        <item>Water-types are having the time of their lives out there.</item>
+        <item>A wet night for anyone caught between towns.</item>
+    </string-array>
+    <string-array name="pokemon_subtitles_rainy_night">
+        <item>Good night for fishing, if you are brave.</item>
+    </string-array>
+    <string-array name="pokemon_quotes_stormy_night">
+        <item>Thunder after dark. Pikachu is wide awake.</item>
+        <item>The Power Plant is lit up from here.</item>
+        <item>Electric-types do not believe in bedtime tonight.</item>
+    </string-array>
+    <string-array name="pokemon_subtitles_stormy_night">
+        <item>Unplug the PC box. Just in case.</item>
+    </string-array>
+    <string-array name="pokemon_quotes_snowy_night">
+        <item>Snow falling in the dark. Very Snowpoint of it.</item>
+        <item>Ice-types are out there enjoying the quiet.</item>
+        <item>Everything will be buried by sunrise, Trainer.</item>
+    </string-array>
+    <string-array name="pokemon_subtitles_snowy_night">
+        <item>Pack Burn Heals and a very thick coat.</item>
+    </string-array>
+    <string-array name="pokemon_quotes_foggy_night">
+        <item>Fog at night. Anything could be out in that.</item>
+        <item>Visibility zero. Bring a Pokémon that knows Flash.</item>
+        <item>The route signs have vanished entirely, Trainer.</item>
+    </string-array>
+    <string-array name="pokemon_subtitles_foggy_night">
+        <item>Defog would be extremely useful right now.</item>
+    </string-array>
+    <string-array name="pokemon_quotes_windy_night">
+        <item>The wind is rattling the windows all night.</item>
+        <item>Flying-types are somewhere up there, enjoying it.</item>
+        <item>A rough night to be camping between towns.</item>
+    </string-array>
+    <string-array name="pokemon_subtitles_windy_night">
+        <item>Tie down the tent, Trainer.</item>
+    </string-array>
+    <string-array name="pokemon_quotes_hot_night">
+        <item>Even the night is warm. Fire-types are delighted.</item>
+        <item>A muggy night on Route 1. Nobody is sleeping.</item>
+        <item>Growlithe has given up and sprawled on the floor.</item>
+    </string-array>
+    <string-array name="pokemon_subtitles_hot_night">
+        <item>Grab a Fresh Water. Sleep is optional.</item>
+    </string-array>
+    <string-array name="pokemon_quotes_cold_night">
+        <item>A freezing night. Glaceon is thriving, you are not.</item>
+        <item>Cold enough to see your breath on Route 1.</item>
+        <item>Even the Pokémon Center heating is struggling.</item>
+    </string-array>
+    <string-array name="pokemon_subtitles_cold_night">
+        <item>Mt. Coronet weather, right outside.</item>
+    </string-array>
+</resources>
