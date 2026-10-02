@@ -119,6 +119,21 @@ class SettingsViewModel(
     private var manualLocationEdited = false
     private var apiKeyEdited = false
 
+    /**
+     * Applies the language. The screen shows the choice at once; the text
+     * itself follows when the activity is rebuilt — by the platform on
+     * Android 13+, by the caller below that, which is what the result says.
+     */
+    override fun setLanguage(language: AppLanguage): Boolean {
+        if (language == _uiState.value.language) return false
+        _uiState.update { it.copy(language = language) }
+        return languageController.set(language)
+    }
+
+    override fun refreshLanguage() {
+        _uiState.update { it.copy(language = languageController.current()) }
+    }
+
     init {
         _uiState.update { it.copy(language = languageController.current()) }
         viewModelScope.launch {

@@ -4,6 +4,7 @@ import android.app.LocaleManager
 import android.content.Context
 import android.content.SharedPreferences
 import android.content.res.Configuration
+import android.content.res.Resources
 import android.os.Build
 import android.os.LocaleList
 import java.util.Locale
@@ -70,7 +71,14 @@ object AppLocale {
     /** For `attachBaseContext` below Android 13; returns [base] untouched above it. */
     fun wrap(base: Context): Context {
         if (platformManaged) return base
-        val locale = stored(base).locale ?: return base
+        val locale = stored(base).locale
+        if (locale == null) {
+            // Back to the phone's language: undo any default an earlier
+            // choice set, or dates and numbers stay in the old language
+            // until the process dies.
+            Resources.getSystem().configuration.locales[0]?.let(Locale::setDefault)
+            return base
+        }
         Locale.setDefault(locale)
         val configuration = Configuration(base.resources.configuration).apply {
             setLocales(LocaleList(locale))
