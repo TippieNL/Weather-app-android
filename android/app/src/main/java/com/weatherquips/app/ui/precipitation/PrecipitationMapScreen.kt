@@ -2,8 +2,6 @@ package com.weatherquips.app.ui.precipitation
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -13,8 +11,6 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.graphics.TransformOrigin
-import androidx.compose.ui.graphics.graphicsLayer
 import com.weatherquips.app.ui.theme.Motion
 import android.graphics.ColorMatrix
 import android.graphics.ColorMatrixColorFilter
@@ -64,6 +60,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.util.lerp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.view.doOnLayout
 import androidx.lifecycle.Lifecycle
@@ -71,13 +75,14 @@ import androidx.lifecycle.LifecycleEventObserver
 import com.weatherquips.app.R
 import com.weatherquips.app.domain.model.Coordinates
 import com.weatherquips.app.domain.repository.RadarFrame
+import com.weatherquips.app.domain.repository.RadarTile
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import com.weatherquips.app.ui.theme.LocalAccents
-import org.osmdroid.tileprovider.MapTileProviderBasic
-import org.osmdroid.tileprovider.util.SimpleInvalidationHandler
+import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.CustomZoomButtonsController
 import org.osmdroid.views.MapView
-import org.osmdroid.views.overlay.TilesOverlay
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -98,9 +103,10 @@ fun PrecipitationMapScreen(
     onSelectFrame: (Int) -> Unit,
     onPauseForLifecycle: () -> Unit,
     onResumeForLifecycle: () -> Unit,
-    tileUrlFor: (RadarFrame) -> String,
+    loadTile: suspend (RadarFrame, RadarTile) -> ByteArray?,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    onFramesReady: (Set<Int>?) -> Unit = {},
 ) {
     val darkTheme = isSystemInDarkTheme()
     val markerColor = MaterialTheme.colorScheme.onBackground.toArgb()
@@ -130,13 +136,45 @@ fun PrecipitationMapScreen(
         onResume = onResumeForLifecycle,
     )
 
-    val radarOverlay = remember(mapView) { createRadarOverlay(mapView) }
-
-    DisposableEffect(radarOverlay) {
-        onDispose {
-            radarOverlay.overlay.onDetach(mapView)
-            radarOverlay.provider.detach()
+    // What is on screen and how far it has blended: shared by the map and
+    // the timeline so the two move together.
+    val playhead = remember { RadarPlayhead(uiState.currentIndex) }
+    val radarScope = rememberCoroutineScope()
+    val currentLoadTile by rememberUpdatedState(loadTile)
+    val currentOnFramesReady by rememberUpdatedState(onFramesReady)
+    val radar = remember(mapView) {
+        RadarLayer(
+            mapView = mapView,
+            scope = radarScope,
+            playhead = playhead,
+            load = { key -> currentLoadTile(key.frame, key.tile) },
+            onFramesReady = { currentOnFramesReady(it) },
+        ).also { layer ->
+            // Under the markers, so the pins are never tinted by rain.
+            mapView.overlays.add(0, layer.overlay)
         }
+    }
+
+    DisposableEffect(radar) {
+        onDispose {
+            mapView.overlays.remove(radar.overlay)
+            // Nothing is waiting on this map any more.
+            currentOnFramesReady(null)
+        }
+    }
+
+    LaunchedEffect(radar, uiState.frames, uiState.maxTileZoom) {
+        playhead.reset(uiState.currentIndex)
+        radar.setFrames(uiState.frames, uiState.maxTileZoom)
+    }
+
+    // A new current frame from the view model: blend the map over to it.
+    // During playback a step to the next frame takes most of the step; a tap
+    // on the timeline or the loop starting over is a quick dissolve.
+    LaunchedEffect(radar, uiState.currentIndex, uiState.frames) {
+        val sequential = uiState.isPlaying && uiState.currentIndex == playhead.to + 1
+        radar.refresh()
+        playhead.moveTo(uiState.currentIndex, sequential) { mapView.invalidate() }
     }
 
     Box(modifier = modifier.fillMaxSize().background(backgroundColor)) {
@@ -146,19 +184,6 @@ fun PrecipitationMapScreen(
             // lands after the view is attached, and that every change ends in an
             // invalidate — the map does not redraw itself.
             update = { view ->
-                val frame = uiState.currentFrame
-                if (frame != null) {
-                    // Swapping the tile source on one provider keeps memory flat:
-                    // osmdroid's disk cache makes the loop smooth after the first
-                    // pass, and no per-frame overlay stack is left behind to leak.
-                    radarOverlay.provider.setTileSource(
-                        RadarTileSource(
-                            frameName = "rainviewer-${frame.timeEpochSeconds}",
-                            urlTemplate = tileUrlFor(frame),
-                        ),
-                    )
-                    radarOverlay.overlay.isEnabled = true
-                }
                 markers.userPoint = uiState.userLocation
                     ?.let { GeoPoint(it.latitude, it.longitude) }
                 view.invalidate()
@@ -188,7 +213,7 @@ fun PrecipitationMapScreen(
             }
             Spacer(Modifier.width(12.dp))
             Text(
-                text = stringResource(R.string.precipitation_forecast),
+                text = stringResource(R.string.radar_title),
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier
                     .clip(RoundedCornerShape(10.dp))
@@ -264,6 +289,7 @@ fun PrecipitationMapScreen(
             )
             RadarTimeline(
                 uiState = uiState,
+                playhead = playhead,
                 onTogglePlay = onTogglePlay,
                 onSelectFrame = onSelectFrame,
                 modifier = Modifier
@@ -276,42 +302,8 @@ fun PrecipitationMapScreen(
     }
 }
 
-private data class RadarOverlayHandle(
-    val provider: MapTileProviderBasic,
-    val overlay: TilesOverlay,
-)
-
-private fun createRadarOverlay(mapView: MapView): RadarOverlayHandle {
-    val provider = MapTileProviderBasic(mapView.context).apply {
-        // MapView wires this up for its own base-map provider, but a second
-        // provider added by hand gets nothing — so finished radar tiles never
-        // asked the map to repaint, and the radar stayed invisible until some
-        // unrelated event (a touch) redrew it.
-        setTileRequestCompleteHandler(SimpleInvalidationHandler(mapView))
-    }
-    val overlay = TilesOverlay(provider, mapView.context).apply {
-        loadingBackgroundColor = android.graphics.Color.TRANSPARENT
-        loadingLineColor = android.graphics.Color.TRANSPARENT
-        // Matches the web app's 0.6 radar opacity over the base map.
-        setColorFilter(radarOpacityFilter())
-        isEnabled = false
-    }
-    mapView.overlays.add(overlay)
-    return RadarOverlayHandle(provider, overlay)
-}
-
-/** 60 % alpha, applied through a colour matrix so no bitmap has to be recreated. */
-private fun radarOpacityFilter(): ColorMatrixColorFilter =
-    ColorMatrixColorFilter(
-        ColorMatrix(
-            floatArrayOf(
-                1f, 0f, 0f, 0f, 0f,
-                0f, 1f, 0f, 0f, 0f,
-                0f, 0f, 1f, 0f, 0f,
-                0f, 0f, 0f, 0.6f, 0f,
-            ),
-        ),
-    )
+/** Base map: standard OpenStreetMap tiles, free and key-free. */
+private fun baseTileSource() = TileSourceFactory.MAPNIK
 
 /** Desaturates the base map so the app's monochrome identity survives. */
 private fun baseMapFilter(darkTheme: Boolean): ColorMatrixColorFilter {
@@ -361,6 +353,9 @@ private fun rememberMapView(
         MapView(context).apply {
             setTileSource(baseTileSource())
             setMultiTouchControls(true)
+            // The radar stops gaining detail at zoom 7 and is only scaled up
+            // after that; past this it is a blur over street names.
+            maxZoomLevel = MAX_MAP_ZOOM
             zoomController.setVisibility(CustomZoomButtonsController.Visibility.SHOW_AND_FADEOUT)
             isTilesScaledToDpi = true
             overlays.add(markers)
@@ -436,7 +431,7 @@ private fun PrecipitationLegend(modifier: Modifier = Modifier) {
                 .weight(1f)
                 .height(12.dp)
                 .clip(RoundedCornerShape(6.dp))
-                .background(Brush.horizontalGradient(LEGEND_COLORS))
+                .background(Brush.horizontalGradient(colorStops = LEGEND_STOPS))
                 .semantics { contentDescription = legendDescription },
         )
         Spacer(Modifier.width(12.dp))
@@ -451,12 +446,17 @@ private fun PrecipitationLegend(modifier: Modifier = Modifier) {
 @Composable
 private fun RadarTimeline(
     uiState: RadarUiState,
+    playhead: RadarPlayhead,
     onTogglePlay: () -> Unit,
     onSelectFrame: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val timeFormatter = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }
     val hourFormatter = remember { SimpleDateFormat("HH", Locale.getDefault()) }
+    // The frame that dominates the picture: the clock turns over halfway
+    // through a blend, when the new frame starts to win.
+    val shownIndex by remember { derivedStateOf { playhead.shown } }
+    val shownFrame = uiState.frames.getOrNull(shownIndex)
 
     Column(modifier = modifier) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -490,7 +490,7 @@ private fun RadarTimeline(
             // Keyed on the timestamp, not the text, so the direction is right
             // across midnight too.
             AnimatedContent(
-                targetState = uiState.currentFrame?.timeEpochSeconds,
+                targetState = shownFrame?.timeEpochSeconds,
                 transitionSpec = {
                     val forward = (targetState ?: 0L) >= (initialState ?: 0L)
                     val direction = if (forward) 1 else -1
@@ -513,9 +513,10 @@ private fun RadarTimeline(
             Spacer(Modifier.width(8.dp))
             Text(
                 text = when {
-                    uiState.currentFrame != null && uiState.isForecast(uiState.currentIndex) ->
+                    uiState.isBuffering -> stringResource(R.string.radar_loading)
+                    shownFrame != null && uiState.isForecast(shownIndex) ->
                         stringResource(R.string.forecast_label)
-                    uiState.currentFrame != null -> stringResource(R.string.radar_label)
+                    shownFrame != null -> stringResource(R.string.radar_label)
                     uiState.hasError -> stringResource(R.string.radar_unavailable)
                     else -> stringResource(R.string.radar_loading)
                 },
@@ -534,27 +535,15 @@ private fun RadarTimeline(
                 .testTag(TAG_TIMELINE),
             horizontalArrangement = Arrangement.spacedBy(2.dp),
         ) {
+            val onSurface = MaterialTheme.colorScheme.onSurface
             uiState.frames.forEachIndexed { index, frame ->
-                val isActive = index == uiState.currentIndex
-                val isPast = index < uiState.currentIndex
                 val isForecast = uiState.isForecast(index)
-                val onSurface = MaterialTheme.colorScheme.onSurface
-                // Eased rather than switched, so playback reads as a sweep
-                // along the bar instead of a blinking cursor, and the active
-                // frame stands a little taller than the rest.
-                val color by animateColorAsState(
-                    targetValue = when {
-                        isActive -> onSurface
-                        isPast -> onSurface.copy(alpha = if (isForecast) 0.25f else 0.35f)
-                        else -> onSurface.copy(alpha = if (isForecast) 0.12f else 0.2f)
+                val isPast = index < shownIndex
+                val resting = onSurface.copy(
+                    alpha = when {
+                        isPast -> if (isForecast) 0.25f else 0.35f
+                        else -> if (isForecast) 0.12f else 0.2f
                     },
-                    animationSpec = tween(Motion.SHORT),
-                    label = "frame-colour",
-                )
-                val height by animateFloatAsState(
-                    targetValue = if (isActive) 1f else INACTIVE_FRAME_HEIGHT,
-                    animationSpec = Motion.pop(),
-                    label = "frame-height",
                 )
                 val label = timeFormatter.format(Date(frame.timeEpochSeconds * 1000))
                 val frameDescription = stringResource(R.string.radar_frame, label)
@@ -562,14 +551,24 @@ private fun RadarTimeline(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxSize()
-                        .graphicsLayer {
-                            scaleY = height
-                            transformOrigin = TransformOrigin(0.5f, 1f)
-                        }
-                        .clip(RoundedCornerShape(2.dp))
-                        .background(color)
                         .clickable { onSelectFrame(index) }
-                        .semantics { contentDescription = frameDescription },
+                        .semantics {
+                            contentDescription = frameDescription
+                            selected = index == shownIndex
+                        }
+                        // Read while drawing, not composing: the bars follow
+                        // the blend frame by frame, so the highlight sweeps
+                        // along with the rain instead of hopping a bar a step.
+                        .drawBehind {
+                            val weight = playhead.weight(index)
+                            val height = size.height * lerp(INACTIVE_FRAME_HEIGHT, 1f, weight)
+                            drawRoundRect(
+                                color = lerp(resting, onSurface, weight),
+                                topLeft = Offset(0f, size.height - height),
+                                size = Size(size.width, height),
+                                cornerRadius = CornerRadius(2.dp.toPx()),
+                            )
+                        },
                 )
             }
         }
@@ -603,15 +602,30 @@ private fun RadarTimeline(
 }
 
 private const val DEFAULT_ZOOM = 7.0
+private const val MAX_MAP_ZOOM = 12.0
 private const val RECENTER_ANIMATION_MILLIS = 500L
 
-private val LEGEND_COLORS = listOf(
-    Color(0xFF88FF88),
-    Color(0xFFFFFF00),
-    Color(0xFFFF8800),
-    Color(0xFFFF0000),
-    Color(0xFFCC00CC),
-    Color(0xFF0000FF),
+/**
+ * The colours RainViewer's "Universal Blue" scheme (the `/2/` in the tile
+ * URL) actually paints, from its published colour table: beige drizzle, blue
+ * rain from light to dark, then yellow, orange, red and magenta for the
+ * heavy end. The bands meet at hard edges, as they do on the radar, rather
+ * than blending through colours the radar never shows.
+ *
+ * The old legend ran green to yellow to red to blue, which read heavy rain as
+ * the lightest colour on the map.
+ */
+private val LEGEND_STOPS = arrayOf(
+    0.00f to Color(0xFFCEC087), // 10 dBZ, drizzle
+    0.16f to Color(0xFFDED097),
+    0.16f to Color(0xFF88DDEE), // 15 dBZ, light rain
+    0.44f to Color(0xFF004768), // 34 dBZ
+    0.44f to Color(0xFFFFEE00), // 35 dBZ, heavy
+    0.62f to Color(0xFFFF8100),
+    0.62f to Color(0xFFFF4400), // 45 dBZ, very heavy
+    0.82f to Color(0xFF8F0000),
+    0.82f to Color(0xFFFFAAFF), // 55 dBZ, extreme
+    1.00f to Color(0xFFFF4EFF),
 )
 
 private const val INACTIVE_FRAME_HEIGHT = 0.6f

@@ -89,7 +89,13 @@ Compose UI → ViewModel (StateFlow) → Repository → Retrofit/OkHttp → prov
   Android Keystore AES/GCM key before it is written to disk.
 - **Offline-first.** The last successful result is cached as JSON and shown
   (clearly labelled as saved) whenever a fetch fails.
-- **osmdroid for the map**, with RainViewer frames as a real tile overlay.
+- **osmdroid for the map, with the radar drawn by its own overlay.** Every
+  frame's tiles are kept, so changing frames never empties the map, and
+  playback waits for the next frame's tiles instead of stepping onto a blank
+  one. RainViewer publishes a frame every ten minutes; consecutive frames are
+  cross-faded across most of each step so the rain moves rather than jumps.
+  RainViewer renders radar down to zoom 7 only, so deeper zooms scale those
+  tiles up.
 
 ## Adding content
 
@@ -113,7 +119,7 @@ Compose UI → ViewModel (StateFlow) → Repository → Retrofit/OkHttp → prov
 | [OpenWeatherMap](https://openweathermap.org/api) | Optional provider | user-supplied |
 | [WeatherAPI](https://www.weatherapi.com) | Optional provider | user-supplied |
 | [Nominatim](https://nominatim.openstreetmap.org) | Forward + reverse geocoding | none |
-| [RainViewer](https://www.rainviewer.com/api.html) | Radar tiles and timeline | none |
+| [RainViewer](https://www.rainviewer.com/api.html) | Radar tiles and timeline: the past two hours, one frame per ten minutes | none |
 | [Bright Sky](https://brightsky.dev) | DWD radar composite and nowcast for the widget (Germany and neighbours) | none |
 | [OpenStreetMap](https://www.openstreetmap.org) | Base map tiles (via osmdroid) | none |
 

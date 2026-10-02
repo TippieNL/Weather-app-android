@@ -2,6 +2,8 @@ package com.weatherquips.app
 
 import com.weatherquips.app.domain.repository.RadarFrame
 import com.weatherquips.app.domain.repository.RadarRepository
+import com.weatherquips.app.domain.repository.RadarTile
+import com.weatherquips.app.data.repository.RadarRepositoryImpl
 import com.weatherquips.app.domain.repository.RadarTimeline
 import com.weatherquips.app.ui.precipitation.PrecipitationViewModel
 import kotlinx.coroutines.Dispatchers
@@ -41,8 +43,9 @@ class RadarTimelineTest {
             return timeline!!
         }
 
-        override fun tileUrlTemplate(frame: RadarFrame): String =
-            "https://tilecache.rainviewer.com${frame.path}/256/{z}/{x}/{y}/2/1_1.png"
+        override val maxTileZoom = 7
+
+        override suspend fun loadTile(frame: RadarFrame, tile: RadarTile): ByteArray? = null
     }
 
     @Before
@@ -91,8 +94,79 @@ class RadarTimelineTest {
             advanceTimeBy(PrecipitationViewModel.FRAME_INTERVAL_MILLIS + 1)
             assertEquals(1, viewModel.uiState.value.currentIndex)
 
-            advanceTimeBy(PrecipitationViewModel.FRAME_INTERVAL_MILLIS * 2)
+            advanceTimeBy(
+                PrecipitationViewModel.FRAME_INTERVAL_MILLIS * 2 +
+                    PrecipitationViewModel.LATEST_FRAME_HOLD_MILLIS,
+            )
             assertEquals(0, viewModel.uiState.value.currentIndex)
+        }
+    }
+
+    @Test
+    fun `the latest frame is held a beat longer before the loop starts over`() = runTest(dispatcher) {
+        withRadar(FakeRadar(RadarTimeline(frames, pastCount = 2))) { viewModel ->
+            advanceTimeBy(PrecipitationViewModel.FRAME_INTERVAL_MILLIS * 2 + 1)
+            assertEquals(2, viewModel.uiState.value.currentIndex)
+
+            // An ordinary step later it is still on the latest frame...
+            advanceTimeBy(PrecipitationViewModel.FRAME_INTERVAL_MILLIS)
+            assertEquals(2, viewModel.uiState.value.currentIndex)
+
+            // ...and starts over once the hold has passed.
+            advanceTimeBy(PrecipitationViewModel.LATEST_FRAME_HOLD_MILLIS)
+            assertEquals(0, viewModel.uiState.value.currentIndex)
+        }
+    }
+
+    // --- waiting for tiles ------------------------------------------------
+
+    @Test
+    fun `playback waits for the next frame's tiles before stepping onto it`() = runTest(dispatcher) {
+        // Regression test for rain that blinked out: playback stepped onto
+        // frames whose tiles were still downloading, and the map went blank.
+        withRadar(FakeRadar(RadarTimeline(frames, pastCount = 2))) { viewModel ->
+            viewModel.onFramesReady(setOf(0))
+            advanceTimeBy(PrecipitationViewModel.FRAME_INTERVAL_MILLIS + 1)
+            assertEquals("stepped onto a frame with nothing to show", 0, viewModel.uiState.value.currentIndex)
+            assertTrue(viewModel.uiState.value.isBuffering)
+
+            viewModel.onFramesReady(setOf(0, 1))
+            runCurrent()
+            assertEquals(1, viewModel.uiState.value.currentIndex)
+            assertFalse(viewModel.uiState.value.isBuffering)
+        }
+    }
+
+    @Test
+    fun `a frame that never arrives does not freeze playback`() = runTest(dispatcher) {
+        withRadar(FakeRadar(RadarTimeline(frames, pastCount = 2))) { viewModel ->
+            viewModel.onFramesReady(setOf(0))
+            advanceTimeBy(
+                PrecipitationViewModel.FRAME_INTERVAL_MILLIS + PrecipitationViewModel.READY_TIMEOUT_MILLIS + 1,
+            )
+            assertEquals(1, viewModel.uiState.value.currentIndex)
+            assertFalse(viewModel.uiState.value.isBuffering)
+        }
+    }
+
+    @Test
+    fun `pausing while waiting clears the waiting state`() = runTest(dispatcher) {
+        withRadar(FakeRadar(RadarTimeline(frames, pastCount = 2))) { viewModel ->
+            viewModel.onFramesReady(emptySet())
+            advanceTimeBy(PrecipitationViewModel.FRAME_INTERVAL_MILLIS + 1)
+            assertTrue(viewModel.uiState.value.isBuffering)
+
+            viewModel.togglePlay()
+            runCurrent()
+            assertFalse(viewModel.uiState.value.isBuffering)
+            assertEquals(0, viewModel.uiState.value.currentIndex)
+        }
+    }
+
+    @Test
+    fun `the source's zoom limit reaches the map`() = runTest(dispatcher) {
+        withRadar(FakeRadar(RadarTimeline(frames, pastCount = 2))) { viewModel ->
+            assertEquals(7, viewModel.uiState.value.maxTileZoom)
         }
     }
 
@@ -163,12 +237,26 @@ class RadarTimelineTest {
     }
 
     @Test
-    fun `tile urls keep the web app's tile flavour`() = runTest(dispatcher) {
-        withRadar(FakeRadar(RadarTimeline(frames, pastCount = 2))) { viewModel ->
-            assertEquals(
-                "https://tilecache.rainviewer.com/v2/radar/1/256/{z}/{x}/{y}/2/1_1.png",
-                viewModel.tileUrl(frames[0]),
-            )
-        }
+    fun `tile urls keep the web app's tile flavour`() {
+        assertEquals(
+            "https://tilecache.rainviewer.com/v2/radar/1/256/7/66/42/2/1_1.png",
+            RadarRepositoryImpl.tileUrl(frames[0], RadarTile(zoom = 7, x = 66, y = 42)),
+        )
+    }
+
+    @Test
+    fun `nothing deeper than RainViewer renders is ever asked for`() = runTest(dispatcher) {
+        // RainViewer answers deeper zooms with a grey "Zoom Level Not
+        // Supported" picture, which over a map looks like weather.
+        val repository = RadarRepositoryImpl(
+            api = object : com.weatherquips.app.data.api.RainViewerApi {
+                override suspend fun weatherMaps() = error("not used")
+            },
+            tileClient = okhttp3.OkHttpClient.Builder()
+                .addInterceptor { error("a tile past the zoom limit was requested") }
+                .build(),
+        )
+        assertEquals(7, repository.maxTileZoom)
+        assertEquals(null, repository.loadTile(frames[0], RadarTile(zoom = 8, x = 132, y = 84)))
     }
 }

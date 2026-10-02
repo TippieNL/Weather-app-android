@@ -33,7 +33,11 @@ class RadarUserLocationTest {
 
     private class StubRadar(private val timeline: RadarTimeline) : RadarRepository {
         override suspend fun loadTimeline() = timeline
-        override fun tileUrlTemplate(frame: RadarFrame) = "https://example.invalid${frame.path}"
+        override val maxTileZoom = 7
+        override suspend fun loadTile(
+            frame: RadarFrame,
+            tile: com.weatherquips.app.domain.repository.RadarTile,
+        ): ByteArray? = null
     }
 
     private class StubLocation(

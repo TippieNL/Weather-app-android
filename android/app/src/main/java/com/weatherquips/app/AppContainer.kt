@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStoreFile
 import com.weatherquips.app.data.api.NetworkModule
+import okhttp3.Cache
 import com.weatherquips.app.data.local.SettingsRepositoryImpl
 import com.weatherquips.app.data.local.WeatherCache
 import com.weatherquips.app.data.repository.DwdRadarNowcastRepository
@@ -86,7 +87,12 @@ class AppContainer(private val context: Context) {
     }
 
     val radarRepository: RadarRepository by lazy {
-        RadarRepositoryImpl(NetworkModule.rainViewerApi)
+        RadarRepositoryImpl(
+            api = NetworkModule.rainViewerApi,
+            tileClient = NetworkModule.okHttpClient.newBuilder()
+                .cache(Cache(context.cacheDir.resolve("radar-tiles"), RADAR_TILE_CACHE_BYTES))
+                .build(),
+        )
     }
 
     val locationProvider: LocationProvider by lazy { LocationProvider(context) }
@@ -115,5 +121,8 @@ class AppContainer(private val context: Context) {
     private companion object {
         const val SETTINGS_STORE = "weather_quips_settings"
         const val CACHE_STORE = "weather_quips_cache"
+
+        /** Two hours of radar over a few screens' worth of map, with room to spare. */
+        const val RADAR_TILE_CACHE_BYTES = 32L * 1024 * 1024
     }
 }

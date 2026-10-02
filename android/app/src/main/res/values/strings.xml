@@ -85,7 +85,7 @@
     <string name="condition_cold">cold</string>
 
     <!-- Precipitation map -->
-    <string name="precipitation_forecast">Precipitation forecast</string>
+    <string name="radar_title">Rain radar</string>
     <string name="back">Back</string>
     <string name="play_radar">Play radar animation</string>
     <string name="pause_radar">Pause radar animation</string>

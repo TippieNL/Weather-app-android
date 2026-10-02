@@ -69,13 +69,28 @@ interface GeocodingRepository {
 /** One RainViewer radar frame: a tile path template and its timestamp. */
 data class RadarFrame(val path: String, val timeEpochSeconds: Long)
 
+/** A map tile in the usual web-map scheme: zoom level, column, row. */
+data class RadarTile(val zoom: Int, val x: Int, val y: Int)
+
 data class RadarTimeline(val frames: List<RadarFrame>, val pastCount: Int)
 
 interface RadarRepository {
     suspend fun loadTimeline(): RadarTimeline
 
-    /** Full tile URL template for a frame, with {z}/{x}/{y} placeholders. */
-    fun tileUrlTemplate(frame: RadarFrame): String
+    /**
+     * The deepest zoom level the source renders. The map can zoom further;
+     * the radar is then drawn from these tiles, scaled up.
+     */
+    val maxTileZoom: Int
+
+    /**
+     * One tile of one frame, as PNG bytes. Null where the source has nothing
+     * to draw, which is an answer and not a failure.
+     *
+     * @throws java.io.IOException when the tile could not be fetched, so the
+     *         caller knows to try again later.
+     */
+    suspend fun loadTile(frame: RadarFrame, tile: RadarTile): ByteArray?
 }
 
 interface SettingsRepository {

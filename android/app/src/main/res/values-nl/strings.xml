@@ -70,7 +70,7 @@
     <string name="condition_windy">winderig</string>
     <string name="condition_hot">heet</string>
     <string name="condition_cold">koud</string>
-    <string name="precipitation_forecast">Neerslagverwachting</string>
+    <string name="radar_title">Regenradar</string>
     <string name="back">Terug</string>
     <string name="play_radar">Radaranimatie afspelen</string>
     <string name="pause_radar">Radaranimatie pauzeren</string>
